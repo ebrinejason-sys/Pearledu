@@ -8,6 +8,7 @@ deployment:
     - export DEPLOYPATH=/home/CPANEL_USERNAME/pearledu-app/
     - /bin/cp -R * $DEPLOYPATH
     - /bin/cp -R .[^.]* $DEPLOYPATH 2>/dev/null || true
+    - chmod -R 775 $DEPLOYPATH/storage $DEPLOYPATH/bootstrap/cache
     - cd $DEPLOYPATH && composer install --no-dev --optimize-autoloader
     - cd $DEPLOYPATH && php artisan db:verify-security
     - cd $DEPLOYPATH && php artisan migrate --force
