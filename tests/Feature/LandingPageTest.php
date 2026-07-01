@@ -45,4 +45,17 @@ class LandingPageTest extends TestCase
         $response->assertSee('Oyoka Daniel');
         $response->assertSee('images/voxsign/team-victor.jpg', false);
     }
+
+    public function test_partners_section_renders_logos_and_text_credits(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('images/voxsign/partner-unad.png', false);
+        $response->assertSee('images/voxsign/partner-kyu.png', false);
+        $response->assertSee('images/voxsign/partner-youtube.webp', false);
+        $response->assertSee('images/voxsign/partner-4.jpg', false);
+        $response->assertSee('Makerere University');
+        $response->assertSee('Makerere Innovation and Incubation Centre');
+    }
 }

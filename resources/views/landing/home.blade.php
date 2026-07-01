@@ -5,4 +5,5 @@
   @include('landing.partials.how-it-works')
   @include('landing.partials.features')
   @include('landing.partials.team')
+  @include('landing.partials.partners')
 @endsection

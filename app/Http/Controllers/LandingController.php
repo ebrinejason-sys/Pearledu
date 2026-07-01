@@ -7,6 +7,7 @@ class LandingController extends Controller {
     public function index() {
         return view('landing.home', [
             'team' => $this->team(),
+            'partners' => $this->partners(),
         ]);
     }
 
@@ -18,6 +19,17 @@ class LandingController extends Controller {
             ['name' => 'Muhumuza Alex', 'role' => 'Head of Product Development', 'photo' => 'team-alex.jpg'],
             ['name' => 'Naikambo Sandra', 'role' => 'Sign Language Specialist and Consultant', 'photo' => 'team-sandra.jpg'],
             ['name' => 'Oyoka Daniel', 'role' => 'Machine Learning Expert and Developer', 'photo' => 'team-daniel.jpg'],
+        ];
+    }
+
+    private function partners(): array {
+        return [
+            ['name' => 'Uganda National Association of the Deaf', 'logo' => 'partner-unad.png'],
+            ['name' => 'Kyambogo University — Faculty of Special Needs & Rehabilitation', 'logo' => 'partner-kyu.png'],
+            ['name' => 'YouTube', 'logo' => 'partner-youtube.webp'],
+            ['name' => 'TGN Systems', 'logo' => 'partner-4.jpg'],
+            ['name' => 'Makerere University', 'logo' => null],
+            ['name' => 'Makerere Innovation and Incubation Centre', 'logo' => null],
         ];
     }
 
