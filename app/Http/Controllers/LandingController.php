@@ -8,6 +8,7 @@ class LandingController extends Controller {
         return view('landing.home', [
             'team' => $this->team(),
             'partners' => $this->partners(),
+            'testimonials' => $this->testimonials(),
         ]);
     }
 
@@ -30,6 +31,26 @@ class LandingController extends Controller {
             ['name' => 'TGN Systems', 'logo' => 'partner-4.jpg'],
             ['name' => 'Makerere University', 'logo' => null],
             ['name' => 'Makerere Innovation and Incubation Centre', 'logo' => null],
+        ];
+    }
+
+    private function testimonials(): array {
+        return [
+            [
+                'quote' => "I can't wait to try VoxSign! The idea of having an AI avatar translate speech into Ugandan Sign Language sounds life-changing for students like me.",
+                'name' => 'Naikambo Sandra',
+                'role' => 'Student, Makerere University',
+            ],
+            [
+                'quote' => "As an educator, I'm excited about VoxSign's potential to make classrooms more inclusive. If it works as described, it will truly revolutionize how we teach Deaf students.",
+                'name' => 'Birabwa Jane Lydia',
+                'role' => 'Educator, Makerere University',
+            ],
+            [
+                'quote' => "I'm really looking forward to VoxSign's launch. A tool that can help my child understand spoken words and communicate back would be a dream come true.",
+                'name' => "Naikambo Sandra's Parent",
+                'role' => 'Parent',
+            ],
         ];
     }
 

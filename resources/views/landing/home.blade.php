@@ -6,4 +6,5 @@
   @include('landing.partials.features')
   @include('landing.partials.team')
   @include('landing.partials.partners')
+  @include('landing.partials.testimonials')
 @endsection

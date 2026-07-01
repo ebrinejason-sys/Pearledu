@@ -58,4 +58,15 @@ class LandingPageTest extends TestCase
         $response->assertSee('Makerere University');
         $response->assertSee('Makerere Innovation and Incubation Centre');
     }
+
+    public function test_testimonials_render_in_anticipatory_tense(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee("I can't wait to try VoxSign!");
+        $response->assertSee('Birabwa Jane Lydia');
+        $response->assertSee("I'm really looking forward to VoxSign's launch.");
+        $response->assertDontSee('I love using VoxSign');
+    }
 }
