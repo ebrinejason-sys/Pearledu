@@ -1,11 +1,10 @@
 ---
 deployment:
   tasks:
-    # TODO: replace CPANEL_USERNAME. This must NOT be public_html itself —
-    # the domain's document root should point at $DEPLOYPATH/public (see
-    # docs/CPANEL_DEPLOY.md), so app code, .env, and storage stay outside
-    # the web-exposed folder.
-    - export DEPLOYPATH=/home/CPANEL_USERNAME/pearledu-app/
+    # This must NOT be public_html itself — the domain's document root
+    # should point at $DEPLOYPATH/public (see docs/CPANEL_DEPLOY.md), so
+    # app code, .env, and storage stay outside the web-exposed folder.
+    - export DEPLOYPATH=/home/voxsign/pearledu-app/
     - /bin/cp -R * $DEPLOYPATH
     - /bin/cp -R .[^.]* $DEPLOYPATH 2>/dev/null || true
     - chmod -R 775 $DEPLOYPATH/storage $DEPLOYPATH/bootstrap/cache

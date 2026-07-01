@@ -14,14 +14,19 @@ in `.cpanel.yml` on every deploy.
      scope, or add the deploy via cPanel's SSH key (Git Version Control has
      an "SSH keys" helper if you prefer `git@github.com:...` over HTTPS).
 
-2. **Edit `.cpanel.yml`** in the repo (before or after first deploy) and
-   replace `CPANEL_USERNAME` with your real cPanel username. `$DEPLOYPATH`
-   is where the *application code* lands — keep it outside `public_html`.
+2. `$DEPLOYPATH` (`/home/voxsign/pearledu-app/`) is where the *application
+   code* lands — outside `public_html`, not inside it.
 
-3. **Point the domain at `public/`**, not the app root:
-   - cPanel → Domains → `pearledu.voxsign.co.ug` (and any other app domain)
-   - Set Document Root to `$DEPLOYPATH/public` (e.g.
-     `/home/CPANEL_USERNAME/pearledu-app/public`)
+3. **Point every app-facing domain at `public/`**, not the app root:
+   - cPanel → Domains → `voxsign.co.ug` (apex, VoxSign landing) — Document
+     Root: `/home/voxsign/pearledu-app/public`
+   - cPanel → Domains → `pearledu.voxsign.co.ug` (platform app) — same
+     Document Root: `/home/voxsign/pearledu-app/public`
+   - The wildcard `*.voxsign.co.ug` subdomain (for auto-provisioned tenant
+     subdomains like `pearledu1.voxsign.co.ug`) also needs to resolve to
+     the same Document Root — the app resolves which tenant/host it's
+     serving internally via `ResolveTenant` middleware, so one codebase +
+     one document root serves all of them.
    - This keeps `.env`, `app/`, `storage/`, etc. unreachable from the web —
      required, since `.env` holds DB credentials and this app handles
      DPPA-protected data (NIN/LIN).
@@ -34,8 +39,9 @@ in `.cpanel.yml` on every deploy.
 
 5. **First deploy**: run migrations manually once via SSH to confirm
    everything works before trusting the automated `.cpanel.yml` pipeline:
+
    ```bash
-   cd /home/CPANEL_USERNAME/pearledu-app
+   cd /home/voxsign/pearledu-app
    composer install --no-dev --optimize-autoloader
    php artisan db:verify-security   # must print OK — hard gate
    php artisan migrate --force
