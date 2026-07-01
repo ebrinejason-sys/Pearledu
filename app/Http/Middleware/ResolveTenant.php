@@ -20,6 +20,16 @@ class ResolveTenant {
             return $next($request);
         }
 
+        if ($id = session(\App\Services\Platform\ImpersonationService::SESSION_SCHOOL)) {
+            $this->context->forSchool((int) $id);
+            return $next($request);
+        }
+
+        if ($request->user()?->isPlatformOperator() && $request->routeIs('platform.*')) {
+            $this->context->forPlatform();
+            return $next($request);
+        }
+
         $label = $this->label($host, $base);
         if ($label === null || in_array($label, config('tenancy.platform_subdomains'), true)) {
             $this->context->clear();                     // platform host

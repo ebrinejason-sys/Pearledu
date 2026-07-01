@@ -15,8 +15,7 @@
           <td><span class="pill">{{ $s->theme }}</span></td>
           <td>{{ $s->status }}</td>
           <td>
-            <a href="{{ route('platform.schools.show', $s) }}">View</a>
-            <form method="post" action="{{ route('platform.schools.enter', $s) }}" style="display:inline">@csrf<button class="btn ghost">Enter</button></form>
+            <a href="{{ route('platform.schools.show', $s) }}">Manage</a>
           </td>
         </tr>
       @endforeach

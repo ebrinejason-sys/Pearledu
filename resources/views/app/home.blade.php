@@ -7,7 +7,6 @@
       <div class="card">
         <h3>Quick actions</h3>
         @if(in_array('sms.send', $permissions))<a class="btn" href="{{ route('app.sms') }}">Send SMS</a>@endif
-        <a class="btn ghost" href="{{ route('account.settings') }}">Account</a>
       </div>
       <div class="card">
         <h3>Your access</h3>

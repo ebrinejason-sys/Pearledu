@@ -1,12 +1,10 @@
 @extends('layouts.app')
 @section('title','Platform dashboard')
 @section('content')
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-    <h2 style="margin:0">Platform overview</h2>
-    <span class="spacer"></span>
-    <a class="btn ghost" href="{{ route('platform.sms.index') }}">SMS &amp; credit</a>
-    <a class="btn ghost" href="{{ route('platform.schools.index') }}">Schools</a>
-    <a class="btn" href="{{ route('platform.schools.create') }}">+ Onboard school</a>
+  <div class="page-header">
+    <div>
+      <h2 class="page-header__title" style="margin:0">Platform overview</h2>
+    </div>
   </div>
   <div class="grid g4">
     <div class="card stat"><div class="l">Schools</div><div class="v">{{ $stats['schools'] }}</div></div>

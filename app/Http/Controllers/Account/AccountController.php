@@ -11,6 +11,9 @@ class AccountController extends Controller {
     public function show() { return view('account.settings'); }
 
     public function destroy(Request $request, AccountDeletionService $deletion) {
+        if (app(\App\Services\Platform\ImpersonationService::class)->isActive()) {
+            throw ValidationException::withMessages(['password' => 'End imitation before deleting an account.']);
+        }
         $request->validate(['confirm'=>'required|in:DELETE','password'=>'required|string']);
         $user = Auth::user();
         if (! Hash::check($request->input('password'), $user->password ?? '')) {

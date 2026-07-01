@@ -33,7 +33,19 @@ class SchoolController extends Controller {
 
     public function show(School $school) {
         $school->load('offerings');
-        return view('platform.schools.show', compact('school'));
+        $members = \App\Models\RoleAssignment::query()
+            ->where('school_id', $school->id)
+            ->where('is_active', true)
+            ->with(['user', 'role'])
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn ($assignments) => [
+                'user' => $assignments->first()->user,
+                'roles' => $assignments->pluck('role.label')->unique()->values()->all(),
+            ])
+            ->sortBy(fn ($m) => $m['user']->full_name)
+            ->values();
+        return view('platform.schools.show', compact('school', 'members'));
     }
 
     public function enter(Request $request, School $school) {

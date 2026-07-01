@@ -13,6 +13,7 @@ Route::middleware(['web','auth','platform'])->prefix('platform')->name('platform
     Route::get('schools/{school}', [SchoolController::class, 'show'])->name('schools.show');
     Route::post('schools/{school}/enter', [SchoolController::class, 'enter'])->name('schools.enter');
     Route::post('schools/leave', [SchoolController::class, 'leave'])->name('schools.leave');
+    Route::post('schools/{school}/imitate/{user}', [\App\Http\Controllers\Platform\ImpersonationController::class, 'store'])->name('schools.imitate');
 
     Route::get('sms', [SmsCreditController::class, 'index'])->name('sms.index');
     Route::post('sms/settings', [SmsCreditController::class, 'updateSettings'])->name('sms.settings');

@@ -1,7 +1,11 @@
 @extends('layouts.app')
 @section('title','Set your password')
 @section('content')
-  <div class="card" style="max-width:440px;margin:40px auto">
+  <a href="{{ url('/') }}" class="auth-brand">
+    <img src="{{ asset('images/brand/logo.png') }}" alt="" class="brand__mark brand__mark--lg" width="56" height="56">
+    <span class="brand__wordmark">Pearl<b>Edu</b></span>
+  </a>
+  <div class="card" style="max-width:440px;margin:0 auto 40px">
     <h2 style="margin-top:0">Welcome — set your password</h2>
     <p style="color:var(--muted)">Choose a strong password (10+ characters) to activate your account.</p>
     <form method="post" action="/invitations/{{ $invitation }}/accept">
