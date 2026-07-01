@@ -7,4 +7,5 @@
   @include('landing.partials.team')
   @include('landing.partials.partners')
   @include('landing.partials.testimonials')
+  @include('landing.partials.pricing')
 @endsection

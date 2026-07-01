@@ -9,6 +9,7 @@ class LandingController extends Controller {
             'team' => $this->team(),
             'partners' => $this->partners(),
             'testimonials' => $this->testimonials(),
+            'pricingTiers' => $this->pricingTiers(),
         ]);
     }
 
@@ -51,6 +52,15 @@ class LandingController extends Controller {
                 'name' => "Naikambo Sandra's Parent",
                 'role' => 'Parent',
             ],
+        ];
+    }
+
+    private function pricingTiers(): array {
+        return [
+            ['name' => 'Free', 'price' => 'UGX 0', 'features' => ['3,000 words/day limit']],
+            ['name' => 'Premium', 'price' => 'UGX 50,000/month', 'features' => ['Unlimited translations', 'Ad-free', 'Collaboration tools']],
+            ['name' => 'Enterprise', 'price' => 'UGX 50,000,000/year', 'features' => ['Custom branding', 'Dedicated support']],
+            ['name' => 'Government/NGOs', 'price' => 'UGX 500,000,000/year', 'features' => ['Full suite', 'Chatbot', 'Analytics']],
         ];
     }
 
