@@ -8,4 +8,6 @@
   @include('landing.partials.partners')
   @include('landing.partials.testimonials')
   @include('landing.partials.pricing')
+  @include('landing.partials.roadmap')
+  @include('landing.partials.contact')
 @endsection

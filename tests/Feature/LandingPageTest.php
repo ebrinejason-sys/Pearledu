@@ -82,4 +82,31 @@ class LandingPageTest extends TestCase
         $response->assertSee('UGX 500,000,000/year');
         $response->assertSee('Government/NGOs');
     }
+
+    public function test_roadmap_and_contact_section_render(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('expansion across Africa', false);
+        $response->assertSee('+256 770 680769');
+        $response->assertSee('voxsign3@gmail.com');
+        $response->assertSee('Makerere Innovation and Incubation Centre');
+        $response->assertSee('name="website"', false); // honeypot field preserved
+        $response->assertDontSee('Accessibility Statement');
+        $response->assertDontSee('Privacy Policy');
+    }
+
+    public function test_contact_form_still_validates_and_submits(): void
+    {
+        $response = $this->post('/contact', [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'message' => 'Hello VoxSign',
+            'website' => '',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('status');
+    }
 }
