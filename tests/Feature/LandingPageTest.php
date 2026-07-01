@@ -30,4 +30,19 @@ class LandingPageTest extends TestCase
         $response->assertSee('Automatic voice recognition that accommodates varied accents', false);
         $response->assertSee('Multi-Device Accessibility', false);
     }
+
+    public function test_team_section_renders_all_six_members(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('Tusuubira Victor');
+        $response->assertSee('CEO/Founder');
+        $response->assertSee('Kamanzi Ahmed');
+        $response->assertSee('Muwanguzi Joan Najjingo');
+        $response->assertSee('Muhumuza Alex');
+        $response->assertSee('Naikambo Sandra');
+        $response->assertSee('Oyoka Daniel');
+        $response->assertSee('images/voxsign/team-victor.jpg', false);
+    }
 }
