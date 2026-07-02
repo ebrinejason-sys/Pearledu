@@ -20,7 +20,7 @@
 </div>
 <style>
   .vx-marquee{overflow:hidden;width:100%}
-  .vx-marquee-track{display:flex;align-items:center;gap:44px;width:max-content;animation:vx-scroll 32s linear infinite}
+  .vx-marquee-track{display:flex;align-items:center;width:max-content;animation:vx-scroll 32s linear infinite}
   .vx-marquee-group{display:flex;align-items:center;gap:44px}
   .vx-marquee-track img{height:38px;width:auto;opacity:.8;filter:grayscale(1);transition:opacity .2s,filter .2s;flex:0 0 auto}
   .vx-marquee:hover .vx-marquee-track{animation-play-state:paused}

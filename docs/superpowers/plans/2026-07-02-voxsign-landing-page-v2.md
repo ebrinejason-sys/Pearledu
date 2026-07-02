@@ -347,28 +347,35 @@ Replace the full contents of `resources/views/landing/partials/partners.blade.ph
   <div class="vx-marquee">
     <div class="vx-marquee-track">
       @for($i = 0; $i < 2; $i++)
-        @foreach($partners as $partner)
-          @if($partner['logo'])
-            <img src="{{ asset('images/voxsign/'.$partner['logo']) }}" alt="{{ $partner['name'] }}">
-          @else
-            <span class="vx-partner-text">{{ $partner['name'] }}</span>
-          @endif
-        @endforeach
+        <div class="vx-marquee-group">
+          @foreach($partners as $partner)
+            @if($partner['logo'])
+              <img src="{{ asset('images/voxsign/'.$partner['logo']) }}" alt="{{ $partner['name'] }}">
+            @else
+              <span class="vx-partner-text">{{ $partner['name'] }}</span>
+            @endif
+          @endforeach
+        </div>
       @endfor
     </div>
   </div>
 </div>
 <style>
+  .vx-marquee{overflow:hidden;width:100%}
   .vx-marquee-track{display:flex;align-items:center;gap:44px;width:max-content;animation:vx-scroll 32s linear infinite}
+  .vx-marquee-group{display:flex;align-items:center;gap:44px}
   .vx-marquee-track img{height:38px;width:auto;opacity:.8;filter:grayscale(1);transition:opacity .2s,filter .2s;flex:0 0 auto}
   .vx-marquee:hover .vx-marquee-track{animation-play-state:paused}
   .vx-marquee-track img:hover{opacity:1;filter:none}
   @keyframes vx-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-  @media(prefers-reduced-motion:reduce){.vx-marquee-track{animation:none;flex-wrap:wrap;justify-content:center}}
+  @media(prefers-reduced-motion:reduce){
+    .vx-marquee-track{animation:none;flex-wrap:wrap;justify-content:center}
+    .vx-marquee-track .vx-marquee-group:nth-child(2){display:none}
+  }
 </style>
 ```
 
-The logo list is duplicated once (`@for($i = 0; $i < 2; $i++)`) so the CSS animation (`translateX(-50%)`) can loop seamlessly from the first copy into the identical second copy.
+The logo list is duplicated once (`@for($i = 0; $i < 2; $i++)`, each pass wrapped in its own `.vx-marquee-group`) so the CSS animation (`translateX(-50%)`) can loop seamlessly from the first copy into the identical second copy. `.vx-marquee{overflow:hidden}` clips the doubled track into a scrolling strip instead of an overflowing double-wide row. Under `prefers-reduced-motion: reduce`, the second `.vx-marquee-group` is hidden so non-animated users see each partner's logo/name exactly once, not duplicated.
 
 - [ ] **Step 4: Move the partners include to right after hero in home.blade.php**
 
