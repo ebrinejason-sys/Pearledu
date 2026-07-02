@@ -32,15 +32,17 @@ class LandingPageTest extends TestCase
         $response->assertDontSee('Communication gaps between hearing instructors', false);
     }
 
-    public function test_mission_how_it_works_and_features_render(): void
+    public function test_how_it_works_and_features_render_with_headings(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
+        $response->assertSee('From spoken word to signed meaning', false);
         $response->assertSee('Speech captured live or recorded', false);
         $response->assertSee('Download', false);
         $response->assertSee('Create account', false);
         $response->assertSee('Tap Listen', false);
+        $response->assertSee('Everything needed for real, everyday inclusion', false);
         $response->assertSee('Automatic voice recognition that accommodates varied accents', false);
         $response->assertSee('Multi-Device Accessibility', false);
     }
