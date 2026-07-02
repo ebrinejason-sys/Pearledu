@@ -72,7 +72,7 @@ class LandingController extends Controller {
             'website'=>'nullable|max:0',   // honeypot: must be empty
         ]);
         Mail::raw($data['message']."\n\nFrom: {$data['name']} <{$data['email']}>", function ($m) use ($data) {
-            $m->to(config('mail.contact_inbox', env('CONTACT_INBOX')))
+            $m->to(config('mail.contact_inbox'))
               ->replyTo($data['email'], $data['name'])
               ->subject('VoxSign contact form');
         });
