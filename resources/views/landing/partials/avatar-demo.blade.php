@@ -5,18 +5,24 @@
     <p class="vx-lead" style="margin:10px 0 8px">
       <span style="display:inline-block;background:var(--sign);color:#0B1020;font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px">Concept preview</span>
     </p>
-    <p class="vx-lead" style="margin-bottom:32px">
-      An early look at how a signing avatar could move — illustrative, not a verified Ugandan Sign Language rendering.
+    <p class="vx-lead vx-sec-head">
+      An early look at how hand-shape signing could look — illustrative, not a verified Ugandan Sign Language rendering.
     </p>
     <div class="vx-avatar-demo" data-phrases="How are you?,What is your name?">
-      <svg viewBox="0 0 200 200" width="180" height="180" role="img" aria-label="Animated avatar preview">
-        <circle cx="100" cy="52" r="26" fill="none" stroke="var(--sign)" stroke-width="5"/>
-        <line x1="100" y1="78" x2="100" y2="140" stroke="var(--sign)" stroke-width="6" stroke-linecap="round"/>
-        <g class="vx-arm-l" style="transform-origin:100px 92px">
-          <line x1="100" y1="92" x2="60" y2="130" stroke="var(--voice)" stroke-width="6" stroke-linecap="round"/>
+      <svg viewBox="0 0 200 200" width="180" height="180" role="img" aria-label="Hand-shape illustration">
+        <g class="vx-hand vx-hand-1">
+          <rect x="80" y="90" width="40" height="60" rx="18" fill="var(--sign)"/>
+          <rect x="60" y="50" width="16" height="55" rx="8" fill="var(--sign)" transform="rotate(-8 68 78)"/>
+          <rect x="80" y="35" width="16" height="65" rx="8" fill="var(--sign)"/>
+          <rect x="102" y="35" width="16" height="65" rx="8" fill="var(--sign)"/>
+          <rect x="124" y="45" width="16" height="60" rx="8" fill="var(--sign)" transform="rotate(8 132 75)"/>
+          <rect x="55" y="95" width="30" height="15" rx="7" fill="var(--sign)" transform="rotate(-35 70 102)"/>
         </g>
-        <g class="vx-arm-r" style="transform-origin:100px 92px">
-          <line x1="100" y1="92" x2="140" y2="130" stroke="var(--voice)" stroke-width="6" stroke-linecap="round"/>
+        <g class="vx-hand vx-hand-2">
+          <rect x="80" y="100" width="42" height="55" rx="18" fill="var(--voice)"/>
+          <rect x="90" y="40" width="18" height="70" rx="9" fill="var(--voice)"/>
+          <rect x="60" y="105" width="24" height="16" rx="8" fill="var(--voice)"/>
+          <rect x="118" y="105" width="24" height="16" rx="8" fill="var(--voice)"/>
         </g>
       </svg>
       <p class="vx-avatar-caption" style="font-family:var(--display);font-weight:700;font-size:20px;margin-top:14px">How are you?</p>
@@ -25,11 +31,11 @@
 </section>
 <style>
   .vx-avatar-demo{text-align:center}
-  .vx-arm-l{animation:vx-arm-l 2.4s ease-in-out infinite}
-  .vx-arm-r{animation:vx-arm-r 2.4s ease-in-out infinite}
-  @keyframes vx-arm-l{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-35deg)}}
-  @keyframes vx-arm-r{0%,100%{transform:rotate(0deg)}50%{transform:rotate(35deg)}}
-  @media(prefers-reduced-motion:reduce){.vx-arm-l,.vx-arm-r{animation:none}}
+  .vx-hand{transition:opacity .5s ease}
+  .vx-hand-2{opacity:0}
+  .vx-avatar-demo.vx-phrase-2 .vx-hand-1{opacity:0}
+  .vx-avatar-demo.vx-phrase-2 .vx-hand-2{opacity:1}
+  @media(prefers-reduced-motion:reduce){.vx-hand{transition:none}}
 </style>
 <script>
   (function(){
@@ -42,6 +48,7 @@
     setInterval(function(){
       i = (i + 1) % phrases.length;
       caption.textContent = phrases[i];
+      demo.classList.toggle('vx-phrase-2', i === 1);
     }, 3200);
   })();
 </script>
