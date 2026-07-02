@@ -637,7 +637,7 @@ Expected: FAIL — `accessibility.blade.php` doesn't exist yet.
       </div>
       <div class="vx-card">
         <h3>Assistive Speech Recognition</h3>
-        <p>Helps people with speech impairments be understood. Built by training OpenAI's Whisper speech-recognition model on non-standard speech patterns, so it can accurately recognize what someone is saying even when their speech doesn't follow typical patterns.</p>
+        <p>VoxSign's speech recognition tool helps people with speech impairments be understood. It's built by training OpenAI's Whisper speech-recognition model on non-standard speech patterns, so it can accurately recognize what someone is saying even when their speech doesn't follow typical patterns.</p>
       </div>
     </div>
   </div>
