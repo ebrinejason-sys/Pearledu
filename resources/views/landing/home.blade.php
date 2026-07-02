@@ -10,7 +10,6 @@
   @include('landing.partials.features')
   @include('landing.partials.team')
   @include('landing.partials.testimonials')
-  @include('landing.partials.pricing')
   @include('landing.partials.roadmap')
   @include('landing.partials.contact')
 @endsection

@@ -107,17 +107,15 @@ class LandingPageTest extends TestCase
         $response->assertDontSee('I love using VoxSign');
     }
 
-    public function test_pricing_table_renders_all_four_tiers(): void
+    public function test_pricing_is_not_present_anywhere_on_the_page(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
-        $response->assertSee('UGX 0');
-        $response->assertSee('3,000 words/day limit');
-        $response->assertSee('UGX 50,000/month');
-        $response->assertSee('UGX 50,000,000/year');
-        $response->assertSee('UGX 500,000,000/year');
-        $response->assertSee('Government/NGOs');
+        $response->assertDontSee('Pricing');
+        $response->assertDontSee('UGX 0');
+        $response->assertDontSee('UGX 50,000');
+        $response->assertDontSee('#pricing', false);
     }
 
     public function test_roadmap_section_renders(): void
