@@ -242,6 +242,7 @@ class LandingPageTest extends TestCase
         $response->assertSee('.vx-section{padding:clamp(48px,8vw,88px) 0}', false);
         $response->assertSee('.vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}', false);
         $response->assertSee('class="vx-lead vx-sec-head"', false);
+        $response->assertSee('class="vx-h2 vx-sec-head"', false);
         $response->assertDontSee('style="margin-bottom:32px"', false);
     }
 

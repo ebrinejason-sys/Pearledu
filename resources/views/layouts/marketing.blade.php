@@ -38,7 +38,6 @@
   }
 
   .vx-section{padding:clamp(48px,8vw,88px) 0;border-bottom:1px solid var(--line)}
-  .vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}
   .vx-section:last-of-type{border-bottom:0}
   .vx-band{background:var(--ink);color:#fff}
   .vx-band .vx-eyebrow{color:var(--sign)}
@@ -49,6 +48,7 @@
   .vx-h1 .vx-flow{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
   .vx-h2{font-size:clamp(24px,3.6vw,36px);font-weight:700;margin:0 0 6px}
   .vx-lead{color:var(--muted);max-width:620px;font-size:17px}
+  .vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}
 
   .vx-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
           background:var(--ink);color:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:12px 22px;cursor:pointer;
