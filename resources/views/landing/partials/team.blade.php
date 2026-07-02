@@ -1,7 +1,7 @@
 <section id="team" class="vx-section">
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">Team</div>
-    <h2 class="vx-h2" style="margin-bottom:28px">The people behind VoxSign.</h2>
+    <h2 class="vx-h2 vx-sec-head">The people behind VoxSign.</h2>
     <div class="vx-grid">
       @foreach($team as $member)
         <div class="vx-card">

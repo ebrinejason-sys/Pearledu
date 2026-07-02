@@ -1,7 +1,7 @@
 <section class="vx-section">
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">Features</div>
-    <h2 class="vx-h2" style="margin-bottom:28px">Everything needed for real, everyday inclusion.</h2>
+    <h2 class="vx-h2 vx-sec-head">Everything needed for real, everyday inclusion.</h2>
     <div class="vx-grid">
       <div class="vx-card"><h3>Automatic voice recognition</h3><p>Automatic voice recognition that accommodates varied accents.</p></div>
       <div class="vx-card"><h3>Seamless collaboration</h3><p>Works alongside tools like YouTube and Zoom.</p></div>

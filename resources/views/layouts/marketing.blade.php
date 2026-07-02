@@ -30,7 +30,8 @@
   .vx-nav-links a:hover{color:var(--ink)}
   .vx-nav-cta{margin-left:auto}
 
-  .vx-section{padding:72px 0;border-bottom:1px solid var(--line)}
+  .vx-section{padding:clamp(48px,8vw,88px) 0;border-bottom:1px solid var(--line)}
+  .vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}
   .vx-section:last-of-type{border-bottom:0}
   .vx-band{background:var(--ink);color:#fff}
   .vx-band .vx-eyebrow{color:var(--sign)}

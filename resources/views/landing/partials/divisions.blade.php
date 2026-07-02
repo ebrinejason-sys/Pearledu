@@ -2,7 +2,7 @@
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">What VoxSign is</div>
     <h2 class="vx-h2">Two divisions, one mission.</h2>
-    <p class="vx-lead" style="margin-bottom:32px">Every VoxSign product exists to close a gap someone else's technology left open.</p>
+    <p class="vx-lead vx-sec-head">Every VoxSign product exists to close a gap someone else's technology left open.</p>
     <div class="vx-grid" style="grid-template-columns:repeat(2,1fr)">
       <div class="vx-card">
         <h3>PearlEdu</h3>

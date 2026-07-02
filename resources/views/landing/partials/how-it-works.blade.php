@@ -1,7 +1,7 @@
 <section id="how-it-works" class="vx-section">
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">How it works</div>
-    <h2 class="vx-h2" style="margin-bottom:28px">From spoken word to signed meaning, instantly.</h2>
+    <h2 class="vx-h2 vx-sec-head">From spoken word to signed meaning, instantly.</h2>
     <div class="vx-steps" style="margin-bottom:36px">
       <div class="vx-step">
         <div class="vx-step-n">1</div>

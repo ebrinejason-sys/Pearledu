@@ -229,4 +229,15 @@ class LandingPageTest extends TestCase
         $response->assertSee('What is your name?', false);
         $response->assertSee('vx-avatar-demo', false);
     }
+
+    public function test_section_spacing_uses_responsive_clamp_and_sec_head_class(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('.vx-section{padding:clamp(48px,8vw,88px) 0}', false);
+        $response->assertSee('.vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}', false);
+        $response->assertSee('class="vx-lead vx-sec-head"', false);
+        $response->assertDontSee('style="margin-bottom:32px"', false);
+    }
 }
