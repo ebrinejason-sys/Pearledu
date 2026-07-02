@@ -59,7 +59,16 @@
   .vx-btn-ghost:hover{border-color:var(--ink)}
 
   .vx-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-  .vx-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .vx-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;transition:transform .2s ease,box-shadow .2s ease}
+  .vx-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -16px rgba(11,16,32,.25)}
+  @media(prefers-reduced-motion:reduce){.vx-card{transition:none}.vx-card:hover{transform:none}}
+  .vx-grid .vx-card:nth-child(1){transition-delay:0ms}
+  .vx-grid .vx-card:nth-child(2){transition-delay:50ms}
+  .vx-grid .vx-card:nth-child(3){transition-delay:100ms}
+  .vx-grid .vx-card:nth-child(4){transition-delay:150ms}
+  .vx-grid .vx-card:nth-child(5){transition-delay:200ms}
+  .vx-grid .vx-card:nth-child(n+6){transition-delay:250ms}
+  @media(prefers-reduced-motion:reduce){.vx-grid .vx-card{transition-delay:0ms!important}}
   .vx-card img{width:100%;aspect-ratio:1;object-fit:cover;margin-bottom:12px;border-radius:12px}
   .vx-card h3{margin:0 0 6px;font-size:18px;font-weight:700}
   .vx-card p{margin:0;color:var(--muted);font-size:14px}
@@ -85,7 +94,7 @@
   .vx-footer a{color:#c7cdda}.vx-footer a:hover{color:#fff}
   @media(max-width:640px){.vx-footer{flex-direction:column}}
 
-  .vx-reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .vx-reveal{opacity:0;transform:translateY(14px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
   .vx-reveal.in{opacity:1;transform:none}
   @media(prefers-reduced-motion:reduce){.vx-reveal{opacity:1;transform:none;transition:none}}
 </style>

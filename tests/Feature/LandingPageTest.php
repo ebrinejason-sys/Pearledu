@@ -271,4 +271,15 @@ class LandingPageTest extends TestCase
         $response->assertSee('.vx-nav-toggle{display:none', false);
         $response->assertSee('@media(max-width:860px)', false);
     }
+
+    public function test_interaction_polish_css_present(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('cubic-bezier(.16,1,.3,1)', false);
+        $response->assertSee('.vx-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;transition:transform .2s ease,box-shadow .2s ease}', false);
+        $response->assertSee('.vx-card:hover{transform:translateY(-3px)', false);
+        $response->assertSee('.vx-grid .vx-card:nth-child(1){transition-delay:0ms}', false);
+    }
 }
