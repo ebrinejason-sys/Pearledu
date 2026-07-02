@@ -25,3 +25,4 @@ Thumbs.db
 /.pgsql
 /.superpowers
 /.php84
+*.glb
