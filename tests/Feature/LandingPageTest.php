@@ -60,17 +60,33 @@ class LandingPageTest extends TestCase
         $response->assertSee('images/voxsign/team-victor.jpg', false);
     }
 
-    public function test_partners_section_renders_logos_and_text_credits(): void
+    public function test_partners_marquee_renders_logos_and_text_credits(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
+        $response->assertSee('vx-marquee', false);
         $response->assertSee('images/voxsign/partner-unad.png', false);
         $response->assertSee('images/voxsign/partner-kyu.png', false);
         $response->assertSee('images/voxsign/partner-youtube.webp', false);
         $response->assertSee('images/voxsign/partner-4.jpg', false);
         $response->assertSee('Makerere University');
         $response->assertSee('Makerere Innovation and Incubation Centre');
+    }
+
+    public function test_partners_section_appears_directly_after_hero(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $heroPos = strpos($response->getContent(), 'Technology built to');
+        $partnersPos = strpos($response->getContent(), 'vx-marquee');
+        $howItWorksPos = strpos($response->getContent(), 'How it works');
+
+        $this->assertNotFalse($heroPos);
+        $this->assertNotFalse($partnersPos);
+        $this->assertGreaterThan($heroPos, $partnersPos);
+        $this->assertLessThan($howItWorksPos, $partnersPos);
     }
 
     public function test_testimonials_render_in_anticipatory_tense(): void
