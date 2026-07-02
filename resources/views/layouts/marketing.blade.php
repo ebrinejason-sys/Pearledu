@@ -62,7 +62,6 @@
   .vx-step h4{margin:8px 0;font-size:17px}
   .vx-step p{margin:0;color:var(--muted);font-size:14px}
 
-  .vx-partners{overflow:hidden;position:relative}
   .vx-partner-text{color:var(--muted);font-size:13px;border:1px dashed var(--line);padding:10px 14px;border-radius:10px}
   .vx-quote{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:16px}
   .vx-quote p{margin:0 0 12px;font-size:16px}

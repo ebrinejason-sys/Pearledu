@@ -162,7 +162,10 @@ class LandingPageTest extends TestCase
         });
 
         \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactFormConfirmation::class, function ($mail) {
-            return $mail->hasTo('test@example.com') && $mail->name === 'Test User';
+            return $mail->hasTo('test@example.com')
+                && $mail->name === 'Test User'
+                && $mail->from[0]->address === config('mail.from.address')
+                && $mail->from[0]->name === 'VoxSign';
         });
     }
 
