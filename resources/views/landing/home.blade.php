@@ -2,6 +2,7 @@
 @section('content')
   @include('landing.partials.hero')
   @include('landing.partials.partners')
+  @include('landing.partials.divisions')
   @include('landing.partials.how-it-works')
   @include('landing.partials.features')
   @include('landing.partials.team')

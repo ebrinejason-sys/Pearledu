@@ -139,4 +139,15 @@ class LandingPageTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('status');
     }
+
+    public function test_two_divisions_section_introduces_pearledu_and_accessibility(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('Two divisions, one mission', false);
+        $response->assertSee('school management platform', false);
+        $response->assertSee('href="#pearledu"', false);
+        $response->assertSee('href="#accessibility"', false);
+    }
 }
