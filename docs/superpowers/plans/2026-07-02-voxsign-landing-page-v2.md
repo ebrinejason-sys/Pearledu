@@ -1310,6 +1310,7 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -1328,7 +1329,7 @@ class ContactFormReceived extends Mailable
     {
         return new Envelope(
             subject: 'VoxSign contact form',
-            replyTo: [$this->email],
+            replyTo: [new Address($this->email, $this->name)],
         );
     }
 
@@ -1336,6 +1337,12 @@ class ContactFormReceived extends Mailable
     {
         return new Content(
             view: 'emails.contact-form-received',
+            // Laravel's Mailer unconditionally injects its own $message view
+            // variable (an Illuminate\Mail\Message wrapper) into every mail
+            // view, which would otherwise shadow this Mailable's own $message
+            // string property. Remap it so the Blade view can render the
+            // actual contact form message.
+            with: ['messageBody' => $this->message],
         );
     }
 }
@@ -1388,7 +1395,7 @@ Create `resources/views/emails/contact-form-received.blade.php`:
 <p>New message from the VoxSign contact form:</p>
 <p><strong>Name:</strong> {{ $name }}<br>
 <strong>Email:</strong> {{ $email }}</p>
-<p>{{ $message }}</p>
+<p>{{ $messageBody }}</p>
 ```
 
 Create `resources/views/emails/contact-form-confirmation.blade.php`:
