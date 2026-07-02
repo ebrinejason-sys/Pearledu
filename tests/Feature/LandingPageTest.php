@@ -261,6 +261,14 @@ class LandingPageTest extends TestCase
         $response->assertDontSee('Atkinson', false);
     }
 
+    public function test_nav_renders_inline_svg_logo_not_png(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertSee('<svg class="vx-logo"', false);
+        $response->assertDontSee('voxsign-logo.png');
+    }
+
     public function test_mobile_nav_has_hamburger_toggle(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
