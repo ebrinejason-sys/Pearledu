@@ -162,4 +162,16 @@ class LandingPageTest extends TestCase
         $response->assertSee('Fees', false);
         $response->assertSee('Communication', false);
     }
+
+    public function test_accessibility_section_describes_both_products(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('id="accessibility"', false);
+        $response->assertSee('Ugandan Sign Language', false);
+        $response->assertSee('non-standard speech', false);
+        $response->assertSee('Whisper', false);
+        $response->assertSee('speech impairments', false);
+    }
 }
