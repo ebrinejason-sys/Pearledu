@@ -362,7 +362,7 @@ Replace the full contents of `resources/views/landing/partials/partners.blade.ph
 </div>
 <style>
   .vx-marquee{overflow:hidden;width:100%}
-  .vx-marquee-track{display:flex;align-items:center;gap:44px;width:max-content;animation:vx-scroll 32s linear infinite}
+  .vx-marquee-track{display:flex;align-items:center;width:max-content;animation:vx-scroll 32s linear infinite}
   .vx-marquee-group{display:flex;align-items:center;gap:44px}
   .vx-marquee-track img{height:38px;width:auto;opacity:.8;filter:grayscale(1);transition:opacity .2s,filter .2s;flex:0 0 auto}
   .vx-marquee:hover .vx-marquee-track{animation-play-state:paused}
@@ -375,7 +375,7 @@ Replace the full contents of `resources/views/landing/partials/partners.blade.ph
 </style>
 ```
 
-The logo list is duplicated once (`@for($i = 0; $i < 2; $i++)`, each pass wrapped in its own `.vx-marquee-group`) so the CSS animation (`translateX(-50%)`) can loop seamlessly from the first copy into the identical second copy. `.vx-marquee{overflow:hidden}` clips the doubled track into a scrolling strip instead of an overflowing double-wide row. Under `prefers-reduced-motion: reduce`, the second `.vx-marquee-group` is hidden so non-animated users see each partner's logo/name exactly once, not duplicated.
+The logo list is duplicated once (`@for($i = 0; $i < 2; $i++)`, each pass wrapped in its own `.vx-marquee-group`) so the CSS animation (`translateX(-50%)`) can loop seamlessly from the first copy into the identical second copy. `.vx-marquee{overflow:hidden}` clips the doubled track into a scrolling strip instead of an overflowing double-wide row. Under `prefers-reduced-motion: reduce`, the second `.vx-marquee-group` is hidden so non-animated users see each partner's logo/name exactly once, not duplicated. The gap lives only on `.vx-marquee-group`, not `.vx-marquee-track` — with no gap between the two groups, the track is exactly `2 × groupWidth`, so `translateX(-50%)` shifts by exactly one group's width for a truly seamless loop (a gap on the track itself would offset the loop restart point).
 
 - [ ] **Step 4: Move the partners include to right after hero in home.blade.php**
 
