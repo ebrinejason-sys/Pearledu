@@ -150,4 +150,16 @@ class LandingPageTest extends TestCase
         $response->assertSee('href="#pearledu"', false);
         $response->assertSee('href="#accessibility"', false);
     }
+
+    public function test_pearledu_section_describes_institution_features(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('id="pearledu"', false);
+        $response->assertSee('Attendance', false);
+        $response->assertSee('Grading', false);
+        $response->assertSee('Fees', false);
+        $response->assertSee('Communication', false);
+    }
 }
