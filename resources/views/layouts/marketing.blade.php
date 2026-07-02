@@ -28,6 +28,14 @@
   .vx-nav-links{margin-left:14px;display:flex;gap:22px;font-size:15px;color:var(--muted);flex-wrap:wrap}
   .vx-nav-links a:hover{color:var(--ink)}
   .vx-nav-cta{margin-left:auto}
+  .vx-nav-toggle{display:none;background:none;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:18px;cursor:pointer;margin-left:auto}
+  @media(max-width:860px){
+    .vx-nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;
+                  background:var(--paper);border-bottom:1px solid var(--line);padding:16px 24px;gap:16px;margin:0}
+    .vx-nav-links.open{display:flex}
+    .vx-nav-cta{display:none}
+    .vx-nav-toggle{display:block}
+  }
 
   .vx-section{padding:clamp(48px,8vw,88px) 0;border-bottom:1px solid var(--line)}
   .vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}
@@ -85,13 +93,14 @@
 <body>
   <div class="vx-nav">
     <a href="{{ url('/') }}"><img src="{{ asset('images/voxsign/voxsign-logo.png') }}" alt="VoxSign"></a>
-    <div class="vx-nav-links">
+    <div class="vx-nav-links" id="vx-nav-links">
       <a href="#pearledu">Institutions</a>
       <a href="#accessibility">Accessibility</a>
       <a href="#team">Team</a>
       <a href="#contact">Contact</a>
     </div>
     <div class="vx-nav-cta"><a href="#contact" class="vx-btn">Talk to us</a></div>
+    <button class="vx-nav-toggle" aria-label="Menu" aria-expanded="false" id="vx-nav-toggle">&#9776;</button>
   </div>
   @if(session('status'))
     <div class="vx-wrap" style="padding-top:20px"><div class="vx-status">{{ session('status') }}</div></div>
@@ -109,6 +118,21 @@
       });
     }, {threshold: .12});
     document.querySelectorAll('.vx-reveal').forEach(function(el){ io.observe(el); });
+
+    var navToggle = document.getElementById('vx-nav-toggle');
+    var navLinks = document.getElementById('vx-nav-links');
+    if (navToggle && navLinks) {
+      navToggle.addEventListener('click', function(){
+        var open = navLinks.classList.toggle('open');
+        navToggle.setAttribute('aria-expanded', open);
+      });
+      navLinks.querySelectorAll('a').forEach(function(link){
+        link.addEventListener('click', function(){
+          navLinks.classList.remove('open');
+          navToggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
   </script>
 </body>
 </html>

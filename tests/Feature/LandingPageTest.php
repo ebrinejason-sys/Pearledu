@@ -14,8 +14,8 @@ class LandingPageTest extends TestCase
         $response->assertSee('--paper:#FBFAF7', false);
         $response->assertSee('--voice:#FF6A3D', false);
         $response->assertSee('--sign:#12B3A6', false);
-        $response->assertSee('Bricolage+Grotesque', false);
-        $response->assertSee('Atkinson+Hyperlegible', false);
+        $response->assertSee('clash-display', false);
+        $response->assertSee('satoshi', false);
         $response->assertDontSee('--vx-bg:#0A0A0A', false);
         $response->assertDontSee('#pricing', false);
     }
@@ -254,5 +254,17 @@ class LandingPageTest extends TestCase
         $response->assertDontSee('fonts.googleapis.com', false);
         $response->assertDontSee('Bricolage', false);
         $response->assertDontSee('Atkinson', false);
+    }
+
+    public function test_mobile_nav_has_hamburger_toggle(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('class="vx-nav-toggle"', false);
+        $response->assertSee('aria-label="Menu"', false);
+        $response->assertSee('aria-expanded="false"', false);
+        $response->assertSee('.vx-nav-toggle{display:none', false);
+        $response->assertSee('@media(max-width:860px)', false);
     }
 }
