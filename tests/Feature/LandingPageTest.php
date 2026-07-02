@@ -295,4 +295,12 @@ class LandingPageTest extends TestCase
         $response->assertSee('.vx-card:hover{transform:translateY(-3px)', false);
         $response->assertSee('.vx-grid .vx-card:nth-child(1){transition-delay:0ms}', false);
     }
+
+    public function test_layout_includes_v4_visual_pass_css(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertSee('.vx-card::before', false);
+        $response->assertSee('vxFlowShift', false);
+    }
 }

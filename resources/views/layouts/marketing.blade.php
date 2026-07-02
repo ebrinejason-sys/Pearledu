@@ -44,8 +44,10 @@
   .vx-band{background:var(--ink);color:#fff}
   .vx-band .vx-eyebrow{color:var(--sign)}
   .vx-band .vx-lead{color:#aeb4c2}
+  .vx-section:nth-of-type(even):not(.vx-band){background:linear-gradient(180deg,var(--paper) 0%,#F5F3EC 100%)}
 
-  .vx-eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--voice);font-weight:700;margin-bottom:14px;text-transform:uppercase}
+  .vx-eyebrow{display:inline-block;font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--voice);font-weight:700;margin-bottom:14px;text-transform:uppercase;background:rgba(255,106,61,.1);border:1px solid rgba(255,106,61,.25);border-radius:999px;padding:5px 14px}
+  .vx-band .vx-eyebrow{background:rgba(18,179,166,.14);border-color:rgba(18,179,166,.35)}
   .vx-h1{font-size:clamp(32px,5.5vw,56px);font-weight:800;line-height:1.05;max-width:680px;margin:0 0 16px}
   .vx-h1 .vx-flow{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
   .vx-hero{position:relative;overflow:hidden}
@@ -70,7 +72,10 @@
   .vx-btn-ghost:hover{border-color:var(--ink)}
 
   .vx-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-  .vx-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;transition:transform .2s ease,box-shadow .2s ease}
+  .vx-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
+  .vx-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+  .vx-card:hover::before{transform:scaleX(1)}
+  @media(prefers-reduced-motion:reduce){.vx-card::before{transition:none}}
   .vx-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -16px rgba(11,16,32,.25)}
   @media(prefers-reduced-motion:reduce){.vx-card{transition:none}.vx-card:hover{transform:none}}
   .vx-grid .vx-card:nth-child(1){transition-delay:0ms}
@@ -86,7 +91,7 @@
 
   .vx-steps{display:flex;gap:22px;flex-wrap:wrap}
   .vx-step{flex:1;min-width:180px}
-  .vx-step-n{font-family:var(--display);font-size:24px;font-weight:800;color:var(--voice)}
+  .vx-step-n{display:inline-block;font-family:var(--display);font-size:24px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
   .vx-step h4{margin:8px 0;font-size:17px}
   .vx-step p{margin:0;color:var(--muted);font-size:14px}
 
