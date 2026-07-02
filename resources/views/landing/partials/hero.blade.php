@@ -1,4 +1,5 @@
-<section class="vx-section" style="padding-top:56px">
+<section class="vx-section vx-hero" style="padding-top:56px">
+  <div class="vx-hero-glow" aria-hidden="true"></div>
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">AI &middot; Inclusion Technology</div>
     <h1 class="vx-h1">Technology built to <span class="vx-flow">include everyone.</span></h1>

@@ -48,6 +48,15 @@
   .vx-eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--voice);font-weight:700;margin-bottom:14px;text-transform:uppercase}
   .vx-h1{font-size:clamp(32px,5.5vw,56px);font-weight:800;line-height:1.05;max-width:680px;margin:0 0 16px}
   .vx-h1 .vx-flow{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .vx-hero{position:relative;overflow:hidden}
+  .vx-hero-glow{position:absolute;inset:-20% -10% auto -10%;height:520px;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(480px 320px at 15% 20%, rgba(255,106,61,.16), transparent 70%),
+      radial-gradient(520px 360px at 85% 10%, rgba(18,179,166,.16), transparent 70%)}
+  .vx-hero .vx-wrap{position:relative;z-index:1}
+  .vx-h1 .vx-flow{background-size:200% 100%;animation:vxFlowShift 6s ease-in-out infinite}
+  @keyframes vxFlowShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @media(prefers-reduced-motion:reduce){.vx-h1 .vx-flow{animation:none}}
   .vx-h2{font-size:clamp(24px,3.6vw,36px);font-weight:700;margin:0 0 6px}
   .vx-lead{color:var(--muted);max-width:620px;font-size:17px}
   .vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}

@@ -32,6 +32,14 @@ class LandingPageTest extends TestCase
         $response->assertDontSee('Communication gaps between hearing instructors', false);
     }
 
+    public function test_hero_renders_gradient_glow_and_preserved_headline(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertSee('vx-hero-glow', false);
+        $response->assertSee('include everyone.');
+    }
+
     public function test_how_it_works_and_features_render_with_headings(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
