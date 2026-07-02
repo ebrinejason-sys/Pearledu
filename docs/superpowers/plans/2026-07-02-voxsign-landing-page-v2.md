@@ -1027,7 +1027,13 @@ git commit -m "Update team roster: remove Oyoka Daniel, add Aaron Marshall Tarem
 
 - [ ] **Step 1: Write the failing test**
 
-Replace `test_testimonials_render_in_anticipatory_tense` and `test_roadmap_and_contact_section_render` in `tests/Feature/LandingPageTest.php` with:
+Update `test_testimonials_render_in_anticipatory_tense` in place, add a new
+`test_roadmap_section_renders` method, and rename
+`test_roadmap_and_contact_section_render` to `test_contact_section_renders`
+(removing only its now-redundant `expansion across Africa` assertion — that
+method also covers contact-section content, i.e. phone/email/honeypot/
+legal-page-absence, that lives nowhere else in this file, so it must be
+trimmed, not deleted):
 
 ```php
     public function test_testimonials_render_in_anticipatory_tense(): void
@@ -1049,6 +1055,19 @@ Replace `test_testimonials_render_in_anticipatory_tense` and `test_roadmap_and_c
         $response->assertStatus(200);
         $response->assertSee('The road ahead', false);
         $response->assertSee('expansion across Africa', false);
+    }
+
+    public function test_contact_section_renders(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('+256 770 680769');
+        $response->assertSee('voxsign3@gmail.com');
+        $response->assertSee('Makerere Innovation and Incubation Centre');
+        $response->assertSee('name="website"', false); // honeypot field preserved
+        $response->assertDontSee('Accessibility Statement');
+        $response->assertDontSee('Privacy Policy');
     }
 ```
 
