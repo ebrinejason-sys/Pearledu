@@ -27,6 +27,7 @@
         <env name="DB_DATABASE" value="voxsign_test"/>
         <env name="TENANCY_BASE_DOMAIN" value="voxsign.test"/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="CONTACT_INBOX" value="tusuubiravictor@gmail.com"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

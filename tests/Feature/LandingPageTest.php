@@ -140,8 +140,10 @@ class LandingPageTest extends TestCase
         $response->assertDontSee('Privacy Policy');
     }
 
-    public function test_contact_form_still_validates_and_submits(): void
+    public function test_contact_form_sends_admin_notification_and_submitter_confirmation(): void
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $response = $this->post('/contact', [
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -151,6 +153,32 @@ class LandingPageTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('status');
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactFormReceived::class, function ($mail) {
+            return $mail->hasTo('tusuubiravictor@gmail.com')
+                && $mail->name === 'Test User'
+                && $mail->email === 'test@example.com'
+                && $mail->message === 'Hello VoxSign';
+        });
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactFormConfirmation::class, function ($mail) {
+            return $mail->hasTo('test@example.com') && $mail->name === 'Test User';
+        });
+    }
+
+    public function test_contact_form_still_validates_required_fields(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $response = $this->post('/contact', [
+            'name' => '',
+            'email' => 'not-an-email',
+            'message' => '',
+            'website' => '',
+        ]);
+
+        $response->assertSessionHasErrors(['name', 'email', 'message']);
+        \Illuminate\Support\Facades\Mail::assertNothingSent();
     }
 
     public function test_two_divisions_section_introduces_pearledu_and_accessibility(): void

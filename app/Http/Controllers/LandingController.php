@@ -62,11 +62,10 @@ class LandingController extends Controller {
             'message'=>'required|string|max:2000',
             'website'=>'nullable|max:0',   // honeypot: must be empty
         ]);
-        Mail::raw($data['message']."\n\nFrom: {$data['name']} <{$data['email']}>", function ($m) use ($data) {
-            $m->to(config('mail.contact_inbox'))
-              ->replyTo($data['email'], $data['name'])
-              ->subject('VoxSign contact form');
-        });
+        Mail::to(config('mail.contact_inbox'))
+            ->send(new \App\Mail\ContactFormReceived($data['name'], $data['email'], $data['message']));
+        Mail::to($data['email'])
+            ->send(new \App\Mail\ContactFormConfirmation($data['name']));
         return back()->with('status', 'Thanks — we will be in touch shortly.');
     }
 }
