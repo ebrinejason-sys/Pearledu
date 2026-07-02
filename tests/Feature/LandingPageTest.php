@@ -219,19 +219,15 @@ class LandingPageTest extends TestCase
         $response->assertSee('speech impairments', false);
     }
 
-    public function test_avatar_demo_uses_hand_shape_illustrations(): void
+    public function test_avatar_demo_renders_3d_container_and_preserved_copy(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
-        $response->assertStatus(200);
-        $response->assertSee('Concept preview', false);
-        $response->assertSee('How are you?', false);
-        $response->assertSee('What is your name?', false);
-        $response->assertSee('vx-hand-1', false);
-        $response->assertSee('vx-hand-2', false);
-        $response->assertDontSee('vx-arm-l', false);
-        $response->assertDontSee('vx-arm-r', false);
-        $response->assertSee('not a verified Ugandan Sign Language', false);
+        $response->assertSee('id="vx-avatar-3d"', false);
+        $response->assertSee('id="vx-avatar-caption"', false);
+        $response->assertSee('How are you?');
+        $response->assertSee('Concept preview');
+        $response->assertSee('illustrative, not a verified Ugandan Sign Language rendering');
     }
 
     public function test_section_spacing_uses_responsive_clamp_and_sec_head_class(): void

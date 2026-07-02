@@ -20,6 +20,7 @@
   h1,h2,h3{font-family:var(--display);line-height:1.08;letter-spacing:-.02em;margin:0}
   a{color:inherit;text-decoration:none}
   .vx-wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  .vx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   :focus-visible{outline:3px solid var(--sign);outline-offset:3px;border-radius:4px}
 
   .vx-nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:20px;padding:16px 24px;
