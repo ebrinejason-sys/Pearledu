@@ -47,7 +47,7 @@ class LandingPageTest extends TestCase
         $response->assertSee('Multi-Device Accessibility', false);
     }
 
-    public function test_team_section_renders_all_six_members(): void
+    public function test_team_section_renders_updated_roster(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
@@ -58,8 +58,12 @@ class LandingPageTest extends TestCase
         $response->assertSee('Muwanguzi Joan Najjingo');
         $response->assertSee('Muhumuza Alex');
         $response->assertSee('Naikambo Sandra');
-        $response->assertSee('Oyoka Daniel');
+        $response->assertSee('Aaron Marshall Taremwa');
+        $response->assertSee('Ebrine Tushabe');
+        $response->assertSee('Product Development Expert');
+        $response->assertSee('vx-avatar-initials', false);
         $response->assertSee('images/voxsign/team-victor.jpg', false);
+        $response->assertDontSee('Oyoka Daniel');
     }
 
     public function test_partners_marquee_renders_logos_and_text_credits(): void
