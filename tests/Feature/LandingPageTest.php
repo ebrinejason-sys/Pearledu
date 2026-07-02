@@ -6,6 +6,20 @@ use Tests\TestCase;
 
 class LandingPageTest extends TestCase
 {
+    public function test_layout_uses_light_mode_palette_and_fonts(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('--paper:#FBFAF7', false);
+        $response->assertSee('--voice:#FF6A3D', false);
+        $response->assertSee('--sign:#12B3A6', false);
+        $response->assertSee('Bricolage+Grotesque', false);
+        $response->assertSee('Atkinson+Hyperlegible', false);
+        $response->assertDontSee('--vx-bg:#0A0A0A', false);
+        $response->assertDontSee('#pricing', false);
+    }
+
     public function test_hero_renders_new_voxsign_copy(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
