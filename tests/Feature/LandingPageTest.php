@@ -100,6 +100,7 @@ class LandingPageTest extends TestCase
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
+        $response->assertSee('What future users are saying', false);
         $response->assertSee("I can't wait to try VoxSign!");
         $response->assertSee('Birabwa Jane Lydia');
         $response->assertSee("I'm really looking forward to VoxSign's launch.");
@@ -119,12 +120,20 @@ class LandingPageTest extends TestCase
         $response->assertSee('Government/NGOs');
     }
 
-    public function test_roadmap_and_contact_section_render(): void
+    public function test_roadmap_section_renders(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
+        $response->assertSee('The road ahead', false);
         $response->assertSee('expansion across Africa', false);
+    }
+
+    public function test_contact_section_renders(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
         $response->assertSee('+256 770 680769');
         $response->assertSee('voxsign3@gmail.com');
         $response->assertSee('Makerere Innovation and Incubation Centre');
