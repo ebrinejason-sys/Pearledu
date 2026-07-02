@@ -5,6 +5,7 @@
   @include('landing.partials.divisions')
   @include('landing.partials.pearledu')
   @include('landing.partials.accessibility')
+  @include('landing.partials.avatar-demo')
   @include('landing.partials.how-it-works')
   @include('landing.partials.features')
   @include('landing.partials.team')

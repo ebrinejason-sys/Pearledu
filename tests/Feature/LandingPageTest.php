@@ -174,4 +174,15 @@ class LandingPageTest extends TestCase
         $response->assertSee('Whisper', false);
         $response->assertSee('speech impairments', false);
     }
+
+    public function test_avatar_demo_is_labeled_as_concept_preview(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('Concept preview', false);
+        $response->assertSee('How are you?', false);
+        $response->assertSee('What is your name?', false);
+        $response->assertSee('vx-avatar-demo', false);
+    }
 }
