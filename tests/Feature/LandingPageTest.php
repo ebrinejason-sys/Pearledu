@@ -240,4 +240,19 @@ class LandingPageTest extends TestCase
         $response->assertSee('class="vx-lead vx-sec-head"', false);
         $response->assertDontSee('style="margin-bottom:32px"', false);
     }
+
+    public function test_uses_clash_display_and_satoshi_fonts(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('api.fontshare.com', false);
+        $response->assertSee('clash-display', false);
+        $response->assertSee('satoshi', false);
+        $response->assertSee("--display:'Clash Display',system-ui,sans-serif;", false);
+        $response->assertSee("--body:'Satoshi',system-ui,sans-serif;", false);
+        $response->assertDontSee('fonts.googleapis.com', false);
+        $response->assertDontSee('Bricolage', false);
+        $response->assertDontSee('Atkinson', false);
+    }
 }

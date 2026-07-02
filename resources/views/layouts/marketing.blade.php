@@ -3,16 +3,15 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'VoxSign — Speak the Future. See It Signed.')</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#0B1020; --paper:#FBFAF7; --surface:#FFFFFF;
     --voice:#FF6A3D; --sign:#12B3A6; --muted:#5D6473; --line:#E7E4DC;
     --grad:linear-gradient(100deg,var(--voice),var(--sign));
-    --display:'Bricolage Grotesque',system-ui,sans-serif;
-    --body:'Atkinson Hyperlegible',system-ui,sans-serif;
+    --display:'Clash Display',system-ui,sans-serif;
+    --body:'Satoshi',system-ui,sans-serif;
   }
   *{box-sizing:border-box} html,body{margin:0}
   html{scroll-behavior:smooth}
