@@ -102,10 +102,11 @@
       mod.mountAvatar({
         container: 'vx-login-avatar-3d',
         mode: 'idle',
+        interactive: true,
         width: 320,
         height: 420,
-        colorVars: ['--brand', '--accent'],
-        colorFallbacks: ['#13443A', '#DDA22E']
+        colorVars: ['--avatar-skin', '--avatar-skin-joint'],
+        colorFallbacks: ['#C68863', '#A8714F']
       });
     });
   }

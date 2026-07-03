@@ -42,8 +42,8 @@
       interactive: true,
       width: 420,
       height: 640,
-      colorVars: ['--sign', '--voice'],
-      colorFallbacks: ['#12B3A6', '#FF6A3D']
+      colorVars: ['--avatar-skin', '--avatar-skin-joint'],
+      colorFallbacks: ['#C68863', '#A8714F']
     });
   }
 </script>

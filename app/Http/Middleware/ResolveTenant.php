@@ -20,6 +20,12 @@ class ResolveTenant {
             return $next($request);
         }
 
+        if ($host === config('tenancy.pearledu_landing_host')) {
+            $request->attributes->set('is_pearledu_landing', true);
+            $this->context->clear();
+            return $next($request);
+        }
+
         if ($id = session(\App\Services\Platform\ImpersonationService::SESSION_SCHOOL)) {
             $this->context->forSchool((int) $id);
             return $next($request);

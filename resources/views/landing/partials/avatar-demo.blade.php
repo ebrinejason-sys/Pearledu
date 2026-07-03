@@ -32,10 +32,11 @@
     container: 'vx-avatar-3d',
     captionId: 'vx-avatar-caption',
     mode: 'cycle',
+    interactive: true,
     width: 280,
     height: 320,
-    colorVars: ['--sign', '--voice'],
-    colorFallbacks: ['#12B3A6', '#FF6A3D'],
+    colorVars: ['--avatar-skin', '--avatar-skin-joint'],
+    colorFallbacks: ['#C68863', '#A8714F'],
     phrases: ['How are you?', 'What is your name?'],
     poseOrder: ['howAreYou', 'whatIsYourName'],
     poses: {
