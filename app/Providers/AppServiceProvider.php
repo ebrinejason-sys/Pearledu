@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider {
         View::composer('*', function ($view) {
             $view->with('themeCss', app(ThemeManager::class)->cssVariables());
         });
-        View::composer(['layouts.app', 'layouts.partials.navigation'], function ($view) {
+        View::composer(['layouts.app', 'layouts.partials.topbar', 'layouts.partials.sidebar'], function ($view) {
             if (auth()->check()) {
                 $view->with('nav', app(\App\Services\Navigation\NavigationBuilder::class)->build(auth()->user()));
             }

@@ -12,11 +12,18 @@ class NavigationBuilder
         private ImpersonationService $impersonation,
     ) {}
 
-    /** @return array{zone: string, items: list<array{label: string, route: string|null, url: string|null, active: bool, highlight?: bool}>, user: array, impersonation: array|null, school: array|null} */
+    /**
+     * @return array{
+     *   zone: string,
+     *   sections: list<array{key: string, label: string, items: list<array>}>,
+     *   account: array|null,
+     *   user: array, impersonation: array|null, school: array|null
+     * }
+     */
     public function build(?User $user): array
     {
         if (! $user) {
-            return ['zone' => 'guest', 'items' => [], 'user' => [], 'impersonation' => null, 'school' => null];
+            return ['zone' => 'guest', 'sections' => [], 'account' => null, 'user' => [], 'impersonation' => null, 'school' => null];
         }
 
         $school = $this->context->school();
@@ -40,26 +47,17 @@ class NavigationBuilder
         }
 
         if ($isPlatformOperator && $onPlatform) {
-            $items = [
-                $this->item('Dashboard', 'platform.dashboard'),
-                $this->item('Schools', 'platform.schools.index', active: request()->routeIs('platform.schools.*') && ! request()->routeIs('platform.schools.create')),
-                $this->item('SMS & credits', 'platform.sms.index', active: request()->routeIs('platform.sms.*')),
-                $this->item('Onboard school', 'platform.schools.create', highlight: true),
-            ];
+            $sections = $this->platformSections();
             $zone = 'platform';
         } else {
-            $items = array_values(array_filter([
-                $this->item('Home', 'app.home'),
-                $this->has($permissions, 'sms.send') ? $this->item('Send SMS', 'app.sms') : null,
-                $this->item('Account', 'account.settings'),
-                $isPlatformOperator ? $this->item('Platform console', 'platform.dashboard') : null,
-            ]));
+            $sections = $this->schoolSections($permissions, $isPlatformOperator);
             $zone = 'school';
         }
 
         return [
             'zone' => $zone,
-            'items' => $items,
+            'sections' => array_values(array_filter($sections, fn($s) => count($s['items']) > 0)),
+            'account' => $this->item('Account settings', 'account.settings', icon: 'account'),
             'user' => [
                 'name' => $user->full_name,
                 'email' => $user->email ?? $user->phone,
@@ -72,7 +70,64 @@ class NavigationBuilder
         ];
     }
 
-    private function item(string $label, string $routeName, bool $active = false, bool $highlight = false): array
+    /** @return list<array{key: string, label: string, items: list<array>}> */
+    private function schoolSections(array $permissions, bool $isPlatformOperator): array
+    {
+        return [
+            [
+                'key' => 'general',
+                'label' => 'General',
+                'items' => array_values(array_filter([
+                    $this->item('Home', 'app.home', icon: 'home'),
+                ])),
+            ],
+            [
+                'key' => 'communications',
+                'label' => 'Communications',
+                'items' => array_values(array_filter([
+                    $this->has($permissions, 'sms.send') ? $this->item('Send SMS', 'app.sms', icon: 'sms') : null,
+                ])),
+            ],
+            [
+                'key' => 'platform',
+                'label' => 'Platform',
+                'items' => array_values(array_filter([
+                    $isPlatformOperator ? $this->item('Platform console', 'platform.dashboard', icon: 'platform') : null,
+                ])),
+            ],
+        ];
+    }
+
+    /** @return list<array{key: string, label: string, items: list<array>}> */
+    private function platformSections(): array
+    {
+        return [
+            [
+                'key' => 'general',
+                'label' => 'General',
+                'items' => [
+                    $this->item('Dashboard', 'platform.dashboard', icon: 'dashboard'),
+                ],
+            ],
+            [
+                'key' => 'schools',
+                'label' => 'Schools',
+                'items' => [
+                    $this->item('Schools', 'platform.schools.index', icon: 'schools', active: request()->routeIs('platform.schools.*') && ! request()->routeIs('platform.schools.create')),
+                    $this->item('Onboard school', 'platform.schools.create', icon: 'add', highlight: true),
+                ],
+            ],
+            [
+                'key' => 'communications',
+                'label' => 'Communications',
+                'items' => [
+                    $this->item('SMS & credits', 'platform.sms.index', icon: 'sms', active: request()->routeIs('platform.sms.*')),
+                ],
+            ],
+        ];
+    }
+
+    private function item(string $label, string $routeName, bool $active = false, bool $highlight = false, string $icon = 'dot'): array
     {
         if (! $active) {
             $active = request()->routeIs($routeName) || request()->routeIs($routeName.'.*');
@@ -84,6 +139,7 @@ class NavigationBuilder
             'url' => Route::has($routeName) ? route($routeName) : null,
             'active' => $active,
             'highlight' => $highlight,
+            'icon' => $icon,
         ];
     }
 

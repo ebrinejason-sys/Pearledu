@@ -16,6 +16,10 @@
 
 <header class="app-header">
   <div class="app-header__row">
+    <button type="button" class="sidebar-toggle sidebar-toggle--mobile" aria-label="Open menu" aria-expanded="false" aria-controls="app-sidebar" onclick="document.body.classList.toggle('sidebar-open')">
+      <span aria-hidden="true">☰</span>
+    </button>
+
     @include('layouts.partials.brand', [
       'brandHref' => ($nav['zone'] ?? '') === 'platform' ? route('platform.dashboard') : route('app.home'),
     ])
@@ -25,17 +29,6 @@
     @elseif(($nav['zone'] ?? '') === 'platform')
       <span class="context-pill context-pill--platform">Platform console</span>
     @endif
-
-    <nav class="main-nav" aria-label="Main navigation">
-      @foreach($nav['items'] ?? [] as $item)
-        @if($item['url'])
-          <a href="{{ $item['url'] }}"
-             class="{{ $item['active'] ? 'active' : '' }} {{ !empty($item['highlight']) ? 'nav-cta' : '' }}">
-            {{ $item['label'] }}
-          </a>
-        @endif
-      @endforeach
-    </nav>
 
     <div class="user-menu">
       <details class="user-menu__details">
