@@ -75,6 +75,10 @@
   .vx-btn-ghost:hover{border-color:var(--ink)}
 
   .vx-grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:640px;margin:0 auto}
+  .vx-grid-team{max-width:960px;grid-template-columns:repeat(2,1fr)}
+  @media(min-width:720px){.vx-grid-team{grid-template-columns:repeat(4,1fr)}}
+  .vx-grid-team .vx-card{padding:14px}
+  @media(max-width:480px){.vx-grid-team{gap:10px}.vx-grid-team .vx-card{padding:10px}.vx-grid-team .vx-card h3{font-size:14px}.vx-grid-team .vx-card p{font-size:12px}}
   .vx-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
   .vx-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
   .vx-card:hover::before{transform:scaleX(1)}
@@ -94,9 +98,16 @@
 
   .vx-steps{display:flex;gap:22px;flex-wrap:wrap}
   .vx-step{flex:1;min-width:180px}
-  .vx-step-n{display:inline-block;font-family:var(--display);font-size:24px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .vx-step-badge{position:relative;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;margin-bottom:14px;background:var(--step-color,var(--voice));box-shadow:0 8px 18px -10px rgba(11,16,32,.4)}
+  .vx-step-badge svg{width:24px;height:24px;stroke:#fff}
+  .vx-step-n{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--display);font-size:12px;font-weight:800;display:grid;place-items:center;line-height:1;border:2px solid var(--paper)}
   .vx-step h4{margin:8px 0;font-size:17px}
   .vx-step p{margin:0;color:var(--muted);font-size:14px}
+  @media(max-width:640px){
+    .vx-steps{flex-direction:column;gap:18px}
+    .vx-step{display:flex;align-items:flex-start;gap:14px;min-width:0}
+    .vx-step-badge{margin-bottom:0;flex-shrink:0}
+  }
 
   .vx-partner-text{color:var(--muted);font-size:13px;border:1px dashed var(--line);padding:10px 14px;border-radius:10px}
   .vx-quote{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:16px}
@@ -194,7 +205,7 @@
         <div class="vx-footer-col">
           <h4>Contact</h4>
           <span>+256 770 680769</span>
-          <span>voxsign3@gmail.com</span>
+          <span>info@voxsign.co.ug</span>
         </div>
       </div>
       <div class="vx-footer-bottom">&copy; {{ date('Y') }} VoxSign, Uganda</div>

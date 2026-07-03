@@ -3,6 +3,7 @@ export function runPreloader(container, opts) {
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var STAGGER_MS = 35;
   var REVEAL_MS = 250;
+  var HOLD_MS = 350;
   var FADE_MS = 400;
 
   var lines = Array.prototype.slice.call(container.querySelectorAll('line[data-index]'));
@@ -40,7 +41,7 @@ export function runPreloader(container, opts) {
     });
   });
 
-  var totalMs = maxAbsIndex * STAGGER_MS + REVEAL_MS;
+  var totalMs = maxAbsIndex * STAGGER_MS + REVEAL_MS + HOLD_MS;
   setTimeout(fadeOut, totalMs);
 
   function fadeOut() {

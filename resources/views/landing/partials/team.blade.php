@@ -2,7 +2,7 @@
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">Team</div>
     <h2 class="vx-h2 vx-sec-head">The people behind VoxSign.</h2>
-    <div class="vx-grid">
+    <div class="vx-grid vx-grid-team">
       @foreach($team as $member)
         <div class="vx-card">
           @if($member['photo'])

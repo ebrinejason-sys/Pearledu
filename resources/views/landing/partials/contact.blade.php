@@ -3,7 +3,7 @@
     <div class="vx-eyebrow">Get in touch</div>
     <h2 class="vx-h2" style="color:#fff;margin-bottom:12px">Talk to us.</h2>
     <p class="vx-lead" style="margin-bottom:24px">
-      +256 770 680769 &middot; voxsign3@gmail.com &middot; Makerere Innovation and Incubation Centre
+      +256 770 680769 &middot; info@voxsign.co.ug
     </p>
     <form method="post" action="{{ route('contact') }}" style="max-width:480px;margin:0 auto;background:#fff;border-radius:20px;padding:26px">
       @csrf

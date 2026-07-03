@@ -149,8 +149,7 @@ class LandingPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('+256 770 680769');
-        $response->assertSee('voxsign3@gmail.com');
-        $response->assertSee('Makerere Innovation and Incubation Centre');
+        $response->assertSee('info@voxsign.co.ug');
         $response->assertSee('name="website"', false); // honeypot field preserved
         $response->assertDontSee('Accessibility Statement');
         $response->assertDontSee('Privacy Policy');
@@ -354,7 +353,15 @@ class LandingPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('.vx-grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:640px;margin:0 auto}', false);
-        $response->assertDontSee('grid-template-columns:repeat(2,1fr)', false);
+    }
+
+    public function test_team_grid_renders_as_four_by_two(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('vx-grid vx-grid-team', false);
+        $response->assertSee('grid-template-columns:repeat(4,1fr)', false);
     }
 
     public function test_contact_form_is_centered(): void

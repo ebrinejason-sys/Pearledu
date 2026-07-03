@@ -94,7 +94,7 @@
   @endif
   @yield('content')
   <div class="pe-footer">
-    &copy; {{ date('Y') }} PearlEdu, by VoxSign Technologies &middot; +256 770 680769 &middot; voxsign3@gmail.com
+    &copy; {{ date('Y') }} PearlEdu, by VoxSign Technologies &middot; +256 770 680769 &middot; info@voxsign.co.ug
   </div>
 </body>
 </html>

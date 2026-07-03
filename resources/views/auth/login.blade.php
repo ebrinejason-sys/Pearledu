@@ -4,7 +4,8 @@
   <script>
     (function () {
       try {
-        if (sessionStorage.getItem('vx-preloader-shown')) {
+        var lastShown = parseInt(sessionStorage.getItem('vx-preloader-shown-at'), 10);
+        if (lastShown && (Date.now() - lastShown) < 60000) {
           document.documentElement.classList.add('vx-preloader-skip');
         }
       } catch (e) {}
@@ -56,8 +57,7 @@
       </div>
     </div>
     <div class="vx-auth-stage">
-      <div id="vx-login-avatar-3d" class="vx-login-avatar-3d"></div>
-      <p class="vx-sr-only">Decorative 3D figure, no functional purpose.</p>
+      <img src="{{ asset('images/auth/login-illustration.png') }}" alt="" class="vx-login-illustration">
     </div>
   </div>
 @endsection
@@ -120,7 +120,7 @@
         mod.runPreloader(preloaderEl, {
           onDone: function () {
             preloaderEl.remove();
-            try { sessionStorage.setItem('vx-preloader-shown', '1'); } catch (e) {}
+            try { sessionStorage.setItem('vx-preloader-shown-at', String(Date.now())); } catch (e) {}
           }
         });
       }).catch(function () {
