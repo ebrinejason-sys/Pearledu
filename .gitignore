@@ -26,3 +26,6 @@ Thumbs.db
 /.superpowers
 /.php84
 *.glb
+
+# Gosfem reference source (unconfirmed license — inspiration only, never committed)
+/open

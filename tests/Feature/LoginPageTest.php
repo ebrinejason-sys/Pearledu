@@ -2,10 +2,27 @@
 
 namespace Tests\Feature;
 
+use App\Models\School;
+use App\Services\Tenancy\TenantContext;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class LoginPageTest extends TestCase
 {
+    use RefreshDatabase;
+
+    public function test_login_page_renders_the_tenant_schools_theme_not_the_default(): void
+    {
+        app(TenantContext::class)->forPlatform();
+        School::create(['name' => 'EMIS Theme School', 'slug' => 'emistest1', 'theme' => 'emis', 'status' => 'active']);
+
+        $response = $this->get('http://emistest1.voxsign.test/login');
+
+        $response->assertStatus(200);
+        $response->assertSee('--brand:#0B4DA2', false);
+        $response->assertDontSee('--brand:#13443A', false);
+    }
+
     public function test_login_page_renders_split_layout_with_avatar_stage(): void
     {
         $response = $this->get('/login');
