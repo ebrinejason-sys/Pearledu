@@ -32,8 +32,8 @@
   .vx-auth-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:#fff}
   .vx-auth-brand span b{opacity:.8}
   .vx-auth-card h1{margin:0 0 18px;font-size:26px;color:#fff}
-  .vx-auth-card label{color:var(--sidebar-ink);font-size:13px;margin:12px 0 4px}
-  .vx-auth-card input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff}
+  .vx-auth-card label{display:block;color:var(--sidebar-ink);font-size:13px;margin:12px 0 4px}
+  .vx-auth-card input{display:block;box-sizing:border-box;width:100%;padding:9px;border-radius:var(--radius);font:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff}
   .vx-auth-card input::placeholder{color:rgba(255,255,255,.5)}
   .vx-auth-remember{display:flex;align-items:center;gap:8px;font-size:13px}
   .vx-auth-remember input{width:auto}
@@ -58,14 +58,17 @@
 }
 </script>
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js';
-  mountAvatar({
-    container: 'vx-login-avatar-3d',
-    mode: 'idle',
-    width: 320,
-    height: 420,
-    colorVars: ['--brand', '--accent'],
-    colorFallbacks: ['#13443A', '#DDA22E']
-  });
+  if (window.matchMedia('(min-width: 861px)').matches) {
+    import('/js/vx-avatar-loader.js').then(function (mod) {
+      mod.mountAvatar({
+        container: 'vx-login-avatar-3d',
+        mode: 'idle',
+        width: 320,
+        height: 420,
+        colorVars: ['--brand', '--accent'],
+        colorFallbacks: ['#13443A', '#DDA22E']
+      });
+    });
+  }
 </script>
 @endsection
