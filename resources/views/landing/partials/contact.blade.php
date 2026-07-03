@@ -5,7 +5,7 @@
     <p class="vx-lead" style="margin-bottom:24px">
       +256 770 680769 &middot; voxsign3@gmail.com &middot; Makerere Innovation and Incubation Centre
     </p>
-    <form method="post" action="{{ route('contact') }}" style="max-width:480px;background:#fff;border-radius:20px;padding:26px">
+    <form method="post" action="{{ route('contact') }}" style="max-width:480px;margin:0 auto;background:#fff;border-radius:20px;padding:26px">
       @csrf
       <div style="position:absolute;left:-9999px"><input name="website" tabindex="-1" autocomplete="off"></div>
       <label class="vx-label">Name</label>

@@ -14,7 +14,7 @@ class LandingPageTest extends TestCase
         $response->assertSee('--paper:#FBFAF7', false);
         $response->assertSee('--voice:#FF6A3D', false);
         $response->assertSee('--sign:#12B3A6', false);
-        $response->assertSee('clash-display', false);
+        $response->assertSee('Google+Sans', false);
         $response->assertSee('satoshi', false);
         $response->assertDontSee('--vx-bg:#0A0A0A', false);
         $response->assertDontSee('#pricing', false);
@@ -26,10 +26,18 @@ class LandingPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Technology built to include everyone.', false);
-        $response->assertSee('PearlEdu', false);
+        $response->assertSee('VoxSign Institutions', false);
         $response->assertSee('VoxSign Accessibility', false);
         $response->assertSee('Talk to us');
         $response->assertDontSee('Communication gaps between hearing instructors', false);
+        $response->assertDontSee('PearlEdu', false);
+
+        $content = $response->getContent();
+        $accessibilityPos = strpos($content, 'VoxSign Accessibility');
+        $institutionsPos = strpos($content, 'VoxSign Institutions');
+        $this->assertNotFalse($accessibilityPos);
+        $this->assertNotFalse($institutionsPos);
+        $this->assertLessThan($institutionsPos, $accessibilityPos);
     }
 
     public function test_hero_renders_gradient_glow_and_preserved_headline(): void
@@ -192,7 +200,7 @@ class LandingPageTest extends TestCase
         \Illuminate\Support\Facades\Mail::assertNothingSent();
     }
 
-    public function test_two_divisions_section_introduces_pearledu_and_accessibility(): void
+    public function test_two_divisions_section_introduces_accessibility_and_institutions(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
@@ -201,6 +209,18 @@ class LandingPageTest extends TestCase
         $response->assertSee('school management platform', false);
         $response->assertSee('href="#pearledu"', false);
         $response->assertSee('href="#accessibility"', false);
+        $response->assertSee('href="https://accessibility.voxsign.test"', false);
+        $response->assertSee('href="https://pearledu.voxsign.test"', false);
+        $response->assertSee('Get Started', false);
+
+        $content = $response->getContent();
+        $sectionPos = strpos($content, 'Two divisions, one mission');
+        $this->assertNotFalse($sectionPos);
+        $accessibilityCardPos = strpos($content, 'href="#accessibility"', $sectionPos);
+        $institutionsCardPos = strpos($content, 'href="#pearledu"', $sectionPos);
+        $this->assertNotFalse($accessibilityCardPos);
+        $this->assertNotFalse($institutionsCardPos);
+        $this->assertLessThan($institutionsCardPos, $accessibilityCardPos);
     }
 
     public function test_pearledu_section_describes_institution_features(): void
@@ -209,6 +229,7 @@ class LandingPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('id="pearledu"', false);
+        $response->assertSee('VoxSign Institutions — school management, without the spreadsheets.', false);
         $response->assertSee('Attendance', false);
         $response->assertSee('Grading', false);
         $response->assertSee('Fees', false);
@@ -243,24 +264,25 @@ class LandingPageTest extends TestCase
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
-        $response->assertSee('.vx-section{padding:clamp(48px,8vw,88px) 0}', false);
+        $response->assertSee('.vx-section{padding:clamp(48px,8vw,88px) 0;', false);
         $response->assertSee('.vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}', false);
         $response->assertSee('class="vx-lead vx-sec-head"', false);
         $response->assertSee('class="vx-h2 vx-sec-head"', false);
         $response->assertDontSee('style="margin-bottom:32px"', false);
     }
 
-    public function test_uses_clash_display_and_satoshi_fonts(): void
+    public function test_uses_google_sans_and_satoshi_fonts(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
         $response->assertSee('api.fontshare.com', false);
-        $response->assertSee('clash-display', false);
         $response->assertSee('satoshi', false);
-        $response->assertSee("--display:'Clash Display',system-ui,sans-serif;", false);
+        $response->assertSee('fonts.googleapis.com', false);
+        $response->assertSee('Google+Sans', false);
+        $response->assertSee("--display:'Google Sans',system-ui,sans-serif;", false);
         $response->assertSee("--body:'Satoshi',system-ui,sans-serif;", false);
-        $response->assertDontSee('fonts.googleapis.com', false);
+        $response->assertDontSee('clash-display', false);
         $response->assertDontSee('Bricolage', false);
         $response->assertDontSee('Atkinson', false);
     }
@@ -306,5 +328,60 @@ class LandingPageTest extends TestCase
 
         $response->assertSee('.vx-card::before', false);
         $response->assertSee('vxFlowShift', false);
+    }
+
+    public function test_footer_renders_professional_multi_column_layout(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('vx-footer-cols', false);
+        $response->assertSee('vx-footer-brand', false);
+        $response->assertSee('Technology built to include everyone.', false);
+        $response->assertSee('>Products<', false);
+        $response->assertSee('>Company<', false);
+        $response->assertSee('>Contact<', false);
+        $response->assertSee('href="https://accessibility.voxsign.test"', false);
+        $response->assertSee('href="https://pearledu.voxsign.test"', false);
+        $response->assertDontSee('Privacy Policy', false);
+        $response->assertDontSee('Terms', false);
+        $response->assertDontSee('href="#privacy"', false);
+    }
+
+    public function test_cards_render_in_single_vertical_column(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('.vx-grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:640px;margin:0 auto}', false);
+        $response->assertDontSee('grid-template-columns:repeat(2,1fr)', false);
+    }
+
+    public function test_contact_form_is_centered(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('max-width:480px;margin:0 auto;background:#fff', false);
+    }
+
+    public function test_hero_renders_full_length_interactive_avatar(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('id="vx-hero-avatar-3d"', false);
+        $response->assertSee("frame: 'full'", false);
+        $response->assertSee('interactive: true', false);
+        $response->assertSee('vx-hero-avatar-wrap', false);
+    }
+
+    public function test_shared_importmap_declared_once_in_head(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $content = $response->getContent();
+        $this->assertSame(1, substr_count($content, 'type="importmap"'));
     }
 }

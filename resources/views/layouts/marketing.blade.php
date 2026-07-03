@@ -4,13 +4,16 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'VoxSign — Speak the Future. See It Signed.')</title>
 <link rel="preconnect" href="https://api.fontshare.com">
-<link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#0B1020; --paper:#FBFAF7; --surface:#FFFFFF;
     --voice:#FF6A3D; --sign:#12B3A6; --muted:#5D6473; --line:#E7E4DC;
     --grad:linear-gradient(100deg,var(--voice),var(--sign));
-    --display:'Clash Display',system-ui,sans-serif;
+    --display:'Google Sans',system-ui,sans-serif;
     --body:'Satoshi',system-ui,sans-serif;
   }
   *{box-sizing:border-box} html,body{margin:0}
@@ -50,7 +53,7 @@
   .vx-band .vx-eyebrow{background:rgba(18,179,166,.14);border-color:rgba(18,179,166,.35)}
   .vx-h1{font-size:clamp(32px,5.5vw,56px);font-weight:800;line-height:1.05;max-width:680px;margin:0 0 16px}
   .vx-h1 .vx-flow{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .vx-hero{position:relative;overflow:hidden}
+  .vx-hero{position:relative;overflow-x:hidden;overflow-y:visible}
   .vx-hero-glow{position:absolute;inset:-20% -10% auto -10%;height:520px;z-index:0;pointer-events:none;
     background:
       radial-gradient(480px 320px at 15% 20%, rgba(255,106,61,.16), transparent 70%),
@@ -71,7 +74,7 @@
                 background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:12px 22px;cursor:pointer}
   .vx-btn-ghost:hover{border-color:var(--ink)}
 
-  .vx-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .vx-grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:640px;margin:0 auto}
   .vx-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
   .vx-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
   .vx-card:hover::before{transform:scaleX(1)}
@@ -106,14 +109,30 @@
   .vx-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
   .vx-status{background:#E9F7F5;border:1px solid var(--sign);color:#0B1020;padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
 
-  .vx-footer{background:var(--ink);color:#c7cdda;padding:32px 24px;font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
-  .vx-footer a{color:#c7cdda}.vx-footer a:hover{color:#fff}
-  @media(max-width:640px){.vx-footer{flex-direction:column}}
+  .vx-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
+  .vx-footer-inner{max-width:1120px;margin:0 auto}
+  .vx-footer-brand{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .vx-footer-brand svg{height:28px;width:auto}
+  .vx-footer-tagline{color:#aeb4c2;font-size:14px;margin:0 0 36px}
+  .vx-footer-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .vx-footer-col h4{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin:0 0 14px}
+  .vx-footer-col a,.vx-footer-col span{display:block;color:#c7cdda;font-size:14px;margin-bottom:10px}
+  .vx-footer-col a:hover{color:#fff}
+  .vx-footer-bottom{padding-top:20px;font-size:13px;color:#8b93a5}
+  @media(max-width:640px){.vx-footer-cols{grid-template-columns:1fr;gap:28px}}
 
   .vx-reveal{opacity:0;transform:translateY(14px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
   .vx-reveal.in{opacity:1;transform:none}
   @media(prefers-reduced-motion:reduce){.vx-reveal{opacity:1;transform:none;transition:none}}
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
   <div class="vx-nav">
@@ -128,12 +147,12 @@
         <rect x="0" y="0" width="32" height="32" rx="9" fill="url(#vxLogoGrad)"/>
         <path d="M7 20c2.5-7 5-10.5 9-10.5s6.5 3.5 9 10.5" stroke="#FBFAF7" stroke-width="2.4" stroke-linecap="round" fill="none"/>
         <path d="M12 22.5v-6.2c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v4.2M15.6 20.5v-5.4c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v5.4M19.2 21v-4.6c0-1 .8-1.8 1.7-1.8s1.7.8 1.7 1.8v5.6c0 2.5-1.9 4.5-4.5 4.5h-1.6c-1.5 0-2.9-.7-3.8-1.9l-2.6-3.4a1.5 1.5 0 0 1 2.3-1.9l1.5 1.6" stroke="#FBFAF7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <text x="40" y="22" font-family="'Clash Display',system-ui,sans-serif" font-weight="600" font-size="18" fill="#0B1020">VoxSign</text>
+        <text x="40" y="22" font-family="'Google Sans',system-ui,sans-serif" font-weight="600" font-size="18" fill="#0B1020">VoxSign</text>
       </svg>
     </a>
     <div class="vx-nav-links" id="vx-nav-links">
-      <a href="#pearledu">Institutions</a>
       <a href="#accessibility">Accessibility</a>
+      <a href="#pearledu">Institutions</a>
       <a href="#team">Team</a>
       <a href="#contact">Contact</a>
     </div>
@@ -145,9 +164,41 @@
   @endif
   @yield('content')
   <div class="vx-footer">
-    <span>&copy; {{ date('Y') }} VoxSign, Uganda</span>
-    <span>+256 770 680769 &middot; voxsign3@gmail.com</span>
-    <a href="https://pearledu.{{ config('tenancy.base_domain') }}">PearlEdu — school management →</a>
+    <div class="vx-footer-inner">
+      <div class="vx-footer-brand">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 32" fill="none" role="img" aria-label="VoxSign">
+          <defs>
+            <linearGradient id="vxFooterLogoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#FF6A3D"/>
+              <stop offset="1" stop-color="#12B3A6"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="32" height="32" rx="9" fill="url(#vxFooterLogoGrad)"/>
+          <path d="M7 20c2.5-7 5-10.5 9-10.5s6.5 3.5 9 10.5" stroke="#FBFAF7" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          <path d="M12 22.5v-6.2c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v4.2M15.6 20.5v-5.4c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v5.4M19.2 21v-4.6c0-1 .8-1.8 1.7-1.8s1.7.8 1.7 1.8v5.6c0 2.5-1.9 4.5-4.5 4.5h-1.6c-1.5 0-2.9-.7-3.8-1.9l-2.6-3.4a1.5 1.5 0 0 1 2.3-1.9l1.5 1.6" stroke="#FBFAF7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <text x="40" y="22" font-family="'Google Sans',system-ui,sans-serif" font-weight="600" font-size="18" fill="#fff">VoxSign</text>
+        </svg>
+      </div>
+      <p class="vx-footer-tagline">Technology built to include everyone.</p>
+      <div class="vx-footer-cols">
+        <div class="vx-footer-col">
+          <h4>Products</h4>
+          <a href="https://accessibility.{{ config('tenancy.base_domain') }}">VoxSign Accessibility</a>
+          <a href="https://pearledu.{{ config('tenancy.base_domain') }}">VoxSign Institutions</a>
+        </div>
+        <div class="vx-footer-col">
+          <h4>Company</h4>
+          <a href="#team">Team</a>
+          <a href="#contact">Contact</a>
+        </div>
+        <div class="vx-footer-col">
+          <h4>Contact</h4>
+          <span>+256 770 680769</span>
+          <span>voxsign3@gmail.com</span>
+        </div>
+      </div>
+      <div class="vx-footer-bottom">&copy; {{ date('Y') }} VoxSign, Uganda</div>
+    </div>
   </div>
   <script>
     var io = new IntersectionObserver(function(entries){

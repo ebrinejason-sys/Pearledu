@@ -4,6 +4,6 @@
         : url('/'));
 @endphp
 <a href="{{ $brandHref }}" class="brand">
-  <img src="{{ asset('images/brand/logo.png') }}" alt="" class="brand__mark" width="36" height="36">
+  <img src="{{ asset('images/brand/logo.svg') }}" alt="" class="brand__mark" width="36" height="36">
   <span class="brand__wordmark">Pearl<b>Edu</b></span>
 </a>

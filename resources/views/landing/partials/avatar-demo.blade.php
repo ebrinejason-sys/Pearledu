@@ -26,14 +26,6 @@
   .vx-avatar-fallback.vx-phrase-2 .vx-hand-2{opacity:1}
   @media(prefers-reduced-motion:reduce){.vx-avatar-fallback .vx-hand{transition:none}}
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
-  }
-}
-</script>
 <script type="module">
   import { mountAvatar } from '/js/vx-avatar-loader.js';
   mountAvatar({

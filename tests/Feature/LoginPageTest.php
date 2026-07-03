@@ -70,4 +70,24 @@ class LoginPageTest extends TestCase
 
         $response->assertSessionHasErrors('email');
     }
+
+    public function test_login_page_renders_preloader_overlay_gated_by_session_storage(): void
+    {
+        $response = $this->get('/login');
+
+        $response->assertStatus(200);
+        $response->assertSee('id="vx-preloader"', false);
+        $response->assertSee('id="vx-preloader-lines"', false);
+        $response->assertSee('vx-preloader-shown', false);
+        $response->assertSee("import('/js/vx-preloader.js')", false);
+    }
+
+    public function test_login_page_uses_svg_logo_not_raster(): void
+    {
+        $response = $this->get('/login');
+
+        $response->assertStatus(200);
+        $response->assertSee('logo.svg', false);
+        $response->assertDontSee('logo.png', false);
+    }
 }

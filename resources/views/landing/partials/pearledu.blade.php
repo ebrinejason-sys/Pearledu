@@ -1,7 +1,7 @@
 <section id="pearledu" class="vx-section">
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">For institutions</div>
-    <h2 class="vx-h2">PearlEdu — school management, without the spreadsheets.</h2>
+    <h2 class="vx-h2">VoxSign Institutions — school management, without the spreadsheets.</h2>
     <p class="vx-lead vx-sec-head">Built for schools that need one system, not five disconnected ones.</p>
     <div class="vx-grid">
       <div class="vx-card"><h3>Attendance</h3><p>Track student attendance across classes without paper registers.</p></div>

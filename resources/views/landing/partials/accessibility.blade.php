@@ -3,7 +3,7 @@
     <div class="vx-eyebrow">VoxSign Accessibility</div>
     <h2 class="vx-h2">Two products, one job: make sure everyone is understood.</h2>
     <p class="vx-lead vx-sec-head">Communication gaps shut people out — at school, at work, in everyday conversation. These two products close them from opposite directions.</p>
-    <div class="vx-grid" style="grid-template-columns:repeat(2,1fr)">
+    <div class="vx-grid">
       <div class="vx-card">
         <h3>Ugandan Sign Language app</h3>
         <p>Converts spoken words into Ugandan Sign Language through a lifelike AI avatar, in real time — for classrooms, calls, and videos.</p>

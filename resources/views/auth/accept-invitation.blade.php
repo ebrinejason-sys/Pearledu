@@ -2,7 +2,7 @@
 @section('title','Set your password')
 @section('content')
   <a href="{{ url('/') }}" class="auth-brand">
-    <img src="{{ asset('images/brand/logo.png') }}" alt="" class="brand__mark brand__mark--lg" width="56" height="56">
+    <img src="{{ asset('images/brand/logo.svg') }}" alt="" class="brand__mark brand__mark--lg" width="56" height="56">
     <span class="brand__wordmark">Pearl<b>Edu</b></span>
   </a>
   <div class="card" style="max-width:440px;margin:0 auto 40px">

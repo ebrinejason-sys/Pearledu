@@ -1,8 +1,16 @@
+var FRAME_PRESETS = {
+  upper: { heightFraction: 0.62, padding: 1.5 },
+  full: { heightFraction: 1, padding: 1.3 }
+};
+
 export function mountAvatar(config) {
   var container = typeof config.container === 'string' ? document.getElementById(config.container) : config.container;
   if (!container) return;
 
   var mode = config.mode || 'cycle';
+  var frame = config.frame || 'upper';
+  var interactive = !!config.interactive;
+  var preset = FRAME_PRESETS[frame] || FRAME_PRESETS.upper;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var captionEl = config.captionId ? document.getElementById(config.captionId) : null;
   var phrases = config.phrases || [];
@@ -57,12 +65,10 @@ export function mountAvatar(config) {
 
   function initScene(THREE, GLTFLoader) {
     var w = container.clientWidth || width;
-    var h = height;
+    var h = container.clientHeight || height;
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100);
-    camera.position.set(0, 1.4, 3.4);
-    camera.lookAt(0, 1.1, 0);
 
     var renderer;
     try {
@@ -102,11 +108,37 @@ export function mountAvatar(config) {
     ));
   }
 
+  function fitCameraToModel(THREE, root, camera) {
+    var box = new THREE.Box3().setFromObject(root);
+    var center = box.getCenter(new THREE.Vector3());
+    root.position.x -= center.x;
+    root.position.z -= center.z;
+    root.position.y -= box.min.y;
+
+    box.setFromObject(root);
+    var size = box.getSize(new THREE.Vector3());
+    center = box.getCenter(new THREE.Vector3());
+
+    var targetHeight = size.y * preset.heightFraction;
+    var fitCenterY = frame === 'full' ? center.y : box.max.y - targetHeight / 2;
+
+    var vFov = camera.fov * (Math.PI / 180);
+    var hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+    var distanceForHeight = (targetHeight / 2) / Math.tan(vFov / 2);
+    var distanceForWidth = (size.x / 2) / Math.tan(hFov / 2);
+    var distance = Math.max(distanceForHeight, distanceForWidth) * preset.padding;
+
+    camera.position.set(center.x, fitCenterY, distance);
+    camera.lookAt(center.x, fitCenterY, center.z);
+    camera.near = Math.max(0.01, distance / 100);
+    camera.far = distance * 10;
+    camera.updateProjectionMatrix();
+  }
+
   function onModelLoaded(gltf, THREE, scene, camera, renderer, getCssVar) {
     var root = gltf.scene;
-    root.scale.setScalar(1.55);
-    root.position.set(0, -1.15, 0);
     scene.add(root);
+    fitCameraToModel(THREE, root, camera);
 
     var bodyColor = new THREE.Color(getCssVar(colorVars[0], colorFallbacks[0]));
     var jointColor = new THREE.Color(getCssVar(colorVars[1], colorFallbacks[1]));
@@ -136,11 +168,44 @@ export function mountAvatar(config) {
     var restQuats = {};
     Object.keys(bones).forEach(function (name) { restQuats[name] = bones[name].quaternion.clone(); });
 
+    if (interactive) { enableDragRotate(renderer, root); }
+
     if (mode === 'idle') {
       runIdle(THREE, bones, restQuats, renderer, scene, camera);
     } else {
       runCycle(THREE, bones, restQuats, renderer, scene, camera);
     }
+  }
+
+  function enableDragRotate(renderer, root) {
+    var dragging = false;
+    var lastX = 0;
+    var baseY = root.rotation.y;
+    var el = renderer.domElement;
+    el.style.touchAction = 'pan-y';
+    el.style.cursor = 'grab';
+
+    function pointerDown(e) {
+      dragging = true;
+      lastX = e.clientX;
+      baseY = root.rotation.y;
+      el.style.cursor = 'grabbing';
+      el.setPointerCapture(e.pointerId);
+    }
+    function pointerMove(e) {
+      if (!dragging) return;
+      var deltaX = e.clientX - lastX;
+      root.rotation.y = baseY + deltaX * 0.012;
+    }
+    function pointerUp() {
+      dragging = false;
+      el.style.cursor = 'grab';
+    }
+
+    el.addEventListener('pointerdown', pointerDown);
+    el.addEventListener('pointermove', pointerMove);
+    el.addEventListener('pointerup', pointerUp);
+    el.addEventListener('pointerleave', pointerUp);
   }
 
   function runIdle(THREE, bones, restQuats, renderer, scene, camera) {
