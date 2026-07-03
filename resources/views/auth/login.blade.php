@@ -57,7 +57,12 @@
       </div>
     </div>
     <div class="vx-auth-stage">
-      <img src="{{ asset('images/auth/login-illustration.png') }}" alt="" class="vx-login-illustration">
+      <div class="vx-stage-inner">
+        <div class="vx-illustration-card">
+          <img src="{{ asset('images/auth/login-illustration.png') }}" alt="" class="vx-login-illustration">
+        </div>
+        <p class="vx-stage-copy"><strong>Run your whole school from one dashboard.</strong><br>Academics, attendance, fees and communication — together.</p>
+      </div>
     </div>
   </div>
 @endsection
@@ -78,8 +83,29 @@
   .vx-auth-card .btn:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(0,0,0,.15)}
   .vx-auth-card .btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
   .vx-auth-card .err{color:#FFD3D3;font-size:13px;margin-top:6px}
-  .vx-auth-stage{flex:1;background:var(--surface);display:flex;align-items:center;justify-content:center}
-  .vx-login-illustration{max-width:420px;width:80%;height:auto}
+  .vx-auth-stage{
+    flex:1;display:flex;align-items:center;justify-content:center;padding:48px;
+    background-color:var(--bg);
+    background-image:radial-gradient(circle,rgba(19,68,58,.10) 1.5px,transparent 1.5px);
+    background-size:22px 22px;
+    position:relative;overflow:hidden;
+  }
+  .vx-auth-stage::before{
+    content:"";position:absolute;width:640px;height:640px;border-radius:50%;
+    background:radial-gradient(circle,var(--accent-soft) 0%,rgba(247,235,207,0) 70%);
+    top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+  }
+  .vx-stage-inner{position:relative;max-width:400px;width:100%;text-align:center;animation:vx-stage-in .5s ease both}
+  .vx-illustration-card{
+    background:var(--surface);border-radius:calc(var(--radius) + 6px);padding:28px;
+    box-shadow:0 24px 48px -16px rgba(19,68,58,.28),0 2px 6px rgba(19,68,58,.08);
+    border-top:3px solid var(--accent);
+  }
+  .vx-login-illustration{display:block;max-width:100%;width:100%;height:auto}
+  .vx-stage-copy{margin:22px 6px 0;font-size:14px;line-height:1.6;color:var(--muted)}
+  .vx-stage-copy strong{display:block;margin-bottom:4px;font-size:16px;color:var(--ink)}
+  @keyframes vx-stage-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.vx-stage-inner{animation:none}}
   .vx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .vx-preloader{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:var(--bg,#F4F4EF);color:#B5652F}
   .vx-preloader svg{width:160px;height:160px}
