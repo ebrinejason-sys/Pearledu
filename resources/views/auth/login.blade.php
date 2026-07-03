@@ -73,11 +73,13 @@
   .vx-auth-card input::placeholder{color:rgba(255,255,255,.5)}
   .vx-auth-remember{display:flex;align-items:center;gap:8px;font-size:13px}
   .vx-auth-remember input{width:auto}
-  .vx-auth-card .btn{width:100%;margin-top:20px;background:var(--accent);color:var(--ink)}
+  .vx-auth-card .btn{width:100%;margin-top:20px;padding:12px 16px;background:var(--accent);color:var(--ink);border:0;border-radius:var(--radius);font:inherit;font-weight:700;font-size:15px;letter-spacing:.2px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15),0 4px 12px rgba(0,0,0,.12);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease}
+  .vx-auth-card .btn:hover{background:color-mix(in srgb,var(--accent) 88%,#fff)}
+  .vx-auth-card .btn:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  .vx-auth-card .btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
   .vx-auth-card .err{color:#FFD3D3;font-size:13px;margin-top:6px}
   .vx-auth-stage{flex:1;background:var(--surface);display:flex;align-items:center;justify-content:center}
-  .vx-login-avatar-3d{width:320px;height:420px}
-  .vx-login-avatar-3d canvas{display:block;margin:0 auto}
+  .vx-login-illustration{max-width:420px;width:80%;height:auto}
   .vx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .vx-preloader{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:var(--bg,#F4F4EF);color:#B5652F}
   .vx-preloader svg{width:160px;height:160px}
@@ -88,29 +90,7 @@
     .vx-auth-stage{display:none}
   }
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
-  }
-}
-</script>
 <script type="module">
-  if (window.matchMedia('(min-width: 861px)').matches) {
-    import('/js/vx-avatar-loader.js').then(function (mod) {
-      mod.mountAvatar({
-        container: 'vx-login-avatar-3d',
-        mode: 'idle',
-        interactive: true,
-        width: 320,
-        height: 420,
-        colorVars: ['--avatar-skin', '--avatar-skin-joint'],
-        colorFallbacks: ['#C68863', '#A8714F']
-      });
-    });
-  }
-
   var preloaderEl = document.getElementById('vx-preloader');
   if (preloaderEl) {
     if (document.documentElement.classList.contains('vx-preloader-skip')) {
