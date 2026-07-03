@@ -20,7 +20,7 @@ class LandingController extends Controller {
             ['name' => 'Muhumuza Alex', 'role' => 'Head of Product Development', 'photo' => 'team-alex.jpg'],
             ['name' => 'Naikambo Sandra', 'role' => 'Sign Language Specialist and Consultant', 'photo' => 'team-sandra.jpg'],
             ['name' => 'Aaron Marshall Taremwa', 'role' => 'Product Development Expert', 'photo' => null],
-            ['name' => 'Ebrine Tushabe', 'role' => 'Product Development Expert', 'photo' => null],
+            ['name' => 'Ebrine Tushabe', 'role' => 'Product Development Expert', 'photo' => 'team-ebrine.jpg'],
         ];
     }
 
