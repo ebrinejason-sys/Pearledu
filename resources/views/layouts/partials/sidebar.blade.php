@@ -7,6 +7,7 @@
     'schools' => '<path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6"/><path d="M4 21h16"/>',
     'add' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
     'account' => '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+    'pricing' => '<path d="M20.6 13.4 12.6 21.4a2 2 0 0 1-2.8 0L2 13.6V4a2 2 0 0 1 2-2h9.6l7 7a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
     'dot' => '<circle cx="12" cy="12" r="3"/>',
   ];
   $collapsed = request()->cookie('sidebar_collapsed') === '1';

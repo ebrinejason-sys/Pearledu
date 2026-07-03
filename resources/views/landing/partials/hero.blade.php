@@ -1,5 +1,6 @@
-<section class="vx-section vx-hero" style="padding-top:56px">
+<section class="vx-section vx-hero vx-band">
   <div class="vx-hero-glow" aria-hidden="true"></div>
+  <div class="vx-hero-texture" aria-hidden="true"></div>
   <div class="vx-wrap vx-reveal">
     <div class="vx-hero-copy">
       <div class="vx-eyebrow">AI &middot; Inclusion Technology</div>
@@ -9,23 +10,29 @@
         tools that give Deaf, hard-of-hearing, and speech-impaired people a voice in the room, and
         <strong>VoxSign Institutions</strong>, a school management platform for institutions.
       </p>
-      <p style="margin-top:26px;display:flex;gap:12px;flex-wrap:wrap">
-        <a href="#contact" class="vx-btn">Talk to us</a>
+      <p style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap">
+        <a href="#contact" class="vx-btn-grad">Talk to us</a>
         <a href="#accessibility" class="vx-btn-ghost">See both divisions ↓</a>
       </p>
     </div>
   </div>
   <div class="vx-hero-avatar-wrap" aria-hidden="true">
+    <div class="vx-hero-avatar-stage" aria-hidden="true"></div>
     <div id="vx-hero-avatar-3d" class="vx-hero-avatar-3d"></div>
   </div>
   <p class="vx-sr-only">Decorative full-length 3D figure of a person, shown for visual interest; drag horizontally to rotate it.</p>
 </section>
 <style>
-  .vx-hero{min-height:clamp(480px,58vw,680px)}
+  .vx-hero{min-height:clamp(520px,60vw,720px)}
   .vx-hero .vx-wrap{position:relative;z-index:2}
-  .vx-hero-copy{max-width:600px}
-  .vx-hero-avatar-wrap{position:absolute;right:0;top:0;bottom:0;width:min(460px,44vw);z-index:1}
-  .vx-hero-avatar-3d{width:100%;height:100%}
+  .vx-hero-copy{max-width:620px}
+  .vx-hero-copy strong{color:#fff}
+  .vx-hero-avatar-wrap{position:absolute;right:0;top:0;bottom:0;width:min(480px,44vw);z-index:1}
+  .vx-hero-avatar-stage{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);width:78%;aspect-ratio:1;
+    border-radius:50%;pointer-events:none;
+    background:radial-gradient(closest-side, rgba(18,179,166,.22), rgba(255,106,61,.1) 55%, transparent 75%);
+    filter:blur(2px)}
+  .vx-hero-avatar-3d{position:relative;width:100%;height:100%}
   .vx-hero-avatar-3d canvas{display:block;touch-action:pan-y}
   @media(max-width:860px){
     .vx-hero{min-height:0}

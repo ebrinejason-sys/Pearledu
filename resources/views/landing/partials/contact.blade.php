@@ -17,7 +17,7 @@
       <label class="vx-label">Message</label>
       <textarea class="vx-input" name="message" rows="4" required></textarea>
       @error('message')<div class="vx-err">{{ $message }}</div>@enderror
-      <button class="vx-btn" type="submit" style="width:100%;justify-content:center">Send message</button>
+      <button class="vx-btn-grad" type="submit" style="width:100%;justify-content:center">Send message</button>
     </form>
   </div>
 </section>

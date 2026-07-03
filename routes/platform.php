@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\Platform\DashboardController;
+use App\Http\Controllers\Platform\PricingPlanController;
 use App\Http\Controllers\Platform\SchoolController;
 use App\Http\Controllers\Platform\SmsCreditController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,11 @@ Route::middleware(['web','auth','platform'])->prefix('platform')->name('platform
     Route::post('schools/{school}/enter', [SchoolController::class, 'enter'])->name('schools.enter');
     Route::post('schools/leave', [SchoolController::class, 'leave'])->name('schools.leave');
     Route::post('schools/{school}/imitate/{user}', [\App\Http\Controllers\Platform\ImpersonationController::class, 'store'])->name('schools.imitate');
+
+    Route::get('pricing', [PricingPlanController::class, 'index'])->name('pricing.index');
+    Route::post('pricing', [PricingPlanController::class, 'store'])->name('pricing.store');
+    Route::put('pricing/{plan}', [PricingPlanController::class, 'update'])->name('pricing.update');
+    Route::delete('pricing/{plan}', [PricingPlanController::class, 'destroy'])->name('pricing.destroy');
 
     Route::get('sms', [SmsCreditController::class, 'index'])->name('sms.index');
     Route::post('sms/settings', [SmsCreditController::class, 'updateSettings'])->name('sms.settings');

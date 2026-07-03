@@ -124,6 +124,13 @@ class NavigationBuilder
                     $this->item('SMS & credits', 'platform.sms.index', icon: 'sms', active: request()->routeIs('platform.sms.*')),
                 ],
             ],
+            [
+                'key' => 'marketing',
+                'label' => 'Marketing',
+                'items' => [
+                    $this->item('Pricing', 'platform.pricing.index', icon: 'pricing', active: request()->routeIs('platform.pricing.*')),
+                ],
+            ],
         ];
     }
 

@@ -1,11 +1,14 @@
 <?php
 namespace App\Http\Controllers;
+use App\Models\PricingPlan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
 class PearlEduLandingController extends Controller {
     public function index() {
-        return view('landing.pearledu-home');
+        return view('landing.pearledu-home', [
+            'plans' => PricingPlan::active()->orderBy('sort_order')->orderBy('id')->get(),
+        ]);
     }
 
     public function onboard(Request $request) {

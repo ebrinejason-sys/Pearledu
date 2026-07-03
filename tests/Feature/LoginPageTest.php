@@ -23,14 +23,15 @@ class LoginPageTest extends TestCase
         $response->assertDontSee('--brand:#13443A', false);
     }
 
-    public function test_login_page_renders_split_layout_with_avatar_stage(): void
+    public function test_login_page_renders_split_layout_with_illustration_stage(): void
     {
         $response = $this->get('/login');
 
         $response->assertStatus(200);
         $response->assertSee('vx-auth-panel', false);
         $response->assertSee('vx-auth-stage', false);
-        $response->assertSee('id="vx-login-avatar-3d"', false);
+        $response->assertSee('vx-illustration-card', false);
+        $response->assertSee('login-illustration', false);
     }
 
     public function test_login_page_uses_theme_tokens_not_hardcoded_brand_colors(): void

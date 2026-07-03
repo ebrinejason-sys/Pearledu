@@ -9,7 +9,7 @@
         <p>AI tools for Deaf, hard-of-hearing, and speech-impaired users — Ugandan Sign Language translation and assistive speech recognition.</p>
         <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
           <a href="#accessibility" class="vx-btn-ghost">Learn more ↓</a>
-          <a href="https://accessibility.{{ config('tenancy.base_domain') }}" class="vx-btn">Get Started</a>
+          <a href="https://accessibility.{{ config('tenancy.base_domain') }}" class="vx-btn-grad">Get Started</a>
         </p>
       </div>
       <div class="vx-card">
@@ -17,7 +17,7 @@
         <p>A school management platform for institutions — attendance, grading, fees, and communication in one place.</p>
         <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
           <a href="#pearledu" class="vx-btn-ghost">Learn more ↓</a>
-          <a href="https://pearledu.{{ config('tenancy.base_domain') }}" class="vx-btn">Get Started</a>
+          <a href="https://pearledu.{{ config('tenancy.base_domain') }}" class="vx-btn-grad">Get Started</a>
         </p>
       </div>
     </div>

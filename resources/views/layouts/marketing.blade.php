@@ -10,8 +10,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B1020; --paper:#FBFAF7; --surface:#FFFFFF;
+    --ink:#0B1020; --ink-2:#111834; --paper:#FBFAF7; --surface:#FFFFFF;
     --voice:#FF6A3D; --sign:#12B3A6; --muted:#5D6473; --line:#E7E4DC;
+    --ink-line:rgba(255,255,255,.12); --ink-muted:#A9B0C2;
     --grad:linear-gradient(100deg,var(--voice),var(--sign));
     --display:'Google Sans',system-ui,sans-serif;
     --body:'Satoshi',system-ui,sans-serif;
@@ -26,17 +27,22 @@
   .vx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   :focus-visible{outline:3px solid var(--sign);outline-offset:3px;border-radius:4px}
 
-  .vx-nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:20px;padding:16px 24px;
-          background:rgba(251,250,247,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  /* Floating pill nav */
+  .vx-nav-shell{position:sticky;top:12px;z-index:50;padding:0 16px}
+  .vx-nav{position:relative;display:flex;align-items:center;gap:18px;max-width:1120px;margin:0 auto;padding:10px 14px 10px 16px;
+          background:rgba(255,255,255,.84);backdrop-filter:blur(14px);border:1px solid var(--line);
+          border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
   .vx-logo-link{display:flex;align-items:center}
-  .vx-logo{height:32px;width:auto;display:block}
-  .vx-nav-links{margin-left:14px;display:flex;gap:22px;font-size:15px;color:var(--muted);flex-wrap:wrap}
+  .vx-logo{height:30px;width:auto;display:block}
+  .vx-nav-links{margin-left:10px;display:flex;gap:22px;font-size:14.5px;color:var(--muted);flex-wrap:wrap}
   .vx-nav-links a:hover{color:var(--ink)}
   .vx-nav-cta{margin-left:auto}
-  .vx-nav-toggle{display:none;background:none;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:18px;cursor:pointer;margin-left:auto}
+  .vx-nav-cta .vx-btn{padding:10px 20px}
+  .vx-nav-toggle{display:none;background:none;border:1.5px solid var(--line);border-radius:999px;padding:8px 12px;font-size:18px;cursor:pointer;margin-left:auto}
   @media(max-width:860px){
-    .vx-nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;
-                  background:var(--paper);border-bottom:1px solid var(--line);padding:16px 24px;gap:16px;margin:0}
+    .vx-nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;flex-direction:column;
+                  background:var(--surface);border:1px solid var(--line);border-radius:20px;
+                  box-shadow:0 18px 40px -20px rgba(11,16,32,.4);padding:16px 24px;gap:16px;margin:0}
     .vx-nav-links.open{display:flex}
     .vx-nav-cta{display:none}
     .vx-nav-toggle{display:block}
@@ -44,25 +50,33 @@
 
   .vx-section{padding:clamp(48px,8vw,88px) 0;border-bottom:1px solid var(--line)}
   .vx-section:last-of-type{border-bottom:0}
-  .vx-band{background:var(--ink);color:#fff}
+  .vx-band{background:linear-gradient(180deg,var(--ink) 0%,var(--ink-2) 100%);color:#fff;border-bottom:0}
   .vx-band .vx-eyebrow{color:var(--sign)}
   .vx-band .vx-lead{color:#aeb4c2}
+  .vx-band .vx-btn-ghost{color:#fff;border-color:var(--ink-line)}
+  .vx-band .vx-btn-ghost:hover{border-color:#fff}
   .vx-section:nth-of-type(even):not(.vx-band){background:linear-gradient(180deg,var(--paper) 0%,#F5F3EC 100%)}
 
   .vx-eyebrow{display:inline-block;font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--voice);font-weight:700;margin-bottom:14px;text-transform:uppercase;background:rgba(255,106,61,.1);border:1px solid rgba(255,106,61,.25);border-radius:999px;padding:5px 14px}
   .vx-band .vx-eyebrow{background:rgba(18,179,166,.14);border-color:rgba(18,179,166,.35)}
-  .vx-h1{font-size:clamp(32px,5.5vw,56px);font-weight:800;line-height:1.05;max-width:680px;margin:0 0 16px}
+  .vx-h1{font-size:clamp(34px,5.8vw,64px);font-weight:800;line-height:1.04;max-width:720px;margin:0 0 18px}
   .vx-h1 .vx-flow{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .vx-hero{position:relative;overflow-x:hidden;overflow-y:visible}
-  .vx-hero-glow{position:absolute;inset:-20% -10% auto -10%;height:520px;z-index:0;pointer-events:none;
+  .vx-hero{position:relative;overflow-x:hidden;overflow-y:visible;margin-top:-66px;
+           padding-top:calc(clamp(48px,8vw,88px) + 96px)}
+  .vx-hero-glow{position:absolute;inset:0;z-index:0;pointer-events:none;
     background:
-      radial-gradient(480px 320px at 15% 20%, rgba(255,106,61,.16), transparent 70%),
-      radial-gradient(520px 360px at 85% 10%, rgba(18,179,166,.16), transparent 70%)}
+      radial-gradient(640px 420px at 12% 12%, rgba(255,106,61,.24), transparent 70%),
+      radial-gradient(700px 460px at 85% 6%, rgba(18,179,166,.22), transparent 70%)}
+  .vx-hero-texture{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:44px 44px;
+    -webkit-mask-image:radial-gradient(85% 75% at 45% 25%,#000 30%,transparent 100%);
+    mask-image:radial-gradient(85% 75% at 45% 25%,#000 30%,transparent 100%)}
   .vx-hero .vx-wrap{position:relative;z-index:1}
   .vx-h1 .vx-flow{background-size:200% 100%;animation:vxFlowShift 6s ease-in-out infinite}
   @keyframes vxFlowShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
   @media(prefers-reduced-motion:reduce){.vx-h1 .vx-flow{animation:none}}
-  .vx-h2{font-size:clamp(24px,3.6vw,36px);font-weight:700;margin:0 0 6px}
+  .vx-h2{font-size:clamp(26px,3.8vw,40px);font-weight:700;margin:0 0 6px}
   .vx-lead{color:var(--muted);max-width:620px;font-size:17px}
   .vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}
 
@@ -70,20 +84,28 @@
           background:var(--ink);color:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:12px 22px;cursor:pointer;
           transition:transform .15s ease,box-shadow .2s ease}
   .vx-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(11,16,32,.5)}
+  .vx-btn-grad{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
+          background:var(--grad);color:#fff;border:0;border-radius:999px;padding:13px 24px;cursor:pointer;
+          box-shadow:0 10px 26px -12px rgba(255,106,61,.55);transition:transform .15s ease,box-shadow .2s ease}
+  .vx-btn-grad:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(18,179,166,.5)}
   .vx-btn-ghost{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
                 background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:12px 22px;cursor:pointer}
   .vx-btn-ghost:hover{border-color:var(--ink)}
+  @media(prefers-reduced-motion:reduce){.vx-btn,.vx-btn-grad{transition:none}.vx-btn:hover,.vx-btn-grad:hover{transform:none}}
 
-  .vx-grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:640px;margin:0 auto}
+  .vx-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
   .vx-grid-team{max-width:960px;grid-template-columns:repeat(2,1fr)}
   @media(min-width:720px){.vx-grid-team{grid-template-columns:repeat(4,1fr)}}
   .vx-grid-team .vx-card{padding:14px}
   @media(max-width:480px){.vx-grid-team{gap:10px}.vx-grid-team .vx-card{padding:10px}.vx-grid-team .vx-card h3{font-size:14px}.vx-grid-team .vx-card p{font-size:12px}}
   .vx-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
-  .vx-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+  .vx-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
   .vx-card:hover::before{transform:scaleX(1)}
   @media(prefers-reduced-motion:reduce){.vx-card::before{transition:none}}
-  .vx-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -16px rgba(11,16,32,.25)}
+  .vx-card:hover{transform:translateY(-3px);box-shadow:0 18px 36px -20px rgba(11,16,32,.35)}
+  .vx-band .vx-card{background:rgba(255,255,255,.05);border-color:var(--ink-line);backdrop-filter:blur(6px)}
+  .vx-band .vx-card h3{color:#fff}
+  .vx-band .vx-card p{color:var(--ink-muted)}
   @media(prefers-reduced-motion:reduce){.vx-card{transition:none}.vx-card:hover{transform:none}}
   .vx-grid .vx-card:nth-child(1){transition-delay:0ms}
   .vx-grid .vx-card:nth-child(2){transition-delay:50ms}
@@ -110,7 +132,8 @@
   }
 
   .vx-partner-text{color:var(--muted);font-size:13px;border:1px dashed var(--line);padding:10px 14px;border-radius:10px}
-  .vx-quote{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:16px}
+  .vx-quote{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 24px 24px 28px;margin-bottom:16px;overflow:hidden}
+  .vx-quote::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--grad)}
   .vx-quote p{margin:0 0 12px;font-size:16px}
   .vx-quote cite{color:var(--muted);font-size:13px;font-style:normal}
 
@@ -146,6 +169,7 @@
 </script>
 </head>
 <body>
+  <div class="vx-nav-shell">
   <div class="vx-nav">
     <a href="{{ url('/') }}" class="vx-logo-link" aria-label="VoxSign home">
       <svg class="vx-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 32" fill="none" role="img" aria-label="VoxSign">
@@ -170,8 +194,9 @@
     <div class="vx-nav-cta"><a href="#contact" class="vx-btn">Talk to us</a></div>
     <button class="vx-nav-toggle" aria-label="Menu" aria-expanded="false" id="vx-nav-toggle">&#9776;</button>
   </div>
+  </div>
   @if(session('status'))
-    <div class="vx-wrap" style="padding-top:20px"><div class="vx-status">{{ session('status') }}</div></div>
+    <div class="vx-wrap" style="padding-top:20px;position:relative;z-index:5"><div class="vx-status">{{ session('status') }}</div></div>
   @endif
   @yield('content')
   <div class="vx-footer">

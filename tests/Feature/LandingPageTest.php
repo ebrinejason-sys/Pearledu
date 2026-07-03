@@ -179,8 +179,7 @@ class LandingPageTest extends TestCase
         \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactFormConfirmation::class, function ($mail) {
             return $mail->hasTo('test@example.com')
                 && $mail->name === 'Test User'
-                && $mail->from[0]->address === config('mail.from.address')
-                && $mail->from[0]->name === 'VoxSign';
+                && $mail->hasFrom(config('mail.from.address'), 'VoxSign');
         });
     }
 
@@ -347,12 +346,32 @@ class LandingPageTest extends TestCase
         $response->assertDontSee('href="#privacy"', false);
     }
 
-    public function test_cards_render_in_single_vertical_column(): void
+    public function test_cards_render_in_responsive_multi_column_grid(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
-        $response->assertSee('.vx-grid{display:grid;gap:16px;grid-template-columns:1fr;max-width:640px;margin:0 auto}', false);
+        $response->assertSee('.vx-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}', false);
+    }
+
+    public function test_hero_renders_as_dark_band_with_texture(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('vx-section vx-hero vx-band', false);
+        $response->assertSee('vx-hero-texture', false);
+        $response->assertSee('vx-btn-grad', false);
+    }
+
+    public function test_nav_renders_as_floating_pill(): void
+    {
+        $response = $this->get('http://voxsign.co.ug/');
+
+        $response->assertStatus(200);
+        $response->assertSee('vx-nav-shell', false);
+        $response->assertSee('.vx-nav-shell{position:sticky;top:12px', false);
+        $response->assertSee('border-radius:999px', false);
     }
 
     public function test_team_grid_renders_as_four_by_two(): void
