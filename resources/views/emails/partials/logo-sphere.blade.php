@@ -1,4 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 30 340 340" fill="currentColor" role="img" aria-label="Sphere logo mark">
+@props([
+    'height' => 28,
+    'color' => '#9FE7F5',
+])
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 30 340 340" fill="{{ $color }}" role="img" aria-label="{{ config('app.name') }} logo" style="height:{{ $height }}px;width:auto;display:block">
   <path d="M150.25,56.34 Q190.05,56.34 249.75,58.49 Q190.05,60.64 150.25,60.64 Z"/>
   <path d="M120.75,69.44 Q184.15,69.44 279.25,72.64 Q184.15,75.84 120.75,75.84 Z"/>
   <path d="M101.59,82.95 Q180.32,82.95 298.41,86.79 Q180.32,90.64 101.59,90.64 Z"/>

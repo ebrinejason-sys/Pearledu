@@ -20,7 +20,7 @@ class LoginPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('--brand:#0B4DA2', false);
-        $response->assertDontSee('--brand:#13443A', false);
+        $response->assertDontSee('--brand:#053F5C', false);
     }
 
     public function test_login_page_renders_split_layout_with_illustration_stage(): void

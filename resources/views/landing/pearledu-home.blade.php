@@ -3,8 +3,6 @@
 @section('content')
   {{-- ============ HERO ============ --}}
   <section class="pe-section pe-band pe-hero">
-    <div class="pe-hero-glow" aria-hidden="true"></div>
-    <div class="pe-hero-grid" aria-hidden="true"></div>
     <div class="pe-wrap">
       <div style="text-align:center;max-width:820px;margin:0 auto">
         <div class="pe-eyebrow">School Management Platform</div>

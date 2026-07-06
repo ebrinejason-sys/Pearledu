@@ -10,10 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B1020; --ink-2:#111834; --paper:#FBFAF7; --surface:#FFFFFF;
-    --voice:#FF6A3D; --sign:#12B3A6; --muted:#5D6473; --line:#E7E4DC;
-    --ink-line:rgba(255,255,255,.12); --ink-muted:#A9B0C2;
-    --grad:linear-gradient(100deg,var(--voice),var(--sign));
+    --ink:#053F5C; --ink-2:#034A6B; --paper:#F5FBFD; --surface:#FFFFFF;
+    --voice:#F27F0C; --sign:#429EBD; --cyan:#9FE7F5; --gold:#F7AD19;
+    --muted:#4A6270; --line:#D4E8EE;
+    --ink-line:rgba(255,255,255,.12); --ink-muted:#9FE7F5;
     --display:'Google Sans',system-ui,sans-serif;
     --body:'Satoshi',system-ui,sans-serif;
   }
@@ -50,32 +50,20 @@
 
   .vx-section{padding:clamp(48px,8vw,88px) 0;border-bottom:1px solid var(--line)}
   .vx-section:last-of-type{border-bottom:0}
-  .vx-band{background:linear-gradient(180deg,var(--ink) 0%,var(--ink-2) 100%);color:#fff;border-bottom:0}
-  .vx-band .vx-eyebrow{color:var(--sign)}
-  .vx-band .vx-lead{color:#aeb4c2}
+  .vx-band{background:var(--ink);color:#fff;border-bottom:0}
+  .vx-band .vx-eyebrow{color:var(--cyan)}
+  .vx-band .vx-lead{color:#C5DDE8}
   .vx-band .vx-btn-ghost{color:#fff;border-color:var(--ink-line)}
   .vx-band .vx-btn-ghost:hover{border-color:#fff}
-  .vx-section:nth-of-type(even):not(.vx-band){background:linear-gradient(180deg,var(--paper) 0%,#F5F3EC 100%)}
+  .vx-section:nth-of-type(even):not(.vx-band){background:var(--paper)}
 
-  .vx-eyebrow{display:inline-block;font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--voice);font-weight:700;margin-bottom:14px;text-transform:uppercase;background:rgba(255,106,61,.1);border:1px solid rgba(255,106,61,.25);border-radius:999px;padding:5px 14px}
-  .vx-band .vx-eyebrow{background:rgba(18,179,166,.14);border-color:rgba(18,179,166,.35)}
+  .vx-eyebrow{display:inline-block;font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--voice);font-weight:700;margin-bottom:14px;text-transform:uppercase;background:rgba(242,127,12,.1);border:1px solid rgba(242,127,12,.25);border-radius:999px;padding:5px 14px}
+  .vx-band .vx-eyebrow{background:rgba(159,231,245,.14);border-color:rgba(159,231,245,.35)}
   .vx-h1{font-size:clamp(34px,5.8vw,64px);font-weight:800;line-height:1.04;max-width:720px;margin:0 0 18px}
-  .vx-h1 .vx-flow{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .vx-h1 .vx-flow{color:var(--cyan)}
   .vx-hero{position:relative;overflow-x:hidden;overflow-y:visible;margin-top:-66px;
            padding-top:calc(clamp(48px,8vw,88px) + 96px)}
-  .vx-hero-glow{position:absolute;inset:0;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(640px 420px at 12% 12%, rgba(255,106,61,.24), transparent 70%),
-      radial-gradient(700px 460px at 85% 6%, rgba(18,179,166,.22), transparent 70%)}
-  .vx-hero-texture{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
-    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
-    background-size:44px 44px;
-    -webkit-mask-image:radial-gradient(85% 75% at 45% 25%,#000 30%,transparent 100%);
-    mask-image:radial-gradient(85% 75% at 45% 25%,#000 30%,transparent 100%)}
   .vx-hero .vx-wrap{position:relative;z-index:1}
-  .vx-h1 .vx-flow{background-size:200% 100%;animation:vxFlowShift 6s ease-in-out infinite}
-  @keyframes vxFlowShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-  @media(prefers-reduced-motion:reduce){.vx-h1 .vx-flow{animation:none}}
   .vx-h2{font-size:clamp(26px,3.8vw,40px);font-weight:700;margin:0 0 6px}
   .vx-lead{color:var(--muted);max-width:620px;font-size:17px}
   .vx-sec-head{margin-bottom:clamp(28px,4vw,44px)}
@@ -85,9 +73,9 @@
           transition:transform .15s ease,box-shadow .2s ease}
   .vx-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(11,16,32,.5)}
   .vx-btn-grad{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
-          background:var(--grad);color:#fff;border:0;border-radius:999px;padding:13px 24px;cursor:pointer;
-          box-shadow:0 10px 26px -12px rgba(255,106,61,.55);transition:transform .15s ease,box-shadow .2s ease}
-  .vx-btn-grad:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(18,179,166,.5)}
+          background:var(--voice);color:#fff;border:0;border-radius:999px;padding:13px 24px;cursor:pointer;
+          box-shadow:0 10px 26px -12px rgba(242,127,12,.45);transition:transform .15s ease,box-shadow .2s ease}
+  .vx-btn-grad:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(66,158,189,.45)}
   .vx-btn-ghost{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
                 background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:12px 22px;cursor:pointer}
   .vx-btn-ghost:hover{border-color:var(--ink)}
@@ -99,7 +87,7 @@
   .vx-grid-team .vx-card{padding:14px}
   @media(max-width:480px){.vx-grid-team{gap:10px}.vx-grid-team .vx-card{padding:10px}.vx-grid-team .vx-card h3{font-size:14px}.vx-grid-team .vx-card p{font-size:12px}}
   .vx-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
-  .vx-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+  .vx-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--sign);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
   .vx-card:hover::before{transform:scaleX(1)}
   @media(prefers-reduced-motion:reduce){.vx-card::before{transition:none}}
   .vx-card:hover{transform:translateY(-3px);box-shadow:0 18px 36px -20px rgba(11,16,32,.35)}
@@ -133,7 +121,7 @@
 
   .vx-partner-text{color:var(--muted);font-size:13px;border:1px dashed var(--line);padding:10px 14px;border-radius:10px}
   .vx-quote{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 24px 24px 28px;margin-bottom:16px;overflow:hidden}
-  .vx-quote::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--grad)}
+  .vx-quote::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--sign)}
   .vx-quote p{margin:0 0 12px;font-size:16px}
   .vx-quote cite{color:var(--muted);font-size:13px;font-style:normal}
 
@@ -141,7 +129,7 @@
   .vx-input:focus{border-color:var(--sign);outline:none}
   .vx-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--ink);margin:0 0 6px}
   .vx-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
-  .vx-status{background:#E9F7F5;border:1px solid var(--sign);color:#0B1020;padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
+  .vx-status{background:#E8F7FA;border:1px solid var(--sign);color:var(--ink);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
 
   .vx-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
   .vx-footer-inner{max-width:1120px;margin:0 auto}
@@ -172,18 +160,7 @@
   <div class="vx-nav-shell">
   <div class="vx-nav">
     <a href="{{ url('/') }}" class="vx-logo-link" aria-label="VoxSign home">
-      <svg class="vx-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 32" fill="none" role="img" aria-label="VoxSign">
-        <defs>
-          <linearGradient id="vxLogoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#FF6A3D"/>
-            <stop offset="1" stop-color="#12B3A6"/>
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="32" height="32" rx="9" fill="url(#vxLogoGrad)"/>
-        <path d="M7 20c2.5-7 5-10.5 9-10.5s6.5 3.5 9 10.5" stroke="#FBFAF7" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-        <path d="M12 22.5v-6.2c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v4.2M15.6 20.5v-5.4c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v5.4M19.2 21v-4.6c0-1 .8-1.8 1.7-1.8s1.7.8 1.7 1.8v5.6c0 2.5-1.9 4.5-4.5 4.5h-1.6c-1.5 0-2.9-.7-3.8-1.9l-2.6-3.4a1.5 1.5 0 0 1 2.3-1.9l1.5 1.6" stroke="#FBFAF7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <text x="40" y="22" font-family="'Google Sans',system-ui,sans-serif" font-weight="600" font-size="18" fill="#0B1020">VoxSign</text>
-      </svg>
+      @include('layouts.partials.logo-sphere', ['height' => 30, 'color' => '#053F5C', 'showWordmark' => true, 'wordmarkColor' => '#053F5C'])
     </a>
     <div class="vx-nav-links" id="vx-nav-links">
       <a href="#accessibility">Accessibility</a>
@@ -202,18 +179,7 @@
   <div class="vx-footer">
     <div class="vx-footer-inner">
       <div class="vx-footer-brand">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 32" fill="none" role="img" aria-label="VoxSign">
-          <defs>
-            <linearGradient id="vxFooterLogoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#FF6A3D"/>
-              <stop offset="1" stop-color="#12B3A6"/>
-            </linearGradient>
-          </defs>
-          <rect x="0" y="0" width="32" height="32" rx="9" fill="url(#vxFooterLogoGrad)"/>
-          <path d="M7 20c2.5-7 5-10.5 9-10.5s6.5 3.5 9 10.5" stroke="#FBFAF7" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-          <path d="M12 22.5v-6.2c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v4.2M15.6 20.5v-5.4c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v5.4M19.2 21v-4.6c0-1 .8-1.8 1.7-1.8s1.7.8 1.7 1.8v5.6c0 2.5-1.9 4.5-4.5 4.5h-1.6c-1.5 0-2.9-.7-3.8-1.9l-2.6-3.4a1.5 1.5 0 0 1 2.3-1.9l1.5 1.6" stroke="#FBFAF7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <text x="40" y="22" font-family="'Google Sans',system-ui,sans-serif" font-weight="600" font-size="18" fill="#fff">VoxSign</text>
-        </svg>
+        @include('layouts.partials.logo-sphere', ['height' => 28, 'color' => '#9FE7F5', 'showWordmark' => true, 'wordmarkColor' => '#fff'])
       </div>
       <p class="vx-footer-tagline">Technology built to include everyone.</p>
       <div class="vx-footer-cols">

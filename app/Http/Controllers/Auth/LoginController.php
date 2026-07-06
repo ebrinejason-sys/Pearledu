@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,18 @@ class LoginController extends Controller {
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages(['email'=>'Too many attempts. Try again shortly.']);
+        }
+
+        $user = User::whereRaw('lower(email) = lower(?)', [$data['email']])->first();
+        if ($user && $user->status === 'invited') {
+            RateLimiter::hit($key, 60);
+            throw ValidationException::withMessages([
+                'email' => 'Your account is not activated yet. Open the invitation email we sent you to set your password.',
+            ]);
+        }
+        if ($user && $user->status === 'disabled') {
+            RateLimiter::hit($key, 60);
+            throw ValidationException::withMessages(['email' => 'This account has been disabled. Contact support for help.']);
         }
 
         if (! Auth::attempt(['email'=>$data['email'],'password'=>$data['password'],'status'=>'active'], $request->boolean('remember'))) {

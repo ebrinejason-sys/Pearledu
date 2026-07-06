@@ -1,6 +1,4 @@
 <section class="vx-section vx-hero vx-band">
-  <div class="vx-hero-glow" aria-hidden="true"></div>
-  <div class="vx-hero-texture" aria-hidden="true"></div>
   <div class="vx-wrap vx-reveal">
     <div class="vx-hero-copy">
       <div class="vx-eyebrow">AI &middot; Inclusion Technology</div>
@@ -30,8 +28,7 @@
   .vx-hero-avatar-wrap{position:absolute;right:0;top:0;bottom:0;width:min(480px,44vw);z-index:1}
   .vx-hero-avatar-stage{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);width:78%;aspect-ratio:1;
     border-radius:50%;pointer-events:none;
-    background:radial-gradient(closest-side, rgba(18,179,166,.22), rgba(255,106,61,.1) 55%, transparent 75%);
-    filter:blur(2px)}
+    background:rgba(66,158,189,.16)}
   .vx-hero-avatar-3d{position:relative;width:100%;height:100%}
   .vx-hero-avatar-3d canvas{display:block;touch-action:pan-y}
   @media(max-width:860px){

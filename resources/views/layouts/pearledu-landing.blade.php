@@ -10,10 +10,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B1020; --ink-2:#111834; --paper:#FBFAF7; --surface:#FFFFFF;
-    --copper:#C8763B; --copper-deep:#B5652F; --sign:#12B3A6; --muted:#5D6473; --line:#E7E4DC;
-    --ink-line:rgba(255,255,255,.12); --ink-muted:#A9B0C2;
-    --grad:linear-gradient(100deg,var(--copper),var(--sign));
+    --ink:#053F5C; --ink-2:#034A6B; --paper:#F5FBFD; --surface:#FFFFFF;
+    --voice:#F27F0C; --gold:#F7AD19; --sign:#429EBD; --cyan:#9FE7F5; --muted:#4A6270; --line:#D4E8EE;
+    --ink-line:rgba(255,255,255,.12); --ink-muted:#9FE7F5;
     --display:'Google Sans',system-ui,sans-serif;
     --body:'Satoshi',system-ui,sans-serif;
   }
@@ -47,9 +46,9 @@
           transition:transform .15s ease,box-shadow .2s ease}
   .pe-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(11,16,32,.5)}
   .pe-btn-grad{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
-          background:var(--grad);color:#fff;border:0;border-radius:999px;padding:13px 24px;cursor:pointer;
-          box-shadow:0 10px 26px -12px rgba(200,118,59,.55);transition:transform .15s ease,box-shadow .2s ease}
-  .pe-btn-grad:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(18,179,166,.5)}
+          background:var(--voice);color:#fff;border:0;border-radius:999px;padding:13px 24px;cursor:pointer;
+          box-shadow:0 10px 26px -12px rgba(242,127,12,.45);transition:transform .15s ease,box-shadow .2s ease}
+  .pe-btn-grad:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(66,158,189,.45)}
   .pe-btn-ghost{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
                 background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:12px 22px;cursor:pointer}
   .pe-btn-ghost:hover{border-color:var(--ink)}
@@ -58,40 +57,29 @@
   @media(prefers-reduced-motion:reduce){.pe-btn,.pe-btn-grad{transition:none}.pe-btn:hover,.pe-btn-grad:hover{transform:none}}
 
   .pe-section{padding:clamp(52px,8vw,96px) 0}
-  .pe-band{background:linear-gradient(180deg,var(--ink) 0%,var(--ink-2) 100%);color:#fff}
+  .pe-band{background:var(--ink);color:#fff}
   .pe-band .pe-lead{color:var(--ink-muted)}
-  .pe-tint{background:linear-gradient(180deg,var(--paper) 0%,#F4F1E9 100%)}
+  .pe-tint{background:var(--paper)}
 
-  .pe-eyebrow{display:inline-block;font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--copper-deep);font-weight:700;margin-bottom:14px;text-transform:uppercase;background:rgba(181,101,47,.1);border:1px solid rgba(181,101,47,.25);border-radius:999px;padding:5px 14px}
-  .pe-band .pe-eyebrow{color:var(--sign);background:rgba(18,179,166,.14);border-color:rgba(18,179,166,.35)}
+  .pe-eyebrow{display:inline-block;font-family:var(--display);font-size:12px;letter-spacing:.15em;color:var(--voice);font-weight:700;margin-bottom:14px;text-transform:uppercase;background:rgba(242,127,12,.1);border:1px solid rgba(242,127,12,.25);border-radius:999px;padding:5px 14px}
+  .pe-band .pe-eyebrow{color:var(--cyan);background:rgba(159,231,245,.14);border-color:rgba(159,231,245,.35)}
   .pe-h1{font-size:clamp(34px,5.6vw,60px);font-weight:800;line-height:1.04;max-width:760px;margin:0 0 18px}
-  .pe-h1 .pe-flow{background:var(--grad);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:peFlow 6s ease-in-out infinite}
-  @keyframes peFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-  @media(prefers-reduced-motion:reduce){.pe-h1 .pe-flow{animation:none}}
+  .pe-h1 .pe-flow{color:var(--cyan)}
   .pe-h2{font-size:clamp(24px,3.6vw,38px);font-weight:700;margin:0 0 6px}
   .pe-lead{color:var(--muted);max-width:640px;font-size:17px}
   .pe-sec-head{margin-bottom:clamp(28px,4vw,44px)}
 
   .pe-hero{position:relative;overflow:hidden;margin-top:-68px;padding-top:calc(clamp(52px,8vw,96px) + 92px)}
-  .pe-hero-glow{position:absolute;inset:0;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(640px 420px at 12% 8%, rgba(200,118,59,.22), transparent 70%),
-      radial-gradient(700px 460px at 88% 4%, rgba(18,179,166,.2), transparent 70%)}
-  .pe-hero-grid{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
-    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
-    background-size:44px 44px;
-    -webkit-mask-image:radial-gradient(80% 70% at 50% 20%,#000 30%,transparent 100%);
-    mask-image:radial-gradient(80% 70% at 50% 20%,#000 30%,transparent 100%)}
   .pe-hero .pe-wrap{position:relative;z-index:1}
 
   .pe-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
   .pe-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
-  .pe-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+  .pe-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--sign);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
   .pe-card:hover::before{transform:scaleX(1)}
   .pe-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -16px rgba(11,16,32,.25)}
   @media(prefers-reduced-motion:reduce){.pe-card{transition:none}.pe-card:hover{transform:none}.pe-card::before{transition:none}}
   .pe-card-icon{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;
-    background:rgba(18,179,166,.12);color:var(--sign);margin-bottom:14px}
+    background:rgba(66,158,189,.12);color:var(--sign);margin-bottom:14px}
   .pe-card-icon svg{width:22px;height:22px}
   .pe-card h3{margin:0 0 6px;font-size:17px;font-weight:700}
   .pe-card p{margin:0;color:var(--muted);font-size:14px}
@@ -111,15 +99,15 @@
   .pe-mock-row:nth-child(even){background:#F8F6F1}
   .pe-mock-dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:10px;color:#fff;flex-shrink:0}
   .pe-mock-chip{margin-left:auto;font-family:var(--display);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
-  .pe-chip-ok{background:rgba(18,179,166,.14);color:#0B7A70}
-  .pe-chip-warn{background:rgba(200,118,59,.16);color:#96521F}
+  .pe-chip-ok{background:rgba(66,158,189,.14);color:#034A6B}
+  .pe-chip-warn{background:rgba(242,127,12,.16);color:#B35F08}
   .pe-mock-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
   .pe-mock-stat{background:#F8F6F1;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
   .pe-mock-stat b{display:block;font-family:var(--display);font-size:17px}
   .pe-mock-stat span{font-size:10.5px;color:var(--muted)}
   .pe-mock-bars{display:flex;align-items:flex-end;gap:10px;height:110px;padding:6px 4px 0}
-  .pe-mock-bars i{flex:1;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--sign),#0E8F85);display:block}
-  .pe-mock-bars i.alt{background:linear-gradient(180deg,var(--copper),var(--copper-deep))}
+  .pe-mock-bars i{flex:1;border-radius:6px 6px 2px 2px;background:var(--sign);display:block}
+  .pe-mock-bars i.alt{background:var(--gold)}
   .pe-mock-labels{display:flex;gap:10px;padding:6px 4px 0;font-size:10px;color:var(--muted)}
   .pe-mock-labels span{flex:1;text-align:center}
   .pe-bubble{max-width:78%;border-radius:14px;padding:9px 13px;font-size:12.5px;margin-bottom:8px}
@@ -143,13 +131,13 @@
                  border-radius:22px;padding:28px 26px;transition:transform .2s ease,box-shadow .2s ease}
   .pe-price-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -22px rgba(11,16,32,.35)}
   @media(prefers-reduced-motion:reduce){.pe-price-card{transition:none}.pe-price-card:hover{transform:none}}
-  .pe-price-card--hot{background:linear-gradient(180deg,var(--ink) 0%,var(--ink-2) 100%);color:#fff;border-color:transparent;
-                      box-shadow:0 26px 54px -26px rgba(11,16,32,.55)}
+  .pe-price-card--hot{background:var(--ink);color:#fff;border-color:transparent;
+                      box-shadow:0 26px 54px -26px rgba(5,63,92,.45)}
   .pe-price-card--hot .pe-price-amount,.pe-price-card--hot h3{color:#fff}
   .pe-price-card--hot .pe-price-tagline,.pe-price-card--hot .pe-price-period{color:var(--ink-muted)}
   .pe-price-card--hot li{color:#E7EAF3}
   .pe-price-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);white-space:nowrap;
-                  background:var(--grad);color:#fff;font-family:var(--display);font-weight:700;font-size:11px;
+                  background:var(--voice);color:#fff;font-family:var(--display);font-weight:700;font-size:11px;
                   letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:5px 14px}
   .pe-price-card h3{font-size:19px;margin:0 0 4px}
   .pe-price-tagline{color:var(--muted);font-size:13.5px;margin:0 0 18px;min-height:20px}
@@ -178,7 +166,7 @@
   .pe-input:focus{border-color:var(--sign);outline:none}
   .pe-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--ink);margin:0 0 6px}
   .pe-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
-  .pe-status{background:#E9F7F5;border:1px solid var(--sign);color:#0B1020;padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
+  .pe-status{background:#E8F7FA;border:1px solid var(--sign);color:var(--ink);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
 
   .pe-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
   .pe-footer-inner{max-width:1120px;margin:0 auto}
@@ -203,7 +191,7 @@
   <div class="pe-nav-shell">
     <div class="pe-nav">
       <a href="{{ url('/') }}" class="pe-brand" aria-label="PearlEdu home">
-        <img src="{{ asset('images/brand/logo.svg') }}" alt="">
+        @include('layouts.partials.logo-sphere', ['height' => 32, 'color' => '#053F5C'])
         <span class="pe-brand-text">
           <span class="pe-brand-name">PearlEdu</span>
           <span class="pe-brand-tagline">By VoxSign Technologies</span>
@@ -225,7 +213,7 @@
   <div class="pe-footer">
     <div class="pe-footer-inner">
       <div class="pe-footer-brand">
-        <img src="{{ asset('images/brand/logo.svg') }}" alt="">
+        @include('layouts.partials.logo-sphere', ['height' => 30, 'color' => '#9FE7F5'])
         <b>PearlEdu</b>
       </div>
       <p class="pe-footer-tagline">School management, without the spreadsheets.</p>

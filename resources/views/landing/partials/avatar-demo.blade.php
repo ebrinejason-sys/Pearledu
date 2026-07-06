@@ -3,7 +3,7 @@
     <div class="vx-eyebrow">See it in motion</div>
     <h2 class="vx-h2" style="color:#fff">The idea, previewed.</h2>
     <p class="vx-lead" style="margin:10px 0 8px">
-      <span style="display:inline-block;background:var(--sign);color:#0B1020;font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px">Concept preview</span>
+      <span style="display:inline-block;background:var(--sign);color:var(--ink);font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px">Concept preview</span>
     </p>
     <p class="vx-lead vx-sec-head">
       An early look at how hand-shape signing could look — illustrative, not a verified Ugandan Sign Language rendering.

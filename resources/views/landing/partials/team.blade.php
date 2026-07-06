@@ -8,7 +8,7 @@
           @if($member['photo'])
             <img src="{{ asset('images/voxsign/'.$member['photo']) }}" alt="{{ $member['name'] }}">
           @else
-            <div class="vx-avatar-initials" aria-hidden="true" style="aspect-ratio:1;border-radius:12px;margin-bottom:12px;background:linear-gradient(160deg,#e9efee,#dfe7e6);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:36px;color:var(--sign)">
+            <div class="vx-avatar-initials" aria-hidden="true" style="aspect-ratio:1;border-radius:12px;margin-bottom:12px;background:#E8F7FA;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:36px;color:var(--sign)">
               {{ collect(explode(' ', $member['name']))->map(fn($w) => mb_substr($w, 0, 1))->take(2)->implode('') }}
             </div>
           @endif

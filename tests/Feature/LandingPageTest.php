@@ -11,9 +11,9 @@ class LandingPageTest extends TestCase
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
-        $response->assertSee('--paper:#FBFAF7', false);
-        $response->assertSee('--voice:#FF6A3D', false);
-        $response->assertSee('--sign:#12B3A6', false);
+        $response->assertSee('--paper:#F5FBFD', false);
+        $response->assertSee('--voice:#F27F0C', false);
+        $response->assertSee('--sign:#429EBD', false);
         $response->assertSee('Google+Sans', false);
         $response->assertSee('satoshi', false);
         $response->assertDontSee('--vx-bg:#0A0A0A', false);
@@ -40,11 +40,10 @@ class LandingPageTest extends TestCase
         $this->assertLessThan($institutionsPos, $accessibilityPos);
     }
 
-    public function test_hero_renders_gradient_glow_and_preserved_headline(): void
+    public function test_hero_renders_preserved_headline(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
-        $response->assertSee('vx-hero-glow', false);
         $response->assertSee('include everyone.');
     }
 
@@ -74,10 +73,10 @@ class LandingPageTest extends TestCase
         $response->assertSee('Muwanguzi Joan Najjingo');
         $response->assertSee('Muhumuza Alex');
         $response->assertSee('Naikambo Sandra');
-        $response->assertSee('Aaron Marshall Taremwa');
+        $response->assertSee('Aaron Francis Taremwa');
         $response->assertSee('Ebrine Tushabe');
         $response->assertSee('Product Development Expert');
-        $response->assertSee('vx-avatar-initials', false);
+        $response->assertSee('images/voxsign/team-aaron.png', false);
         $response->assertSee('images/voxsign/team-victor.jpg', false);
         $response->assertDontSee('Oyoka Daniel');
     }
@@ -289,7 +288,8 @@ class LandingPageTest extends TestCase
     {
         $response = $this->get('http://voxsign.co.ug/');
 
-        $response->assertSee('<svg class="vx-logo"', false);
+        $response->assertSee('vx-brand-lockup', false);
+        $response->assertSee('viewBox="30 30 340 340"', false);
         $response->assertDontSee('voxsign-logo.png');
     }
 
@@ -320,12 +320,12 @@ class LandingPageTest extends TestCase
         $response->assertSee('.vx-grid .vx-card:nth-child(1){transition-delay:0ms}', false);
     }
 
-    public function test_layout_includes_v4_visual_pass_css(): void
+    public function test_layout_includes_card_accent_css(): void
     {
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertSee('.vx-card::before', false);
-        $response->assertSee('vxFlowShift', false);
+        $response->assertSee('.vx-h1 .vx-flow{color:var(--cyan)}', false);
     }
 
     public function test_footer_renders_professional_multi_column_layout(): void
@@ -360,8 +360,9 @@ class LandingPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('vx-section vx-hero vx-band', false);
-        $response->assertSee('vx-hero-texture', false);
         $response->assertSee('vx-btn-grad', false);
+        $response->assertDontSee('vx-hero-glow', false);
+        $response->assertDontSee('vx-hero-texture', false);
     }
 
     public function test_nav_renders_as_floating_pill(): void
