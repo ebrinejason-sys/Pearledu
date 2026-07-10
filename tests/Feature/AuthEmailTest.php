@@ -60,4 +60,35 @@ class AuthEmailTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/login/2fa/challenge');
     }
+
+    public function test_platform_login_regenerates_session_id_before_storing_pending_2fa_state(): void
+    {
+        $user = User::factory()->platform()->create([
+            'email' => 'rotate@test.local',
+            'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
+        ]);
+
+        $sessionCookieName = config('session.cookie');
+
+        // Establish a real, valid session ID first (as an attacker performing
+        // session fixation would), so we have a genuine "before" value to
+        // compare against rather than two independently-generated IDs.
+        $priming = $this->get('/login');
+        $originalSessionId = $priming->getCookie($sessionCookieName)->getValue();
+
+        $response = $this->withCookie($sessionCookieName, $originalSessionId)->post('/login', [
+            'email' => 'rotate@test.local',
+            'password' => 'password1234',
+        ]);
+
+        $response->assertSessionHas('2fa_pending_user_id', $user->id);
+
+        $newSessionId = $response->getCookie($sessionCookieName)->getValue();
+
+        $this->assertNotSame(
+            $originalSessionId,
+            $newSessionId,
+            'Session ID must rotate when entering the pending-2FA state, otherwise a fixated session ID would carry the pending-auth state through the 2FA window.'
+        );
+    }
 }

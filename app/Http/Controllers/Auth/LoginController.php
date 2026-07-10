@@ -43,6 +43,7 @@ class LoginController extends Controller {
         $remember = $request->boolean('remember');
 
         if ($user->isPlatformOperator()) {
+            $request->session()->regenerate();
             $request->session()->put('2fa_pending_user_id', $user->id);
             $request->session()->put('2fa_remember', $remember);
 
