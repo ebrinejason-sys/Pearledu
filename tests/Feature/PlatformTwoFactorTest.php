@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
@@ -79,5 +80,80 @@ class PlatformTwoFactorTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Save your recovery codes');
+    }
+
+    private function loginEnrolledToPending(): array
+    {
+        $secret = (new Google2FA())->generateSecretKey();
+        $user = User::factory()->platform()->create([
+            'email' => 'enrolled@test.local',
+            'password' => Hash::make('password1234'),
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $this->post('/login', ['email' => 'enrolled@test.local', 'password' => 'password1234']);
+
+        return [$user, $secret];
+    }
+
+    public function test_challenge_succeeds_with_correct_totp(): void
+    {
+        [$user, $secret] = $this->loginEnrolledToPending();
+        $code = (new Google2FA())->getCurrentOtp($secret);
+
+        $response = $this->post('/login/2fa/challenge', ['code' => $code]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('platform.dashboard'));
+    }
+
+    public function test_challenge_fails_with_wrong_totp(): void
+    {
+        $this->loginEnrolledToPending();
+
+        $response = $this->post('/login/2fa/challenge', ['code' => '000000']);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('code');
+    }
+
+    public function test_email_otp_send_and_verify(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        [$user] = $this->loginEnrolledToPending();
+
+        $this->post('/login/2fa/email');
+
+        // The plaintext code only ever exists in the outgoing mail (the DB row stores a
+        // hash), so capture it off the faked mailable's public property.
+        $capturedCode = null;
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user, &$capturedCode) {
+            $capturedCode = $mail->code;
+            return $mail->hasTo($user->email);
+        });
+        $this->assertNotNull($capturedCode);
+
+        $response = $this->post('/login/2fa/challenge', ['code' => $capturedCode]);
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_recovery_code_redeems_once(): void
+    {
+        [$user, $secret] = $this->loginEnrolledToPending();
+        $service = new \App\Services\Auth\TwoFactorService();
+        $plainCodes = $service->generateRecoveryCodes();
+        $user->forceFill(['two_factor_recovery_codes' => $service->hashRecoveryCodes($plainCodes)])->save();
+
+        $response = $this->post('/login/2fa/challenge', ['recovery_code' => $plainCodes[0]]);
+        $this->assertAuthenticatedAs($user);
+
+        Auth::logout();
+        $this->post('/login', ['email' => 'enrolled@test.local', 'password' => 'password1234']);
+        $response2 = $this->post('/login/2fa/challenge', ['recovery_code' => $plainCodes[0]]);
+
+        $this->assertGuest();
+        $response2->assertSessionHasErrors('recovery_code');
     }
 }
