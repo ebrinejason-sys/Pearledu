@@ -13,11 +13,12 @@ class User extends Authenticatable
     use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = ['full_name','email','phone','password','status','is_platform','preferred_theme','last_login_at'];
-    protected $hidden = ['password','remember_token','two_factor_secret'];
+    protected $hidden = ['password','remember_token','two_factor_secret','two_factor_recovery_codes'];
 
     protected function casts(): array {
         return ['password' => 'hashed', 'is_platform' => 'boolean',
                 'two_factor_secret' => 'encrypted', 'two_factor_confirmed_at' => 'datetime',
+                'two_factor_recovery_codes' => 'encrypted:array',
                 'last_login_at' => 'datetime'];
     }
 
