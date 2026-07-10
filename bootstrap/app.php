@@ -1,5 +1,6 @@
 <?php
 use App\Http\Middleware\EnsurePlatformOperator;
+use App\Http\Middleware\EnsureTwoFactorPending;
 use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\ResolveTenant;
 use Illuminate\Foundation\Application;
@@ -20,8 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [ResolveTenant::class]);
         $middleware->alias([
-            'platform'   => EnsurePlatformOperator::class,
-            'permission' => RequirePermission::class,
+            'platform'    => EnsurePlatformOperator::class,
+            'permission'  => RequirePermission::class,
+            '2fa.pending' => EnsureTwoFactorPending::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {})
