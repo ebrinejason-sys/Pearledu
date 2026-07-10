@@ -33,13 +33,29 @@ class LoginController extends Controller {
             throw ValidationException::withMessages(['email' => 'This account has been disabled. Contact support for help.']);
         }
 
-        if (! Auth::attempt(['email'=>$data['email'],'password'=>$data['password'],'status'=>'active'], $request->boolean('remember'))) {
+        if (! Auth::validate(['email'=>$data['email'],'password'=>$data['password'],'status'=>'active'])) {
             RateLimiter::hit($key, 60);
             $audit->record('auth.failed', null, ['email'=>$data['email']]);
             throw ValidationException::withMessages(['email'=>'These credentials do not match our records.']);
         }
 
         RateLimiter::clear($key);
+        $remember = $request->boolean('remember');
+
+        if ($user->isPlatformOperator()) {
+            $request->session()->put('2fa_pending_user_id', $user->id);
+            $request->session()->put('2fa_remember', $remember);
+
+            return redirect($user->hasTwoFactorEnabled() ? '/login/2fa/challenge' : '/login/2fa/setup');
+        }
+
+        Auth::login($user, $remember);
+        $this->completeLogin($request, $audit, $context);
+
+        return redirect()->intended($this->home($user));
+    }
+
+    public function completeLogin(Request $request, AuditLogger $audit, TenantContext $context): void {
         $request->session()->regenerate();
         $user = Auth::user();
         $user->forceFill(['last_login_at'=>now()])->save();
@@ -48,8 +64,6 @@ class LoginController extends Controller {
         if (($school = $context->school()) && ! $school->activated_at) {
             $school->forceFill(['activated_at' => now()])->save();
         }
-
-        return redirect()->intended($this->home($user));
     }
 
     public function destroy(Request $request): RedirectResponse {
