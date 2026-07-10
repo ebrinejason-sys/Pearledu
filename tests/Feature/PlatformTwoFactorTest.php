@@ -156,4 +156,96 @@ class PlatformTwoFactorTest extends TestCase
         $this->assertGuest();
         $response2->assertSessionHasErrors('recovery_code');
     }
+
+    /**
+     * The sequential test above (test_recovery_code_redeems_once) proves reuse is
+     * rejected, but PHPUnit is single-threaded, so it can't prove that the row lock in
+     * TwoFactorChallengeController::redeemRecoveryCode() actually blocks a second,
+     * truly-overlapping transaction -- it only proves the *end state* is correct once one
+     * request has fully finished before the next starts.
+     *
+     * This test proves the lock is real by using a second, fully independent raw PDO
+     * connection to the same Postgres database. We can't literally run two overlapping
+     * HTTP requests from one PHP process, so instead we hook Laravel's query listener:
+     * the instant the controller's `User::lockForUpdate()->find()` query executes (row
+     * lock acquired, but redeemRecoveryCode()'s transaction has NOT committed yet,
+     * because we're still inside the DB::transaction() closure that issued it), we open
+     * the second connection and try to take the *same* row lock with a short
+     * lock_timeout. If the lock is real, that second attempt must time out. If
+     * lockForUpdate() were removed from the controller, the query text would no longer
+     * contain "for update", our listener would never fire, and both assertions below
+     * would fail -- so this test is a genuine regression guard tied to the real
+     * production code, not a standalone assertion that would pass regardless.
+     *
+     * Note on RefreshDatabase: this whole test method runs inside one outer,
+     * never-committed transaction on Laravel's default connection. A user created via
+     * Eloquent here would therefore be invisible to a genuinely separate Postgres
+     * session -- "SELECT ... FOR UPDATE" against it would just match zero rows and
+     * "succeed" trivially, proving nothing. So the user row is created via a raw,
+     * autocommitting INSERT on the second connection first, which makes it durable and
+     * visible to any session; the 2FA fields are then filled in normally via Eloquent
+     * (fine, because the *same* session/connection always sees its own uncommitted
+     * writes).
+     */
+    public function test_recovery_code_row_lock_blocks_concurrent_transaction(): void
+    {
+        $config = config('database.connections.pgsql');
+        $dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['database']}";
+        $pdo2 = new \PDO($dsn, $config['username'], $config['password'], [
+            \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+        ]);
+        $pdo2->exec("SET lock_timeout = '200ms'");
+
+        $password = Hash::make('password1234');
+        $stmt = $pdo2->prepare(
+            "INSERT INTO users (full_name, email, password, status, is_platform, created_at, updated_at) ".
+            "VALUES (:name, :email, :password, 'active', true, now(), now()) RETURNING id"
+        );
+        $stmt->execute(['name' => 'Lock Test User', 'email' => 'lock-test@test.local', 'password' => $password]);
+        $userId = (int) $stmt->fetchColumn();
+
+        $secret = (new Google2FA())->generateSecretKey();
+        $service = new \App\Services\Auth\TwoFactorService();
+        $plainCodes = $service->generateRecoveryCodes();
+        $user = User::find($userId);
+        $user->forceFill([
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+            'two_factor_recovery_codes' => $service->hashRecoveryCodes($plainCodes),
+        ])->save();
+
+        $this->post('/login', ['email' => 'lock-test@test.local', 'password' => 'password1234']);
+
+        $sawLockQuery = false;
+        $blocked = false;
+        \DB::listen(function ($query) use (&$sawLockQuery, &$blocked, $pdo2, $userId) {
+            $sql = strtolower($query->sql);
+            if ($sawLockQuery || ! str_contains($sql, 'for update') || ! str_contains($sql, 'users')) {
+                return;
+            }
+            $sawLockQuery = true;
+
+            try {
+                $pdo2->beginTransaction();
+                $pdo2->query("SELECT * FROM users WHERE id = {$userId} FOR UPDATE");
+                $pdo2->commit();
+            } catch (\PDOException $e) {
+                $blocked = str_contains($e->getMessage(), 'lock timeout') || str_contains($e->getMessage(), '55P03');
+                $pdo2->rollBack();
+            }
+        });
+
+        $response = $this->post('/login/2fa/challenge', ['recovery_code' => $plainCodes[0]]);
+
+        $this->assertTrue(
+            $sawLockQuery,
+            'Expected redeemRecoveryCode() to run a "... FOR UPDATE" query against users -- if this fails, lockForUpdate() is missing from the controller and the rest of this test proves nothing.'
+        );
+        $this->assertTrue(
+            $blocked,
+            "A second, fully independent connection should have been blocked by the row lock redeemRecoveryCode() takes. If this fails, the lock is not actually being taken/held, and the single-use guarantee is not real under concurrency."
+        );
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('platform.dashboard'));
+    }
 }
