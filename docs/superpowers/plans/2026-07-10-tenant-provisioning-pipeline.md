@@ -617,3 +617,10 @@ Expected: All tests PASS, including the 4 new test files and all pre-existing su
 - [ ] **Step 2: If anything fails, fix forward**
 
 Do not skip or delete a failing pre-existing test — if `RequireSchoolMembership` broke something, the fix belongs in the middleware or the affected controller/route, not in loosening the test.
+
+- [ ] **Step 3: Run the database security gate**
+
+This plan adds a new migration and a new tenant-isolation-adjacent middleware, so the `db:verify-security` hard gate applies (see `app/Console/Commands/VerifyDatabaseSecurity.php`) — do not treat Task 2's own tests as a substitute for this gate.
+
+Run: `php artisan db:verify-security`
+Expected: PASS with no findings. If it fails, fix the underlying RLS/policy issue before considering this plan done — do not weaken or bypass the check.
