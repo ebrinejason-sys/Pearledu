@@ -21,6 +21,13 @@ Route::middleware('web')->group(function () {
     // away (via RedirectIfAuthenticated) before they ever see their one-time recovery codes.
     Route::get('/login/2fa/recovery-codes', [\App\Http\Controllers\Auth\TwoFactorSetupController::class, 'showRecoveryCodes']);
 
+    Route::middleware('guest')->group(function () {
+        Route::get('/forgot-password', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'show'])->name('password.request');
+        Route::post('/forgot-password', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
+        Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'show'])->name('password.reset');
+        Route::post('/reset-password', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'store'])->middleware('throttle:5,1')->name('password.update');
+    });
+
     Route::get('/invitations/{invitation}/accept', [InvitationController::class, 'show'])->name('invitations.accept');
     Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'store'])->middleware('throttle:10,1');
 
