@@ -104,6 +104,7 @@
   .status{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:14px}
   .err{color:#b3261e;font-size:13px;margin-top:4px}
   .pill{display:inline-block;background:var(--accent-soft);color:var(--brand);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+  .pill--muted{background:var(--bg);color:var(--muted)}
 </style>
 </head>
 <body class="{{ request()->cookie('sidebar_collapsed') === '1' ? 'sidebar-collapsed' : '' }}">

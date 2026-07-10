@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 class LoginController extends Controller {
     public function show() { return view('auth.login'); }
 
-    public function store(Request $request, AuditLogger $audit): RedirectResponse {
+    public function store(Request $request, AuditLogger $audit, TenantContext $context): RedirectResponse {
         $data = $request->validate(['email'=>'required|email','password'=>'required|string']);
         $key = 'login:'.strtolower($data['email']).'|'.$request->ip();
 
@@ -43,6 +44,10 @@ class LoginController extends Controller {
         $user = Auth::user();
         $user->forceFill(['last_login_at'=>now()])->save();
         $audit->record('auth.login', $user);
+
+        if (($school = $context->school()) && ! $school->activated_at) {
+            $school->forceFill(['activated_at' => now()])->save();
+        }
 
         return redirect()->intended($this->home($user));
     }

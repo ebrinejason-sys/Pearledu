@@ -22,6 +22,16 @@
       <p><strong>District:</strong> {{ $school->district ?: '—' }}</p>
       <p><strong>Theme:</strong> <span class="pill">{{ $school->theme }}</span></p>
       <p><strong>Status:</strong> {{ $school->status }}</p>
+      @php($provisioning = $school->provisioningState())
+      <p>
+        <strong>Provisioning:</strong>
+        <span class="pill @if($provisioning !== 'ready') pill--muted @endif">
+          {{ ['pending_invite' => 'Pending invite', 'invite_accepted' => 'Invite accepted', 'ready' => 'Ready'][$provisioning] }}
+        </span>
+        @if($school->activated_at)
+          <span style="color:var(--muted);font-size:13px"> — Verified live since {{ $school->activated_at->diffForHumans() }}</span>
+        @endif
+      </p>
     </div>
     <div class="card">
       <h3>Levels offered</h3>
