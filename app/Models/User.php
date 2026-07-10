@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use App\Services\Authorization\PermissionResolver;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -9,7 +10,7 @@ use Illuminate\Notifications\Notifiable;
 /** Global identity. Schools + roles come from role_assignments (one person, many roles). */
 class User extends Authenticatable
 {
-    use Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = ['full_name','email','phone','password','status','is_platform','preferred_theme','last_login_at'];
     protected $hidden = ['password','remember_token','two_factor_secret'];
