@@ -82,6 +82,15 @@ class NavigationBuilder
                 ])),
             ],
             [
+                'key' => 'learners',
+                'label' => 'Learners',
+                'items' => array_values(array_filter([
+                    $this->has($permissions, 'learners.manage')
+                        ? $this->item('Students', 'app.students.index', icon: 'students', active: request()->routeIs('app.students.*'))
+                        : null,
+                ])),
+            ],
+            [
                 'key' => 'communications',
                 'label' => 'Communications',
                 'items' => array_values(array_filter([

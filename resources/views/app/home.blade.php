@@ -6,6 +6,7 @@
     <div class="grid g2">
       <div class="card">
         <h3>Quick actions</h3>
+        @if(in_array('learners.manage', $permissions))<a class="btn" href="{{ route('app.students.index') }}">Students</a>@endif
         @if(in_array('sms.send', $permissions))<a class="btn" href="{{ route('app.sms') }}">Send SMS</a>@endif
       </div>
       <div class="card">
