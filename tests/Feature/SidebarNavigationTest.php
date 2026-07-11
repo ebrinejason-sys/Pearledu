@@ -34,6 +34,8 @@ class SidebarNavigationTest extends TestCase
         $response = $this->actingAsInSchool($admin)->get(route('app.home'));
 
         $response->assertOk();
+        $response->assertSee('Learners');
+        $response->assertSee('Students');
         $response->assertSee('Communications');
         $response->assertSee('Send SMS');
         $response->assertSee('Account settings');
@@ -46,6 +48,7 @@ class SidebarNavigationTest extends TestCase
         $response = $this->actingAsInSchool($parent)->get(route('app.home'));
 
         $response->assertOk();
+        $response->assertDontSee('Learners');
         $response->assertDontSee('Communications');
         $response->assertDontSee('Send SMS');
         $response->assertSee('Account settings');
@@ -58,6 +61,7 @@ class SidebarNavigationTest extends TestCase
         $response = $this->actingAsInSchool($student)->get(route('app.home'));
 
         $response->assertOk();
+        $response->assertDontSee('Learners');
         $response->assertDontSee('Communications');
         $response->assertSee('Account settings');
     }
