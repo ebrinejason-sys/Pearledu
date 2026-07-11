@@ -14,14 +14,14 @@ in `.cpanel.yml` on every deploy.
      scope, or add the deploy via cPanel's SSH key (Git Version Control has
      an "SSH keys" helper if you prefer `git@github.com:...` over HTTPS).
 
-2. `$DEPLOYPATH` (`/home/voxsign/pearledu-app/`) is where the *application
+2. `$DEPLOYPATH` (`/home/voxsignco/pearledu-app/`) is where the *application
    code* lands — outside `public_html`, not inside it.
 
 3. **Point every app-facing domain at `public/`**, not the app root:
    - cPanel → Domains → `voxsign.co.ug` (apex, VoxSign landing) — Document
-     Root: `/home/voxsign/pearledu-app/public`
+     Root: `/home/voxsignco/pearledu-app/public`
    - cPanel → Domains → `pearledu.voxsign.co.ug` (platform app) — same
-     Document Root: `/home/voxsign/pearledu-app/public`
+     Document Root: `/home/voxsignco/pearledu-app/public`
    - The wildcard `*.voxsign.co.ug` subdomain (for auto-provisioned tenant
      subdomains like `pearledu1.voxsign.co.ug`) also needs to resolve to
      the same Document Root — the app resolves which tenant/host it's
@@ -41,7 +41,7 @@ in `.cpanel.yml` on every deploy.
    everything works before trusting the automated `.cpanel.yml` pipeline:
 
    ```bash
-   cd /home/voxsign/pearledu-app
+   cd /home/voxsignco/pearledu-app
    composer install --no-dev --optimize-autoloader
    php artisan db:verify-security   # must print OK — hard gate
    php artisan migrate --force
@@ -75,7 +75,7 @@ the server. The avatar-demo partial expects it at `public/models/avatar.glb`
 on the live site. To deploy it:
 
 1. In cPanel File Manager (or via SFTP), navigate to
-   `/home/voxsign/pearledu-app/public/`.
+   `/home/voxsignco/pearledu-app/public/`.
 2. Create a `models` directory if it doesn't already exist.
 3. Upload the local file `thirg glb.glb` into that directory, renaming it to
    `avatar.glb` on upload (the code requests `/models/avatar.glb`).
