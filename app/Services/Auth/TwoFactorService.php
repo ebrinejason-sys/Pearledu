@@ -2,11 +2,15 @@
 
 namespace App\Services\Auth;
 
+use App\Mail\Auth\TwoFactorEmailCodeMail;
+use App\Models\TwoFactorEmailCode;
+use App\Models\User;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -40,8 +44,12 @@ class TwoFactorService
         return (new Writer($renderer))->writeString($otpauthUrl);
     }
 
-    public function verifyTotp(string $secret, string $code): bool
+    public function verifyTotp(?string $secret, string $code): bool
     {
+        if (! $secret) {
+            return false;
+        }
+
         return (bool) $this->google2fa->verifyKey($secret, $code);
     }
 
@@ -61,5 +69,20 @@ class TwoFactorService
     public function generateEmailOtp(): string
     {
         return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /** Create a hashed email OTP row and send it via Resend/mail. */
+    public function sendEmailOtp(User $user, ?string $ipAddress = null, int $expiresMinutes = 10): void
+    {
+        $code = $this->generateEmailOtp();
+
+        TwoFactorEmailCode::create([
+            'user_id' => $user->id,
+            'code_hash' => Hash::make($code),
+            'expires_at' => now()->addMinutes($expiresMinutes),
+            'ip_address' => $ipAddress,
+        ]);
+
+        Mail::to($user->email)->send(new TwoFactorEmailCodeMail($user, $code, $expiresMinutes));
     }
 }

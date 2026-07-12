@@ -3,7 +3,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\TwoFactorEmailCode;
 use App\Models\User;
-use App\Mail\Auth\TwoFactorEmailCodeMail;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\TwoFactorService;
 use App\Services\Tenancy\TenantContext;
@@ -12,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
@@ -20,7 +18,12 @@ class TwoFactorChallengeController extends Controller
 {
     public function show(Request $request)
     {
-        return view('auth.two-factor-challenge');
+        $user = User::findOrFail($request->session()->get('2fa_pending_user_id'));
+
+        return view('auth.two-factor-challenge', [
+            'email' => $user->email,
+            'hasAuthenticator' => $user->hasTwoFactorEnabled(),
+        ]);
     }
 
     public function sendEmailCode(Request $request, TwoFactorService $service, AuditLogger $audit): RedirectResponse
@@ -33,18 +36,11 @@ class TwoFactorChallengeController extends Controller
         }
         RateLimiter::hit($key, 60);
 
-        $code = $service->generateEmailOtp();
-        TwoFactorEmailCode::create([
-            'user_id' => $user->id,
-            'code_hash' => Hash::make($code),
-            'expires_at' => now()->addMinutes(10),
-            'ip_address' => $request->ip(),
-        ]);
-
-        Mail::to($user->email)->send(new TwoFactorEmailCodeMail($user, $code));
+        $service->sendEmailOtp($user, $request->ip());
+        $request->session()->put('2fa_email_sent', true);
         $audit->record('auth.2fa.challenge_sent', $user);
 
-        return back()->with('status', 'We emailed you a 6-digit code.');
+        return back()->with('status', 'We emailed a 6-digit code to '.$user->email.'.');
     }
 
     public function store(
@@ -93,7 +89,7 @@ class TwoFactorChallengeController extends Controller
         Auth::login($user, (bool) $request->session()->get('2fa_remember'));
         $login->completeLogin($request, $audit, $context);
         $audit->record('auth.2fa.success', $user);
-        $request->session()->forget(['2fa_pending_user_id', '2fa_remember']);
+        $request->session()->forget(['2fa_pending_user_id', '2fa_remember', '2fa_email_sent']);
 
         return redirect(route('platform.dashboard'));
     }

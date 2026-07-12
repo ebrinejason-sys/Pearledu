@@ -60,8 +60,10 @@ class AuthEmailTest extends TestCase
         $response->assertSessionMissing('2fa_pending_user_id');
     }
 
-    public function test_platform_login_is_redirected_to_2fa_setup_when_unenrolled(): void
+    public function test_platform_login_is_redirected_to_2fa_challenge_and_emails_otp(): void
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $user = User::factory()->platform()->create([
             'email' => 'newadmin@test.local',
             'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
@@ -73,12 +75,17 @@ class AuthEmailTest extends TestCase
         ]);
 
         $this->assertGuest();
-        $response->assertRedirect('/login/2fa/setup');
+        $response->assertRedirect('/login/2fa/challenge');
         $response->assertSessionHas('2fa_pending_user_id', $user->id);
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user) {
+            return $mail->hasTo($user->email);
+        });
     }
 
     public function test_platform_login_is_redirected_to_2fa_challenge_when_enrolled(): void
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $user = User::factory()->platform()->create([
             'email' => 'enrolledadmin@test.local',
             'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
@@ -93,10 +100,13 @@ class AuthEmailTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect('/login/2fa/challenge');
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class);
     }
 
     public function test_platform_login_regenerates_session_id_before_storing_pending_2fa_state(): void
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $user = User::factory()->platform()->create([
             'email' => 'rotate@test.local',
             'password' => \Illuminate\Support\Facades\Hash::make('password1234'),

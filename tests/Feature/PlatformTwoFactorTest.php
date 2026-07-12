@@ -15,6 +15,8 @@ class PlatformTwoFactorTest extends TestCase
 
     private function loginToPending(string $email = 'newadmin@test.local'): User
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $user = User::factory()->platform()->create([
             'email' => $email,
             'password' => Hash::make('password1234'),
@@ -23,6 +25,31 @@ class PlatformTwoFactorTest extends TestCase
         $this->post('/login', ['email' => $email, 'password' => 'password1234']);
 
         return $user;
+    }
+
+    public function test_unenrolled_platform_admin_logs_in_with_email_otp_only(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $user = User::factory()->platform()->create([
+            'email' => 'emailonly@test.local',
+            'password' => Hash::make('password1234'),
+        ]);
+
+        $this->post('/login', ['email' => 'emailonly@test.local', 'password' => 'password1234'])
+            ->assertRedirect('/login/2fa/challenge');
+
+        $capturedCode = null;
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user, &$capturedCode) {
+            $capturedCode = $mail->code;
+
+            return $mail->hasTo($user->email);
+        });
+
+        $this->post('/login/2fa/challenge', ['code' => $capturedCode])
+            ->assertRedirect(route('platform.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_setup_page_shows_qr_and_manual_key(): void
@@ -84,6 +111,8 @@ class PlatformTwoFactorTest extends TestCase
 
     private function loginEnrolledToPending(): array
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $secret = (new Google2FA())->generateSecretKey();
         $user = User::factory()->platform()->create([
             'email' => 'enrolled@test.local',
@@ -118,15 +147,32 @@ class PlatformTwoFactorTest extends TestCase
         $response->assertSessionHasErrors('code');
     }
 
-    public function test_email_otp_send_and_verify(): void
+    public function test_email_otp_sent_on_login_and_verifies(): void
     {
         \Illuminate\Support\Facades\Mail::fake();
         [$user] = $this->loginEnrolledToPending();
 
+        $capturedCode = null;
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user, &$capturedCode) {
+            $capturedCode = $mail->code;
+            return $mail->hasTo($user->email);
+        });
+        $this->assertNotNull($capturedCode);
+
+        $response = $this->post('/login/2fa/challenge', ['code' => $capturedCode]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('platform.dashboard'));
+    }
+
+    public function test_email_otp_resend_and_verify(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        [$user] = $this->loginEnrolledToPending();
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class);
+
         $this->post('/login/2fa/email');
 
-        // The plaintext code only ever exists in the outgoing mail (the DB row stores a
-        // hash), so capture it off the faked mailable's public property.
         $capturedCode = null;
         \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user, &$capturedCode) {
             $capturedCode = $mail->code;

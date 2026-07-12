@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\TwoFactorService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,12 @@ use Illuminate\Validation\ValidationException;
 class LoginController extends Controller {
     public function show() { return view('auth.login'); }
 
-    public function store(Request $request, AuditLogger $audit, TenantContext $context): RedirectResponse {
+    public function store(
+        Request $request,
+        AuditLogger $audit,
+        TenantContext $context,
+        TwoFactorService $twoFactor,
+    ): RedirectResponse {
         $data = $request->validate(['email'=>'required|email','password'=>'required|string']);
         $key = 'login:'.strtolower($data['email']).'|'.$request->ip();
 
@@ -47,7 +53,13 @@ class LoginController extends Controller {
             $request->session()->put('2fa_pending_user_id', $user->id);
             $request->session()->put('2fa_remember', $remember);
 
-            return redirect($user->hasTwoFactorEnabled() ? '/login/2fa/challenge' : '/login/2fa/setup');
+            // Platform operators always complete sign-in with an email OTP (Resend).
+            $twoFactor->sendEmailOtp($user, $request->ip());
+            $request->session()->put('2fa_email_sent', true);
+            $audit->record('auth.2fa.challenge_sent', $user);
+
+            return redirect('/login/2fa/challenge')
+                ->with('status', 'We emailed a 6-digit code to '.$user->email.'.');
         }
 
         Auth::login($user, $remember);

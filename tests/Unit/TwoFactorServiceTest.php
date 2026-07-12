@@ -34,6 +34,13 @@ class TwoFactorServiceTest extends TestCase
         $this->assertFalse($service->verifyTotp($secret, '000000'));
     }
 
+    public function test_verify_totp_rejects_null_secret(): void
+    {
+        $service = new TwoFactorService();
+
+        $this->assertFalse($service->verifyTotp(null, '123456'));
+    }
+
     public function test_qr_code_svg_contains_svg_markup(): void
     {
         $service = new TwoFactorService();
