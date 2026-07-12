@@ -171,9 +171,15 @@
 
   .vx-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--input-bg);color:var(--fg);font:inherit;margin-bottom:12px}
   .vx-input:focus{border-color:var(--sign);outline:none}
+  .vx-input::placeholder{color:var(--muted);opacity:.85}
   .vx-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--fg);margin:0 0 6px}
   .vx-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
   .vx-status{background:var(--status-bg);border:1px solid var(--sign);color:var(--fg);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
+  .vx-form-card{max-width:480px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);
+                border-radius:20px;padding:26px;box-shadow:0 24px 48px -28px rgba(0,0,0,.45)}
+  .vx-band .vx-form-card{box-shadow:0 24px 48px -24px rgba(0,0,0,.55)}
+  html[data-theme="dark"] .vx-band .vx-form-card{background:#141B2A;border-color:#2A3447}
+  html[data-theme="dark"] .vx-band .vx-form-card .vx-input{background:#0B1220;border-color:#2A3447;color:#E8EEF5}
 
   .vx-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
   .vx-footer-inner{max-width:1120px;margin:0 auto}

@@ -212,6 +212,11 @@
   .pe-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--fg);margin:0 0 6px}
   .pe-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
   .pe-status{background:var(--status-bg);border:1px solid var(--sign);color:var(--fg);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
+  .pe-form-card{max-width:480px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);
+                border-radius:20px;padding:26px;text-align:left;box-shadow:0 24px 48px -28px rgba(0,0,0,.45)}
+  .pe-band .pe-form-card{box-shadow:0 24px 48px -24px rgba(0,0,0,.55)}
+  html[data-theme="dark"] .pe-band .pe-form-card{background:#141B2A;border-color:#2A3447}
+  html[data-theme="dark"] .pe-band .pe-form-card .pe-input{background:#0B1220;border-color:#2A3447;color:#E8EEF5}
 
   .pe-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
   .pe-footer-inner{max-width:1120px;margin:0 auto}

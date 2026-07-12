@@ -38,21 +38,9 @@ php artisan serve
 
 > `composer install` must run where Packagist is reachable (your machine or the server) — it was not run in the build sandbox.
 
-## Explore the seeded profiles (password: password1234)
+## Local demo seed (optional)
 
-| Role | Login |
-|---|---|
-| Platform Admin | admin@voxsign.co.ug |
-| School Admin | admin@standrews.test |
-| Director | director@standrews.test |
-| Head Teacher | head@standrews.test |
-| Bursar | bursar@standrews.test |
-| Class Teacher | classteacher@standrews.test |
-| Subject Teacher | teacher@standrews.test |
-| Parent | parent@standrews.test |
-| Student | student@standrews.test |
-
-Demo school St. Andrew's Mixed Schools starts with 500 SMS credits.
+`php artisan db:seed` can create a local demo school for exploration. Demo login emails/passwords are **not published here** — check your local seeder output or ask a teammate with seed access. Never use demo credentials in production.
 
 ## Verify the security guarantees
 
