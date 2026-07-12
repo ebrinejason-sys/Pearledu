@@ -12,7 +12,7 @@
           communication in one place. Built by VoxSign Technologies for schools that need one system,
           not five disconnected ones.
         </p>
-        <p style="margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+        <p class="pe-cta-row" style="margin-top:30px">
           <a href="#onboard" class="pe-btn-grad">Onboard your school</a>
           <a href="{{ url('/login') }}" class="pe-btn-ghost">Login</a>
         </p>
@@ -260,7 +260,7 @@
       <p class="pe-lead" style="margin:0 auto 28px">
         Tell us about your school and we'll be in touch to get you set up on PearlEdu.
       </p>
-      <form method="post" action="{{ route('pearledu.onboard') }}" style="max-width:480px;margin:0 auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:26px;text-align:left">
+      <form method="post" action="{{ route('pearledu.onboard') }}" style="max-width:480px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:20px;padding:26px;text-align:left">
         @csrf
         <div style="position:absolute;left:-9999px"><input name="website" tabindex="-1" autocomplete="off"></div>
         <label class="pe-label">School name</label>

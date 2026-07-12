@@ -7,7 +7,7 @@
       <div class="vx-card">
         <h3>VoxSign Accessibility</h3>
         <p>AI tools for Deaf, hard-of-hearing, and speech-impaired users — Ugandan Sign Language translation and assistive speech recognition.</p>
-        <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <p class="vx-cta-row" style="margin-top:14px">
           <a href="#accessibility" class="vx-btn-ghost">Learn more ↓</a>
           <a href="https://accessibility.{{ config('tenancy.base_domain') }}" class="vx-btn-grad">Get Started</a>
         </p>
@@ -15,7 +15,7 @@
       <div class="vx-card">
         <h3>VoxSign Institutions</h3>
         <p>A school management platform for institutions — attendance, grading, fees, and communication in one place.</p>
-        <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <p class="vx-cta-row" style="margin-top:14px">
           <a href="#pearledu" class="vx-btn-ghost">Learn more ↓</a>
           <a href="https://pearledu.{{ config('tenancy.base_domain') }}" class="vx-btn-grad">Get Started</a>
         </p>

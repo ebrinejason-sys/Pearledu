@@ -3,6 +3,18 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'PearlEdu — School management, without the spreadsheets.')</title>
+<script>
+(function () {
+  try {
+    var key = 'voxsign-color-scheme';
+    var stored = localStorage.getItem(key);
+    var theme = (stored === 'light' || stored === 'dark')
+      ? stored
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
 <link rel="preconnect" href="https://api.fontshare.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,35 +23,63 @@
 <style>
   :root{
     --ink:#053F5C; --ink-2:#034A6B; --paper:#F5FBFD; --surface:#FFFFFF;
+    --fg:#053F5C; --logo:#053F5C;
     --voice:#F27F0C; --gold:#F7AD19; --sign:#429EBD; --cyan:#9FE7F5; --muted:#4A6270; --line:#D4E8EE;
     --ink-line:rgba(255,255,255,.12); --ink-muted:#9FE7F5;
+    --nav-glass:rgba(255,255,255,.82);
+    --input-bg:#fff; --status-bg:#E8F7FA;
+    --mock-bar:#F6F4EE; --mock-row:#F8F6F1; --mock-bubble:#F1EEE6;
     --display:'Google Sans',system-ui,sans-serif;
     --body:'Satoshi',system-ui,sans-serif;
+  }
+  html[data-theme="dark"]{
+    color-scheme:dark;
+    --paper:#0B1220; --surface:#141B2A; --fg:#E8EEF5; --logo:#9FE7F5;
+    --muted:#9AA8B8; --line:#2A3447;
+    --nav-glass:rgba(20,27,42,.92);
+    --input-bg:#141B2A; --status-bg:rgba(66,158,189,.16);
+    --mock-bar:#1A2233; --mock-row:#1A2233; --mock-bubble:#1A2233;
   }
   *{box-sizing:border-box} html,body{margin:0}
   html{scroll-behavior:smooth}
   @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-  body{font-family:var(--body);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  body{font-family:var(--body);background:var(--paper);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased}
   h1,h2,h3,h4{font-family:var(--display);line-height:1.1;letter-spacing:-.02em;margin:0}
   a{color:inherit;text-decoration:none}
   .pe-wrap{max-width:1120px;margin:0 auto;padding:0 24px}
   .pe-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   :focus-visible{outline:3px solid var(--sign);outline-offset:3px;border-radius:4px}
 
-  /* Floating pill nav */
   .pe-nav-shell{position:sticky;top:12px;z-index:50;padding:0 16px}
-  .pe-nav{display:flex;align-items:center;gap:16px;max-width:1120px;margin:0 auto;padding:10px 14px 10px 12px;
-          background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border:1px solid var(--line);
+  .pe-nav{position:relative;display:flex;align-items:center;gap:12px;max-width:1120px;margin:0 auto;padding:10px 14px 10px 12px;
+          background:var(--nav-glass);backdrop-filter:blur(14px);border:1px solid var(--line);
           border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
-  .pe-brand{display:flex;align-items:center;gap:10px;padding-left:4px}
-  .pe-brand img{height:32px;width:32px}
+  .pe-brand{display:flex;align-items:center;gap:10px;padding-left:4px;color:var(--logo)}
+  .pe-brand .vx-brand-lockup svg{fill:var(--logo)}
   .pe-brand-text{display:flex;flex-direction:column;line-height:1.12}
-  .pe-brand-name{font-family:var(--display);font-weight:700;font-size:16px}
+  .pe-brand-name{font-family:var(--display);font-weight:700;font-size:16px;color:var(--fg)}
   .pe-brand-tagline{font-size:10.5px;color:var(--muted)}
   .pe-nav-links{margin-left:8px;display:flex;gap:20px;font-size:14.5px;color:var(--muted)}
-  .pe-nav-links a:hover{color:var(--ink)}
+  .pe-nav-links a:hover{color:var(--fg)}
   .pe-nav-cta{margin-left:auto;display:flex;gap:8px;align-items:center}
-  @media(max-width:760px){.pe-nav-links{display:none}}
+  .pe-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;
+                border:1.5px solid var(--line);background:transparent;color:var(--fg);cursor:pointer;flex-shrink:0}
+  .pe-theme-btn:hover{border-color:var(--fg)}
+  .pe-theme-btn .pe-theme-icon-dark{display:none}
+  html[data-theme="dark"] .pe-theme-btn .pe-theme-icon-light{display:none}
+  html[data-theme="dark"] .pe-theme-btn .pe-theme-icon-dark{display:block}
+  .pe-nav-toggle{display:none;background:none;border:1.5px solid var(--line);border-radius:999px;padding:8px 12px;font-size:18px;cursor:pointer;color:var(--fg)}
+  .pe-nav-mobile-cta{display:none}
+  @media(max-width:760px){
+    .pe-nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;flex-direction:column;
+                  background:var(--surface);border:1px solid var(--line);border-radius:20px;
+                  box-shadow:0 18px 40px -20px rgba(11,16,32,.4);padding:16px 20px;gap:14px;margin:0}
+    .pe-nav-links.open{display:flex}
+    .pe-nav-cta .pe-btn{display:none}
+    .pe-nav-toggle{display:block}
+    .pe-nav-mobile-cta{display:flex;margin-top:4px}
+    .pe-nav-mobile-cta .pe-btn{width:100%;justify-content:center;min-height:48px}
+  }
 
   .pe-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
           background:var(--ink);color:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:12px 22px;cursor:pointer;
@@ -50,11 +90,18 @@
           box-shadow:0 10px 26px -12px rgba(242,127,12,.45);transition:transform .15s ease,box-shadow .2s ease}
   .pe-btn-grad:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(66,158,189,.45)}
   .pe-btn-ghost{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:15px;
-                background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:12px 22px;cursor:pointer}
-  .pe-btn-ghost:hover{border-color:var(--ink)}
+                background:transparent;color:var(--fg);border:1.5px solid var(--line);border-radius:999px;padding:12px 22px;cursor:pointer}
+  .pe-btn-ghost:hover{border-color:var(--fg)}
   .pe-band .pe-btn-ghost{color:#fff;border-color:var(--ink-line)}
   .pe-band .pe-btn-ghost:hover{border-color:#fff}
   @media(prefers-reduced-motion:reduce){.pe-btn,.pe-btn-grad{transition:none}.pe-btn:hover,.pe-btn-grad:hover{transform:none}}
+
+  .pe-cta-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  @media(max-width:640px){
+    .pe-cta-row{flex-direction:column;align-items:stretch;width:100%;max-width:360px;margin-left:auto;margin-right:auto}
+    .pe-cta-row > a,.pe-cta-row > .pe-btn,.pe-cta-row > .pe-btn-grad,.pe-cta-row > .pe-btn-ghost{
+      width:100%;justify-content:center;text-align:center;min-height:48px;box-sizing:border-box}
+  }
 
   .pe-section{padding:clamp(52px,8vw,96px) 0}
   .pe-band{background:var(--ink);color:#fff}
@@ -84,25 +131,26 @@
   .pe-card h3{margin:0 0 6px;font-size:17px;font-weight:700}
   .pe-card p{margin:0;color:var(--muted);font-size:14px}
 
-  /* Fake-browser product mockups */
-  .pe-mock{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  .pe-mock{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:18px;overflow:hidden;
            box-shadow:0 30px 60px -30px rgba(11,16,32,.35)}
-  .pe-mock-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);background:#F6F4EE}
+  .pe-mock-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--mock-bar)}
   .pe-mock-bar i{width:10px;height:10px;border-radius:50%;background:#D9D4C8;display:block}
   .pe-mock-bar i:first-child{background:#F2B8B5}
   .pe-mock-bar i:nth-child(2){background:#F2DCA0}
   .pe-mock-bar i:nth-child(3){background:#B7E1CD}
-  .pe-mock-url{margin-left:8px;flex:1;max-width:260px;background:#fff;border:1px solid var(--line);border-radius:999px;
+  .pe-mock-url{margin-left:8px;flex:1;max-width:260px;background:var(--surface);border:1px solid var(--line);border-radius:999px;
                font-size:11px;color:var(--muted);padding:3px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pe-mock-body{padding:18px}
   .pe-mock-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:12.5px}
-  .pe-mock-row:nth-child(even){background:#F8F6F1}
+  .pe-mock-row:nth-child(even){background:var(--mock-row)}
   .pe-mock-dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:10px;color:#fff;flex-shrink:0}
   .pe-mock-chip{margin-left:auto;font-family:var(--display);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
   .pe-chip-ok{background:rgba(66,158,189,.14);color:#034A6B}
+  html[data-theme="dark"] .pe-chip-ok{color:#9FE7F5}
   .pe-chip-warn{background:rgba(242,127,12,.16);color:#B35F08}
+  html[data-theme="dark"] .pe-chip-warn{color:#F7AD19}
   .pe-mock-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-  .pe-mock-stat{background:#F8F6F1;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .pe-mock-stat{background:var(--mock-row);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
   .pe-mock-stat b{display:block;font-family:var(--display);font-size:17px}
   .pe-mock-stat span{font-size:10.5px;color:var(--muted)}
   .pe-mock-bars{display:flex;align-items:flex-end;gap:10px;height:110px;padding:6px 4px 0}
@@ -111,10 +159,9 @@
   .pe-mock-labels{display:flex;gap:10px;padding:6px 4px 0;font-size:10px;color:var(--muted)}
   .pe-mock-labels span{flex:1;text-align:center}
   .pe-bubble{max-width:78%;border-radius:14px;padding:9px 13px;font-size:12.5px;margin-bottom:8px}
-  .pe-bubble-in{background:#F1EEE6;border:1px solid var(--line)}
+  .pe-bubble-in{background:var(--mock-bubble);border:1px solid var(--line)}
   .pe-bubble-out{background:var(--ink);color:#fff;margin-left:auto}
 
-  /* Feature deep-dive rows */
   .pe-feature-row{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,64px);align-items:center;padding:clamp(28px,4vw,44px) 0}
   .pe-feature-row + .pe-feature-row{border-top:1px solid var(--line)}
   .pe-feature-row h3{font-size:clamp(20px,2.6vw,27px);margin:0 0 10px}
@@ -125,7 +172,6 @@
     .pe-feature-row .pe-feature-mock{order:2}
   }
 
-  /* Pricing */
   .pe-pricing-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:stretch}
   .pe-price-card{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);
                  border-radius:22px;padding:28px 26px;transition:transform .2s ease,box-shadow .2s ease}
@@ -147,7 +193,6 @@
   .pe-price-card li{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--muted)}
   .pe-price-card li svg{width:16px;height:16px;flex-shrink:0;margin-top:3px;color:var(--sign)}
 
-  /* FAQ */
   .pe-faq{max-width:720px;margin:0 auto}
   .pe-faq details{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden}
   .pe-faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;
@@ -162,16 +207,15 @@
   .pe-quote p{margin:0 0 12px;font-size:15.5px}
   .pe-quote cite{color:var(--muted);font-size:13px;font-style:normal}
 
-  .pe-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit;margin-bottom:12px}
+  .pe-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--input-bg);color:var(--fg);font:inherit;margin-bottom:12px}
   .pe-input:focus{border-color:var(--sign);outline:none}
-  .pe-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--ink);margin:0 0 6px}
+  .pe-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--fg);margin:0 0 6px}
   .pe-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
-  .pe-status{background:#E8F7FA;border:1px solid var(--sign);color:var(--ink);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
+  .pe-status{background:var(--status-bg);border:1px solid var(--sign);color:var(--fg);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
 
   .pe-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
   .pe-footer-inner{max-width:1120px;margin:0 auto}
   .pe-footer-brand{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-  .pe-footer-brand img{height:30px;width:30px}
   .pe-footer-brand b{font-family:var(--display);font-size:17px;color:#fff}
   .pe-footer-tagline{color:#aeb4c2;font-size:14px;margin:0 0 32px}
   .pe-footer-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-bottom:26px;border-bottom:1px solid rgba(255,255,255,.12)}
@@ -191,19 +235,27 @@
   <div class="pe-nav-shell">
     <div class="pe-nav">
       <a href="{{ url('/') }}" class="pe-brand" aria-label="PearlEdu home">
-        @include('layouts.partials.logo-sphere', ['height' => 32, 'color' => '#053F5C'])
+        @include('layouts.partials.logo-sphere', ['height' => 32, 'color' => 'currentColor'])
         <span class="pe-brand-text">
           <span class="pe-brand-name">PearlEdu</span>
           <span class="pe-brand-tagline">By VoxSign Technologies</span>
         </span>
       </a>
-      <div class="pe-nav-links">
+      <div class="pe-nav-links" id="pe-nav-links">
         <a href="#how-it-works">Features</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
         <a href="#onboard">Onboard</a>
+        <div class="pe-nav-mobile-cta"><a href="{{ url('/login') }}" class="pe-btn">Login</a></div>
       </div>
-      <div class="pe-nav-cta"><a href="{{ url('/login') }}" class="pe-btn">Login</a></div>
+      <div class="pe-nav-cta">
+        <button type="button" class="pe-theme-btn" id="pe-theme-toggle" aria-label="Toggle color theme" title="Toggle light/dark mode">
+          <svg class="pe-theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="pe-theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/></svg>
+        </button>
+        <a href="{{ url('/login') }}" class="pe-btn">Login</a>
+        <button class="pe-nav-toggle" aria-label="Menu" aria-expanded="false" id="pe-nav-toggle">&#9776;</button>
+      </div>
     </div>
   </div>
   @if(session('status'))
@@ -245,6 +297,37 @@
       });
     }, {threshold: .12});
     document.querySelectorAll('.pe-reveal').forEach(function(el){ io.observe(el); });
+
+    var navToggle = document.getElementById('pe-nav-toggle');
+    var navLinks = document.getElementById('pe-nav-links');
+    if (navToggle && navLinks) {
+      navToggle.addEventListener('click', function(){
+        var open = navLinks.classList.toggle('open');
+        navToggle.setAttribute('aria-expanded', open);
+      });
+      navLinks.querySelectorAll('a').forEach(function(link){
+        link.addEventListener('click', function(){
+          navLinks.classList.remove('open');
+          navToggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+
+    var themeKey = 'voxsign-color-scheme';
+    var themeBtn = document.getElementById('pe-theme-toggle');
+    function peApplyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem(themeKey, theme); } catch (e) {}
+      if (themeBtn) {
+        themeBtn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      }
+    }
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function(){
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        peApplyTheme(next);
+      });
+    }
   </script>
 </body>
 </html>

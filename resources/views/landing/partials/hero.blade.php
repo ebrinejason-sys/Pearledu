@@ -8,7 +8,7 @@
         tools that give Deaf, hard-of-hearing, and speech-impaired people a voice in the room, and
         <strong>VoxSign Institutions</strong>, a school management platform for institutions.
       </p>
-      <p style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap">
+      <p class="vx-cta-row" style="margin-top:28px">
         <a href="#contact" class="vx-btn-grad">Talk to us</a>
         <a href="#accessibility" class="vx-btn-ghost">See both divisions ↓</a>
       </p>
