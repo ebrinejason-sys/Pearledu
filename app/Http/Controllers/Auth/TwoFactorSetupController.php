@@ -14,6 +14,7 @@ class TwoFactorSetupController extends Controller
 {
     public function show(Request $request, TwoFactorService $service)
     {
+        $this->assertEmailVerified($request);
         $user = User::findOrFail($request->session()->get('2fa_pending_user_id'));
 
         if (! $request->session()->has('2fa_setup_secret')) {
@@ -34,6 +35,7 @@ class TwoFactorSetupController extends Controller
         TenantContext $context,
         LoginController $login,
     ): RedirectResponse {
+        $this->assertEmailVerified($request);
         $data = $request->validate(['code' => 'required|string']);
         $user = User::findOrFail($request->session()->get('2fa_pending_user_id'));
         $secret = $request->session()->get('2fa_setup_secret');
@@ -53,7 +55,13 @@ class TwoFactorSetupController extends Controller
         $login->completeLogin($request, $audit, $context);
         $audit->record('auth.2fa.enrolled', $user);
 
-        $request->session()->forget(['2fa_pending_user_id', '2fa_remember', '2fa_setup_secret']);
+        $request->session()->forget([
+            '2fa_pending_user_id',
+            '2fa_remember',
+            '2fa_setup_secret',
+            '2fa_email_verified',
+            '2fa_email_sent',
+        ]);
         $request->session()->put('2fa_recovery_codes_display', $recoveryCodes);
 
         return redirect('/login/2fa/recovery-codes');
@@ -65,5 +73,15 @@ class TwoFactorSetupController extends Controller
         abort_unless($codes, 404);
 
         return view('auth.two-factor-recovery-codes', ['codes' => $codes]);
+    }
+
+    /** Setup must not complete login with password alone — email OTP is required first. */
+    private function assertEmailVerified(Request $request): void
+    {
+        abort_unless(
+            $request->session()->get('2fa_email_verified') === true,
+            403,
+            'Verify the email code before setting up an authenticator.'
+        );
     }
 }

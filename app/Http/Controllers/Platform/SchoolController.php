@@ -3,9 +3,12 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\OnboardSchoolRequest;
 use App\Models\School;
+use App\Models\SchoolInvitation;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\InvitationMailer;
 use App\Services\Provisioning\SchoolProvisioner;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class SchoolController extends Controller {
     public function __construct(private AuditLogger $audit) {}
@@ -19,16 +22,34 @@ class SchoolController extends Controller {
         return view('platform.schools.create', ['themes'=>config('themes.themes')]);
     }
 
-    public function store(OnboardSchoolRequest $request, SchoolProvisioner $provisioner) {
+    public function store(OnboardSchoolRequest $request, SchoolProvisioner $provisioner, InvitationMailer $mailer) {
         $result = $provisioner->onboard(
             school: $request->only(['name','district','emis_number','theme']),
             levels: $request->input('levels'),
             admin:  $request->input('admin'),
             operatorId: $request->user()->id,
         );
-        // Deliver $result['invite_token'] to the contact person via mail/SMS (queued).
+
+        $invitation = SchoolInvitation::query()
+            ->where('school_id', $result['school']->id)
+            ->where('user_id', $result['admin']->id)
+            ->latest('id')
+            ->first();
+
+        $status = "Onboarded. Subdomain: ".$result['school']->subdomainUrl();
+        if ($invitation && ! empty($result['admin']->email)) {
+            try {
+                $mailer->send($invitation, $result['invite_token'], $result['school']);
+                $status .= ' Invitation emailed to '.$result['admin']->email.'.';
+            } catch (RuntimeException $e) {
+                $status .= ' Invitation created, but email could not be sent: '.$e->getMessage();
+            }
+        } elseif ($invitation) {
+            $status .= ' Invitation created — deliver the activation link out-of-band (no email on file).';
+        }
+
         return redirect()->route('platform.schools.show', $result['school'])
-            ->with('status', "Onboarded. Subdomain: ".$result['school']->subdomainUrl());
+            ->with('status', $status);
     }
 
     public function show(School $school) {

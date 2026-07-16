@@ -18,8 +18,8 @@ class SchoolShowProvisioningTest extends TestCase
 
     public function test_pending_school_shows_pending_invite_pill(): void
     {
-        // DemoTenantSeeder force-activates the demo admin's User row directly but never
-        // sets SchoolInvitation.accepted_at, so the seeded school's state is 'pending_invite'.
+        // DemoTenantSeeder leaves the school admin invited (no passwords published),
+        // so the seeded school's state stays 'pending_invite'.
         $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
         $school = School::where('slug', 'like', 'pearledu%')->firstOrFail();
 

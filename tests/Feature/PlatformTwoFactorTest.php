@@ -27,7 +27,22 @@ class PlatformTwoFactorTest extends TestCase
         return $user;
     }
 
-    public function test_unenrolled_platform_admin_logs_in_with_email_otp_only(): void
+    private function verifyEmailToSetup(User $user): string
+    {
+        $capturedCode = null;
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user, &$capturedCode) {
+            $capturedCode = $mail->code;
+
+            return $mail->hasTo($user->email);
+        });
+
+        $this->post('/login/2fa/challenge', ['code' => $capturedCode])
+            ->assertRedirect('/login/2fa/setup');
+
+        return $capturedCode;
+    }
+
+    public function test_unenrolled_platform_admin_can_continue_after_email_otp(): void
     {
         \Illuminate\Support\Facades\Mail::fake();
 
@@ -39,22 +54,26 @@ class PlatformTwoFactorTest extends TestCase
         $this->post('/login', ['email' => 'emailonly@test.local', 'password' => 'password1234'])
             ->assertRedirect('/login/2fa/challenge');
 
-        $capturedCode = null;
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user, &$capturedCode) {
-            $capturedCode = $mail->code;
+        $this->verifyEmailToSetup($user);
 
-            return $mail->hasTo($user->email);
-        });
-
-        $this->post('/login/2fa/challenge', ['code' => $capturedCode])
+        $this->post('/login/2fa/setup/skip')
             ->assertRedirect(route('platform.dashboard'));
 
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_setup_page_shows_qr_and_manual_key(): void
+    public function test_setup_is_blocked_before_email_otp(): void
     {
         $this->loginToPending();
+
+        $this->get('/login/2fa/setup')->assertForbidden();
+        $this->post('/login/2fa/setup', ['code' => '123456'])->assertForbidden();
+    }
+
+    public function test_setup_page_shows_qr_and_manual_key(): void
+    {
+        $user = $this->loginToPending();
+        $this->verifyEmailToSetup($user);
 
         $response = $this->get('/login/2fa/setup');
 
@@ -65,6 +84,7 @@ class PlatformTwoFactorTest extends TestCase
     public function test_setup_confirms_with_correct_code_and_logs_in(): void
     {
         $user = $this->loginToPending();
+        $this->verifyEmailToSetup($user);
         $this->get('/login/2fa/setup');
         $secret = session('2fa_setup_secret');
         $this->assertNotNull($secret, 'setup GET must seed a secret into session before POST is tested');
@@ -82,7 +102,8 @@ class PlatformTwoFactorTest extends TestCase
 
     public function test_setup_rejects_wrong_code(): void
     {
-        $this->loginToPending();
+        $user = $this->loginToPending();
+        $this->verifyEmailToSetup($user);
         $this->get('/login/2fa/setup');
 
         $response = $this->post('/login/2fa/setup', ['code' => '000000']);
@@ -93,11 +114,8 @@ class PlatformTwoFactorTest extends TestCase
 
     public function test_recovery_codes_page_is_reachable_after_login_completes(): void
     {
-        // The user is authenticated by the time this page loads (store() calls Auth::login()
-        // before redirecting here), so this route must NOT sit behind 'guest' middleware --
-        // otherwise RedirectIfAuthenticated bounces the now-logged-in user away before they
-        // ever see their one-time recovery codes.
-        $this->loginToPending();
+        $user = $this->loginToPending();
+        $this->verifyEmailToSetup($user);
         $this->get('/login/2fa/setup');
         $secret = session('2fa_setup_secret');
         $code = (new Google2FA())->getCurrentOtp($secret);
@@ -171,17 +189,16 @@ class PlatformTwoFactorTest extends TestCase
         [$user] = $this->loginEnrolledToPending();
         \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class);
 
-        $this->post('/login/2fa/email');
+        $this->post('/login/2fa/email')->assertRedirect();
 
-        $capturedCode = null;
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user, &$capturedCode) {
-            $capturedCode = $mail->code;
-            return $mail->hasTo($user->email);
-        });
-        $this->assertNotNull($capturedCode);
+        $capturedCode = \Illuminate\Support\Facades\Mail::sent(\App\Mail\Auth\TwoFactorEmailCodeMail::class)
+            ->filter(fn ($m) => $m->hasTo($user->email))
+            ->last()
+            ->code;
 
         $response = $this->post('/login/2fa/challenge', ['code' => $capturedCode]);
 
+        $response->assertRedirect(route('platform.dashboard'));
         $this->assertAuthenticatedAs($user);
     }
 
@@ -203,36 +220,6 @@ class PlatformTwoFactorTest extends TestCase
         $response2->assertSessionHasErrors('recovery_code');
     }
 
-    /**
-     * The sequential test above (test_recovery_code_redeems_once) proves reuse is
-     * rejected, but PHPUnit is single-threaded, so it can't prove that the row lock in
-     * TwoFactorChallengeController::redeemRecoveryCode() actually blocks a second,
-     * truly-overlapping transaction -- it only proves the *end state* is correct once one
-     * request has fully finished before the next starts.
-     *
-     * This test proves the lock is real by using a second, fully independent raw PDO
-     * connection to the same Postgres database. We can't literally run two overlapping
-     * HTTP requests from one PHP process, so instead we hook Laravel's query listener:
-     * the instant the controller's `User::lockForUpdate()->find()` query executes (row
-     * lock acquired, but redeemRecoveryCode()'s transaction has NOT committed yet,
-     * because we're still inside the DB::transaction() closure that issued it), we open
-     * the second connection and try to take the *same* row lock with a short
-     * lock_timeout. If the lock is real, that second attempt must time out. If
-     * lockForUpdate() were removed from the controller, the query text would no longer
-     * contain "for update", our listener would never fire, and both assertions below
-     * would fail -- so this test is a genuine regression guard tied to the real
-     * production code, not a standalone assertion that would pass regardless.
-     *
-     * Note on RefreshDatabase: this whole test method runs inside one outer,
-     * never-committed transaction on Laravel's default connection. A user created via
-     * Eloquent here would therefore be invisible to a genuinely separate Postgres
-     * session -- "SELECT ... FOR UPDATE" against it would just match zero rows and
-     * "succeed" trivially, proving nothing. So the user row is created via a raw,
-     * autocommitting INSERT on the second connection first, which makes it durable and
-     * visible to any session; the 2FA fields are then filled in normally via Eloquent
-     * (fine, because the *same* session/connection always sees its own uncommitted
-     * writes).
-     */
     public function test_recovery_code_row_lock_blocks_concurrent_transaction(): void
     {
         $config = config('database.connections.pgsql');

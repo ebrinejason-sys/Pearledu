@@ -4,7 +4,7 @@
   <div class="vx-auth-split">
     <div class="vx-auth-panel">
       <a href="{{ url('/login') }}" class="vx-auth-brand">
-        <img src="{{ asset('images/brand/logo.svg') }}" alt="" width="40" height="40">
+        @include('layouts.partials.logo', ['height' => 36, 'color' => '#9FE7F5', 'label' => 'PearlEdu'])
         <span>Pearl<b>Edu</b></span>
       </a>
       <div class="vx-auth-card">

@@ -27,8 +27,12 @@ class InvitationService {
         DB::transaction(function () use ($invitationId, $rawToken, $password) {
             $inv = $this->verify($invitationId, $rawToken);
             $user = $inv->user;
+            if (! $user) {
+                throw new RuntimeException('This invitation has no user account.');
+            }
 
-            $user->forceFill(['password' => Hash::make($password), 'status' => 'active'])->save();
+            // Password cast is 'hashed' — pass plaintext.
+            $user->forceFill(['password' => $password, 'status' => 'active'])->save();
 
             if ($inv->school_id) {
                 $roleId = Role::where('key', $inv->role_key)->value('id');

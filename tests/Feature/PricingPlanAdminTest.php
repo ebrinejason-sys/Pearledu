@@ -19,13 +19,13 @@ class PricingPlanAdminTest extends TestCase
         parent::setUp();
         $this->seed(PricingPlanSeeder::class);
 
-        $this->operator = User::create([
+        $this->operator = new User([
             'full_name' => 'Platform Admin',
             'email' => 'platform-admin@test.local',
             'status' => 'active',
-            'is_platform' => true,
             'password' => 'password1234',
         ]);
+        $this->operator->forceFill(['is_platform' => true])->save();
     }
 
     public function test_platform_operator_can_view_pricing_console(): void
@@ -126,7 +126,6 @@ class PricingPlanAdminTest extends TestCase
             'full_name' => 'School Person',
             'email' => 'school-person@test.local',
             'status' => 'active',
-            'is_platform' => false,
             'password' => 'password1234',
         ]);
 

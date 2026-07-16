@@ -54,9 +54,20 @@
   .pe-nav{position:relative;display:flex;align-items:center;gap:12px;max-width:1120px;margin:0 auto;padding:10px 14px 10px 12px;
           background:var(--nav-glass);backdrop-filter:blur(14px);border:1px solid var(--line);
           border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
-  .pe-brand{display:flex;align-items:center;gap:10px;padding-left:4px;color:var(--logo)}
-  .pe-brand .vx-brand-lockup svg{fill:var(--logo)}
-  .pe-brand-text{display:flex;flex-direction:column;line-height:1.12}
+  .pe-brand{display:flex;align-items:center;gap:10px;padding-left:4px;color:var(--logo);min-width:0}
+  .vx-logo{
+    display:inline-block;flex-shrink:0;
+    height:var(--vx-logo-h,26px);
+    width:calc(var(--vx-logo-h,26px) * 5568 / 2428);
+    -webkit-mask-position:center;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;
+    mask-position:center;mask-size:contain;mask-repeat:no-repeat;
+  }
+  .pe-brand .vx-logo{background:var(--logo)}
+  .pe-brand-text{display:flex;flex-direction:column;line-height:1.12;min-width:0}
+  @media(max-width:760px){
+    .pe-brand .vx-logo{--vx-logo-h:20px}
+    .pe-brand-tagline{display:none}
+  }
   .pe-brand-name{font-family:var(--display);font-weight:700;font-size:16px;color:var(--fg)}
   .pe-brand-tagline{font-size:10.5px;color:var(--muted)}
   .pe-nav-links{margin-left:8px;display:flex;gap:20px;font-size:14.5px;color:var(--muted)}
@@ -207,16 +218,18 @@
   .pe-quote p{margin:0 0 12px;font-size:15.5px}
   .pe-quote cite{color:var(--muted);font-size:13px;font-style:normal}
 
-  .pe-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--input-bg);color:var(--fg);font:inherit;margin-bottom:12px}
+  .pe-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--input-bg);color:var(--fg);font:inherit;font-size:16px;margin-bottom:12px}
   .pe-input:focus{border-color:var(--sign);outline:none}
   .pe-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--fg);margin:0 0 6px}
   .pe-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
   .pe-status{background:var(--status-bg);border:1px solid var(--sign);color:var(--fg);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
-  .pe-form-card{max-width:480px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);
-                border-radius:20px;padding:26px;text-align:left;box-shadow:0 24px 48px -28px rgba(0,0,0,.45)}
-  .pe-band .pe-form-card{box-shadow:0 24px 48px -24px rgba(0,0,0,.55)}
-  html[data-theme="dark"] .pe-band .pe-form-card{background:#141B2A;border-color:#2A3447}
-  html[data-theme="dark"] .pe-band .pe-form-card .pe-input{background:#0B1220;border-color:#2A3447;color:#E8EEF5}
+  .pe-form-card{position:relative;max-width:480px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);
+                border-radius:20px;padding:clamp(20px,4vw,28px);text-align:left;box-shadow:0 18px 40px -28px rgba(11,16,32,.35)}
+  .pe-form-card .pe-btn,.pe-form-card .pe-btn-grad{min-height:48px;width:100%;justify-content:center}
+  html[data-theme="dark"] .pe-form-card{background:var(--surface);border-color:var(--line);box-shadow:0 18px 40px -24px rgba(0,0,0,.55)}
+  html[data-theme="dark"] .pe-form-card .pe-input{background:var(--paper);border-color:var(--line);color:var(--fg)}
+  html[data-theme="dark"] .pe-form-card .pe-label{color:var(--fg)}
+  @media(max-width:640px){.pe-form-card{padding:20px 16px;border-radius:16px}}
 
   .pe-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
   .pe-footer-inner{max-width:1120px;margin:0 auto}
@@ -240,7 +253,7 @@
   <div class="pe-nav-shell">
     <div class="pe-nav">
       <a href="{{ url('/') }}" class="pe-brand" aria-label="PearlEdu home">
-        @include('layouts.partials.logo-sphere', ['height' => 32, 'color' => 'currentColor'])
+        @include('layouts.partials.logo', ['height' => 26, 'color' => 'currentColor', 'label' => 'PearlEdu'])
         <span class="pe-brand-text">
           <span class="pe-brand-name">PearlEdu</span>
           <span class="pe-brand-tagline">By VoxSign Technologies</span>
@@ -270,7 +283,7 @@
   <div class="pe-footer">
     <div class="pe-footer-inner">
       <div class="pe-footer-brand">
-        @include('layouts.partials.logo-sphere', ['height' => 30, 'color' => '#9FE7F5'])
+        @include('layouts.partials.logo', ['height' => 24, 'color' => '#9FE7F5', 'label' => 'PearlEdu'])
         <b>PearlEdu</b>
       </div>
       <p class="pe-footer-tagline">School management, without the spreadsheets.</p>

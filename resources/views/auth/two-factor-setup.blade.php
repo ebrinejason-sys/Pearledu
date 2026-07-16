@@ -7,6 +7,7 @@
       <div class="vx-auth-card">
         <h1>Set up your authenticator</h1>
         <p>Scan this QR code with Google Authenticator, Authy, or any TOTP app, then enter the 6-digit code it shows.</p>
+        @if(session('status'))<div class="vx-auth-status">{{ session('status') }}</div>@endif
         <div>{!! $qrSvg !!}</div>
         <p>Can't scan? Enter this key manually: <code>{{ $manualKey }}</code></p>
         <form method="post" action="/login/2fa/setup">
@@ -15,6 +16,10 @@
           <input name="code" type="text" inputmode="numeric" autocomplete="one-time-code" required autofocus>
           @error('code')<div class="err">{{ $message }}</div>@enderror
           <button class="btn" type="submit">Confirm and continue</button>
+        </form>
+        <form method="post" action="/login/2fa/setup/skip" style="margin-top:14px">
+          @csrf
+          <button class="btn-link" type="submit">Continue without authenticator</button>
         </form>
       </div>
     </div>

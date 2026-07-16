@@ -6,8 +6,8 @@ class DatabaseSeeder extends Seeder {
     public function run(): void {
         $this->call([RoleSeeder::class, PlatformSeeder::class, PricingPlanSeeder::class]);
 
-        // Demo school + role profiles are local/dev only — never seed into production.
-        if (! app()->environment('production')) {
+        // Optional tenant scaffold for local exploration (no login passwords published).
+        if (! app()->environment('production') && env('SEED_DEMO_TENANT', false)) {
             $this->call(DemoTenantSeeder::class);
         }
     }

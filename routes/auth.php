@@ -12,6 +12,7 @@ Route::middleware('web')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/login/2fa/setup', [\App\Http\Controllers\Auth\TwoFactorSetupController::class, 'show'])->middleware('2fa.pending');
         Route::post('/login/2fa/setup', [\App\Http\Controllers\Auth\TwoFactorSetupController::class, 'store'])->middleware(['2fa.pending','throttle:10,1']);
+        Route::post('/login/2fa/setup/skip', [\App\Http\Controllers\Auth\TwoFactorChallengeController::class, 'continueWithoutAuthenticator'])->middleware(['2fa.pending','throttle:10,1']);
         Route::get('/login/2fa/challenge', [\App\Http\Controllers\Auth\TwoFactorChallengeController::class, 'show'])->middleware('2fa.pending');
         Route::post('/login/2fa/challenge', [\App\Http\Controllers\Auth\TwoFactorChallengeController::class, 'store'])->middleware(['2fa.pending','throttle:10,1']);
         Route::post('/login/2fa/email', [\App\Http\Controllers\Auth\TwoFactorChallengeController::class, 'sendEmailCode'])->middleware(['2fa.pending','throttle:5,1']);

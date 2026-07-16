@@ -74,13 +74,13 @@ class ImpersonationTest extends TestCase
 
     public function test_cannot_imitate_platform_operator(): void
     {
-        $other = User::create([
+        $other = new User([
             'full_name' => 'Other Admin',
             'email' => 'other-admin@test.local',
             'status' => 'active',
-            'is_platform' => true,
             'password' => 'password1234',
         ]);
+        $other->forceFill(['is_platform' => true])->save();
 
         $this->actingAs($this->operator)->post(
             route('platform.schools.imitate', [$this->school, $other])

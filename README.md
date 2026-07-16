@@ -16,7 +16,7 @@ Laravel 13 · PostgreSQL · multi-tenant with database-enforced isolation. Built
 
 **Onboarding** — `SchoolProvisioner` onboards atomically, auto-assigns `pearledu{N}` subdomain, seeds class scaffold, creates the contact person as School Admin, and issues their activation invite.
 
-**SMS reselling** — platform-controlled provider + per-segment credit price; append-only credit ledger with locked balance writes; platform tops schools up; schools spend credit to message parents/staff. Charge-then-dispatch with automatic refund on failure. `FakeGateway` until a real provider is wired.
+**SMS reselling** — platform-controlled provider + per-segment credit price; append-only credit ledger with locked balance writes; platform tops schools up; schools spend credit to message parents/staff. Charge-then-dispatch with automatic refund on failure. Drivers: `fake` (no delivery), `log` (log-only). Any other `SMS_DRIVER` fails closed until a real provider gateway is added.
 
 **Account deletion** — `AccountDeletionService` hard-deletes the identity + personal links; de-identifies any learner record the school must keep; retains de-identified audit. Self-service at Account -> Delete account.
 
@@ -40,7 +40,7 @@ php artisan serve
 
 ## Local demo seed (optional)
 
-`php artisan db:seed` can create a local demo school for exploration. Demo login emails/passwords are **not published here** — check your local seeder output or ask a teammate with seed access. Never use demo credentials in production.
+Set `SEED_DEMO_TENANT=true` and run `php artisan db:seed` to create a sample school + role assignments for exploration. **No shared demo passwords are published** — accounts stay invitation-status until you activate them via the invite flow. Never invent or circulate demo credentials for production.
 
 ## Verify the security guarantees
 

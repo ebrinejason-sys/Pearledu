@@ -88,7 +88,7 @@ class LoginPageTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
-        $response->assertSee('logo.svg', false);
+        $response->assertSee('voxsign-logo.svg', false);
         $response->assertDontSee('logo.png', false);
     }
 }

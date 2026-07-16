@@ -54,10 +54,18 @@
   .vx-nav{position:relative;display:flex;align-items:center;gap:12px;max-width:1120px;margin:0 auto;padding:10px 14px 10px 16px;
           background:var(--nav-glass);backdrop-filter:blur(14px);border:1px solid var(--line);
           border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
-  .vx-logo-link{display:flex;align-items:center;color:var(--logo)}
-  .vx-logo-link .vx-brand-lockup span{color:var(--logo)!important}
-  .vx-logo-link .vx-brand-lockup svg{fill:var(--logo)}
-  .vx-logo{height:30px;width:auto;display:block}
+  .vx-logo-link{display:flex;align-items:center;color:var(--logo);min-width:0}
+  .vx-logo{
+    display:inline-block;flex-shrink:0;
+    height:var(--vx-logo-h,30px);
+    width:calc(var(--vx-logo-h,30px) * 5568 / 2428);
+    -webkit-mask-position:center;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;
+    mask-position:center;mask-size:contain;mask-repeat:no-repeat;
+  }
+  .vx-logo-link .vx-logo{background:var(--logo)}
+  @media(max-width:860px){
+    .vx-logo-link .vx-logo{--vx-logo-h:22px}
+  }
   .vx-nav-links{margin-left:10px;display:flex;gap:22px;font-size:14.5px;color:var(--muted);flex-wrap:wrap}
   .vx-nav-links a:hover{color:var(--fg)}
   .vx-nav-cta{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -169,17 +177,23 @@
   .vx-quote p{margin:0 0 12px;font-size:16px}
   .vx-quote cite{color:var(--muted);font-size:13px;font-style:normal}
 
-  .vx-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--input-bg);color:var(--fg);font:inherit;margin-bottom:12px}
+  .vx-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--input-bg);color:var(--fg);font:inherit;font-size:16px;margin-bottom:12px}
   .vx-input:focus{border-color:var(--sign);outline:none}
   .vx-input::placeholder{color:var(--muted);opacity:.85}
   .vx-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--fg);margin:0 0 6px}
   .vx-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
   .vx-status{background:var(--status-bg);border:1px solid var(--sign);color:var(--fg);padding:12px 16px;margin-bottom:16px;border-radius:12px;font-size:15px}
-  .vx-form-card{max-width:480px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);
-                border-radius:20px;padding:26px;box-shadow:0 24px 48px -28px rgba(0,0,0,.45)}
-  .vx-band .vx-form-card{box-shadow:0 24px 48px -24px rgba(0,0,0,.55)}
-  html[data-theme="dark"] .vx-band .vx-form-card{background:#141B2A;border-color:#2A3447}
-  html[data-theme="dark"] .vx-band .vx-form-card .vx-input{background:#0B1220;border-color:#2A3447;color:#E8EEF5}
+  .vx-contact .vx-h2{color:var(--fg)}
+  .vx-form-card{position:relative;max-width:480px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);
+                border-radius:20px;padding:clamp(20px,4vw,28px);box-shadow:0 18px 40px -28px rgba(11,16,32,.35)}
+  .vx-form-card .vx-btn-grad{min-height:48px}
+  html[data-theme="dark"] .vx-form-card{background:var(--surface);border-color:var(--line);box-shadow:0 18px 40px -24px rgba(0,0,0,.55)}
+  html[data-theme="dark"] .vx-form-card .vx-input{background:var(--paper);border-color:var(--line);color:var(--fg)}
+  html[data-theme="dark"] .vx-form-card .vx-label{color:var(--fg)}
+  @media(max-width:640px){
+    .vx-form-card{padding:20px 16px;border-radius:16px}
+    .vx-contact .vx-lead{font-size:15px}
+  }
 
   .vx-footer{background:var(--ink);color:#c7cdda;padding:56px 24px 28px}
   .vx-footer-inner{max-width:1120px;margin:0 auto}
@@ -210,7 +224,7 @@
   <div class="vx-nav-shell">
   <div class="vx-nav">
     <a href="{{ url('/') }}" class="vx-logo-link" aria-label="VoxSign home">
-      @include('layouts.partials.logo-sphere', ['height' => 30, 'color' => 'currentColor', 'showWordmark' => true, 'wordmarkColor' => 'currentColor'])
+      @include('layouts.partials.logo', ['height' => 28, 'color' => 'currentColor', 'label' => 'VoxSign'])
     </a>
     <div class="vx-nav-links" id="vx-nav-links">
       <a href="#accessibility">Accessibility</a>
@@ -236,7 +250,7 @@
   <div class="vx-footer">
     <div class="vx-footer-inner">
       <div class="vx-footer-brand">
-        @include('layouts.partials.logo-sphere', ['height' => 28, 'color' => '#9FE7F5', 'showWordmark' => true, 'wordmarkColor' => '#fff'])
+        @include('layouts.partials.logo', ['height' => 26, 'color' => '#9FE7F5', 'label' => 'VoxSign'])
       </div>
       <p class="vx-footer-tagline">Technology built to include everyone.</p>
       <div class="vx-footer-cols">

@@ -169,7 +169,7 @@ class LandingPageTest extends TestCase
         $response->assertSessionHas('status');
 
         \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactFormReceived::class, function ($mail) {
-            return $mail->hasTo('tusuubiravictor@gmail.com')
+            return $mail->hasTo(config('mail.contact_inbox'))
                 && $mail->name === 'Test User'
                 && $mail->email === 'test@example.com'
                 && $mail->message === 'Hello VoxSign';
@@ -288,8 +288,8 @@ class LandingPageTest extends TestCase
     {
         $response = $this->get('http://voxsign.co.ug/');
 
-        $response->assertSee('vx-brand-lockup', false);
-        $response->assertSee('viewBox="30 30 340 340"', false);
+        $response->assertSee('vx-logo', false);
+        $response->assertSee('voxsign-logo.svg', false);
         $response->assertDontSee('voxsign-logo.png');
     }
 
@@ -389,7 +389,8 @@ class LandingPageTest extends TestCase
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertStatus(200);
-        $response->assertSee('max-width:480px;margin:0 auto;background:#fff', false);
+        $response->assertSee('max-width:480px;margin:0 auto', false);
+        $response->assertSee('.vx-form-card{', false);
     }
 
     public function test_hero_renders_full_length_interactive_avatar(): void

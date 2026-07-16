@@ -56,7 +56,7 @@
       </thead>
       <tbody>
       @forelse($members as $member)
-        @php $user = $member['user']; @endphp
+        @php($user = $member['user'])
         <tr>
           <td><strong>{{ $user->full_name }}</strong></td>
           <td>{{ $user->email ?? $user->phone ?? '—' }}</td>

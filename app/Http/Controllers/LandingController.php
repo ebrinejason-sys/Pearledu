@@ -1,5 +1,6 @@
 <?php
 namespace App\Http\Controllers;
+use App\Services\Security\TurnstileVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -55,13 +56,14 @@ class LandingController extends Controller {
         ];
     }
 
-    public function contact(Request $request) {
+    public function contact(Request $request, TurnstileVerifier $turnstile) {
         $data = $request->validate([
             'name'=>'required|string|max:120',
             'email'=>'required|email|max:160',
             'message'=>'required|string|max:2000',
-            'website'=>'nullable|max:0',   // honeypot: must be empty
+            'website'=>'nullable|max:0',
         ]);
+        $turnstile->assertValid($request);
         Mail::to(config('mail.contact_inbox'))
             ->send(new \App\Mail\ContactFormReceived($data['name'], $data['email'], $data['message']));
         Mail::to($data['email'])

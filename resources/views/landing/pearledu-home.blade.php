@@ -253,31 +253,32 @@
   </section>
 
   {{-- ============ FINAL CTA + ONBOARDING ============ --}}
-  <section id="onboard" class="pe-section pe-band">
+  <section id="onboard" class="pe-section pe-onboard">
     <div class="pe-wrap pe-reveal" style="text-align:center">
       <div class="pe-eyebrow">Get started</div>
-      <h2 class="pe-h2" style="color:#fff;margin-bottom:12px">Onboard your school.</h2>
+      <h2 class="pe-h2" style="margin-bottom:12px">Onboard your school.</h2>
       <p class="pe-lead" style="margin:0 auto 28px">
         Tell us about your school and we'll be in touch to get you set up on PearlEdu.
       </p>
       <form method="post" action="{{ route('pearledu.onboard') }}" class="pe-form-card">
         @csrf
-        <div style="position:absolute;left:-9999px"><input name="website" tabindex="-1" autocomplete="off"></div>
-        <label class="pe-label">School name</label>
-        <input class="pe-input" name="school_name" value="{{ old('school_name') }}" required>
+        <div style="position:absolute;left:-9999px" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div>
+        <label class="pe-label" for="onboard-school">School name</label>
+        <input id="onboard-school" class="pe-input" name="school_name" value="{{ old('school_name') }}" required autocomplete="organization">
         @error('school_name')<div class="pe-err">{{ $message }}</div>@enderror
-        <label class="pe-label">Your name</label>
-        <input class="pe-input" name="contact_name" value="{{ old('contact_name') }}" required>
+        <label class="pe-label" for="onboard-name">Your name</label>
+        <input id="onboard-name" class="pe-input" name="contact_name" value="{{ old('contact_name') }}" required autocomplete="name">
         @error('contact_name')<div class="pe-err">{{ $message }}</div>@enderror
-        <label class="pe-label">Email</label>
-        <input class="pe-input" name="email" type="email" value="{{ old('email') }}" required>
+        <label class="pe-label" for="onboard-email">Email</label>
+        <input id="onboard-email" class="pe-input" name="email" type="email" value="{{ old('email') }}" required autocomplete="email">
         @error('email')<div class="pe-err">{{ $message }}</div>@enderror
-        <label class="pe-label">Phone</label>
-        <input class="pe-input" name="phone" value="{{ old('phone') }}">
+        <label class="pe-label" for="onboard-phone">Phone</label>
+        <input id="onboard-phone" class="pe-input" name="phone" value="{{ old('phone') }}" autocomplete="tel">
         @error('phone')<div class="pe-err">{{ $message }}</div>@enderror
-        <label class="pe-label">Tell us about your school</label>
-        <textarea class="pe-input" name="message" rows="4">{{ old('message') }}</textarea>
+        <label class="pe-label" for="onboard-message">Tell us about your school</label>
+        <textarea id="onboard-message" class="pe-input" name="message" rows="4">{{ old('message') }}</textarea>
         @error('message')<div class="pe-err">{{ $message }}</div>@enderror
+        @include('partials.turnstile', ['errorClass' => 'pe-err'])
         <button class="pe-btn-grad" type="submit" style="width:100%;justify-content:center">Request onboarding</button>
       </form>
     </div>

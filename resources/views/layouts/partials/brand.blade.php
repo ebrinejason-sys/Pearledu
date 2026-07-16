@@ -4,6 +4,6 @@
         : url('/'));
 @endphp
 <a href="{{ $brandHref }}" class="brand">
-  <img src="{{ asset('images/brand/logo.svg') }}" alt="" class="brand__mark" width="36" height="36">
+  @include('layouts.partials.logo', ['height' => 28, 'color' => 'currentColor', 'label' => 'PearlEdu'])
   <span class="brand__wordmark">Pearl<b>Edu</b></span>
 </a>

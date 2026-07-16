@@ -30,8 +30,8 @@ class PearlEduLandingPageTest extends TestCase
         $response = $this->get('http://pearledu.voxsign.test/');
 
         $response->assertStatus(200);
-        $response->assertSee('vx-brand-lockup', false);
-        $response->assertSee('viewBox="30 30 340 340"', false);
+        $response->assertSee('vx-logo', false);
+        $response->assertSee('voxsign-logo.svg', false);
         $response->assertSee('pe-brand-name', false);
         $response->assertSee('By VoxSign Technologies', false);
     }

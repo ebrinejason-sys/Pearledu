@@ -45,8 +45,13 @@ class UserFactory extends Factory
 
     public function platform(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'is_platform' => true,
-        ]);
+        // is_platform is intentionally not mass-assignable.
+        return $this->afterMaking(function (\App\Models\User $user) {
+            $user->forceFill(['is_platform' => true]);
+        })->afterCreating(function (\App\Models\User $user) {
+            if (! $user->is_platform) {
+                $user->forceFill(['is_platform' => true])->save();
+            }
+        });
     }
 }

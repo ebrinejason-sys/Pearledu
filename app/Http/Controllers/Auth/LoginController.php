@@ -28,15 +28,11 @@ class LoginController extends Controller {
         }
 
         $user = User::whereRaw('lower(email) = lower(?)', [$data['email']])->first();
-        if ($user && $user->status === 'invited') {
+        if ($user && in_array($user->status, ['invited', 'disabled'], true)) {
             RateLimiter::hit($key, 60);
             throw ValidationException::withMessages([
-                'email' => 'Your account is not activated yet. Open the invitation email we sent you to set your password.',
+                'email' => 'These credentials do not match our records.',
             ]);
-        }
-        if ($user && $user->status === 'disabled') {
-            RateLimiter::hit($key, 60);
-            throw ValidationException::withMessages(['email' => 'This account has been disabled. Contact support for help.']);
         }
 
         if (! Auth::validate(['email'=>$data['email'],'password'=>$data['password'],'status'=>'active'])) {

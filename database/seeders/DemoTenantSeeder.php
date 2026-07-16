@@ -8,13 +8,19 @@ use App\Services\Provisioning\SchoolProvisioner;
 use App\Services\Sms\SmsCreditService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
+/**
+ * Local/test structure only — never publishes usable login credentials.
+ * Accounts are active for actingAs/impersonation tests, but passwords are random.
+ */
 class DemoTenantSeeder extends Seeder {
     public function run(): void {
         $ctx = app(TenantContext::class);
         $ctx->forPlatform();
 
-        $operator = User::where('email','admin@voxsign.co.ug')->first();
+        $operator = User::where('is_platform', true)->first();
 
         $res = app(SchoolProvisioner::class)->onboard(
             school: ['name'=>"St. Andrew's Mixed Schools",'district'=>'Kampala','emis_number'=>'1043221','theme'=>'pearledu'],
@@ -24,10 +30,12 @@ class DemoTenantSeeder extends Seeder {
         );
         $school = $res['school'];
 
-        // Activate the seeded School Admin so it is immediately explorable.
-        User::where('email','admin@standrews.test')->update(['status'=>'active','password'=>bcrypt('password1234')]);
+        // Activate structure users with unusable random passwords (no shared demo logins).
+        User::where('email', 'admin@standrews.test')->update([
+            'status' => 'active',
+            'password' => Hash::make(Str::password(40)),
+        ]);
 
-        // Ready-to-explore profiles, one per school role (password: password1234).
         $profiles = [
             'director'        => ['Daniel Director','director@standrews.test'],
             'head_teacher'    => ['Helen Head','head@standrews.test'],
@@ -38,20 +46,30 @@ class DemoTenantSeeder extends Seeder {
             'student'         => ['Stella Student','student@standrews.test'],
         ];
         foreach ($profiles as $roleKey => [$name, $email]) {
-            $u = User::firstOrCreate(['email'=>$email],
-                ['full_name'=>$name,'status'=>'active','password'=>bcrypt('password1234')]);
+            $u = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'full_name' => $name,
+                    'status' => 'active',
+                    'password' => Hash::make(Str::password(40)),
+                ],
+            );
+            if ($u->status !== 'active') {
+                $u->forceFill([
+                    'status' => 'active',
+                    'password' => Hash::make(Str::password(40)),
+                ])->save();
+            }
             RoleAssignment::firstOrCreate([
                 'user_id'=>$u->id,'role_id'=>Role::where('key',$roleKey)->value('id'),
                 'school_id'=>$school->id,'is_active'=>true,
             ]);
         }
 
-        // A couple of learner records for context.
         foreach (['Aisha Nabukenya','Joseph Mugisha'] as $n) {
             Student::firstOrCreate(['school_id'=>$school->id,'full_name'=>$n],['status'=>'active']);
         }
 
-        // Allocate demo SMS credit so the school can try the SMS module.
         app(SmsCreditService::class)->topUp($school, 500, $operator?->id, 'demo-allocation');
     }
 }

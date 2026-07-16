@@ -15,7 +15,7 @@ Route::get('/', function (\Illuminate\Http\Request $r) {
 });
 
 Route::post('/contact', [LandingController::class, 'contact'])
-    ->middleware('throttle:5,1')->name('contact');
+    ->middleware('throttle:3,1')->name('contact');
 
 Route::post('/onboard', [PearlEduLandingController::class, 'onboard'])
-    ->middleware('throttle:5,1')->name('pearledu.onboard');
+    ->middleware('throttle:3,1')->name('pearledu.onboard');
