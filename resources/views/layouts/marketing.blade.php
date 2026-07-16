@@ -55,16 +55,9 @@
           background:var(--nav-glass);backdrop-filter:blur(14px);border:1px solid var(--line);
           border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
   .vx-logo-link{display:flex;align-items:center;color:var(--logo);min-width:0}
-  .vx-logo{
-    display:inline-block;flex-shrink:0;
-    height:var(--vx-logo-h,30px);
-    width:calc(var(--vx-logo-h,30px) * 5568 / 2428);
-    -webkit-mask-position:center;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;
-    mask-position:center;mask-size:contain;mask-repeat:no-repeat;
-  }
-  .vx-logo-link .vx-logo{background:var(--logo)}
+  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,30px);width:auto}
   @media(max-width:860px){
-    .vx-logo-link .vx-logo{--vx-logo-h:22px}
+    .vx-logo-link .vx-logo{--vx-logo-h:22px;height:22px}
   }
   .vx-nav-links{margin-left:10px;display:flex;gap:22px;font-size:14.5px;color:var(--muted);flex-wrap:wrap}
   .vx-nav-links a:hover{color:var(--fg)}

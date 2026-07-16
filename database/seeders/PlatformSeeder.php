@@ -7,9 +7,10 @@ use RuntimeException;
 
 class PlatformSeeder extends Seeder {
     public function run(): void {
-        $email = (string) env('PLATFORM_ADMIN_EMAIL', 'admin@voxsign.co.ug');
-        $name = (string) env('PLATFORM_ADMIN_NAME', 'Platform Admin');
-        $password = (string) env('PLATFORM_ADMIN_PASSWORD', '');
+        // Use config() so this works after `php artisan config:cache` (env() is empty then).
+        $email = (string) config('platform.admin_email', 'admin@voxsign.co.ug');
+        $name = (string) config('platform.admin_name', 'Platform Admin');
+        $password = (string) config('platform.admin_password', '');
 
         if ($password === '') {
             throw new RuntimeException(

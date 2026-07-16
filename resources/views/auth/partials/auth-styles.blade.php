@@ -2,14 +2,7 @@
   .vx-auth-split{display:flex;min-height:100vh}
   .vx-auth-panel{flex:0 0 44%;max-width:480px;min-width:340px;background:var(--sidebar);color:var(--sidebar-ink);display:flex;flex-direction:column;justify-content:center;padding:48px;gap:28px}
   .vx-auth-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:#fff}
-  .vx-logo{
-    display:inline-block;flex-shrink:0;
-    height:var(--vx-logo-h,36px);
-    width:calc(var(--vx-logo-h,36px) * 5568 / 2428);
-    -webkit-mask-position:center;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;
-    mask-position:center;mask-size:contain;mask-repeat:no-repeat;
-  }
-  .vx-auth-brand .vx-logo{background:#9FE7F5}
+  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,36px);width:auto}
   .vx-auth-brand span b{opacity:.8}
   .vx-auth-card h1{margin:0 0 12px;font-size:26px;color:#fff}
   .vx-auth-lead{margin:0 0 18px;font-size:14px;line-height:1.55;color:rgba(255,255,255,.78)}
@@ -31,6 +24,18 @@
   .vx-auth-card .btn-link{display:inline;width:auto;margin:0;padding:0;background:none;border:0;box-shadow:none;color:rgba(255,255,255,.85);font:inherit;font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
   .vx-auth-card .btn-link:hover{color:#fff}
   .vx-auth-card .err{color:#FFD3D3;font-size:13px;margin-top:6px}
+  .vx-auth-card p{margin:0 0 14px;font-size:14px;line-height:1.55;color:rgba(255,255,255,.78)}
+  .vx-auth-card code{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.25);color:#9FE7F5;font-size:12px;word-break:break-all}
+  .vx-auth-qr{display:inline-flex;align-items:center;justify-content:center;margin:4px 0 14px;padding:14px;background:#fff;border-radius:calc(var(--radius) + 4px);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+  .vx-auth-qr svg{display:block;width:180px;height:180px}
+  .vx-auth-manual{margin:0 0 16px;font-size:13px;line-height:1.55;color:rgba(255,255,255,.72)}
+  .vx-auth-alt{margin-top:18px;border-top:1px solid rgba(255,255,255,.14);padding-top:14px}
+  .vx-auth-alt details{margin-top:10px}
+  .vx-auth-alt summary{cursor:pointer;color:rgba(255,255,255,.9);font-size:13px;font-weight:600}
+  .vx-auth-alt summary:hover{color:#fff}
+  .vx-auth-codes{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px}
+  .vx-auth-codes li{padding:10px 12px;border-radius:var(--radius);background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.12)}
+  .vx-auth-codes code{background:transparent;padding:0;color:#fff;font-size:14px;letter-spacing:.04em}
   .vx-auth-stage{
     flex:1;display:flex;align-items:center;justify-content:center;padding:48px;
     background-color:var(--bg);

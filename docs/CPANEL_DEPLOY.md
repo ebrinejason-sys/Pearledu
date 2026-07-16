@@ -67,6 +67,39 @@ Per CLAUDE.md: run `php artisan db:verify-security` and
 `php artisan test --filter=TenantIsolationTest` — ideally in a staging
 subdomain first, not directly against a school's live data.
 
+## If the site returns HTTP 500 ("This page isn't working")
+
+Artisan working in Terminal while the browser 500s usually means the
+**web PHP** handler differs from CLI, or Laravel cannot write logs/cache.
+
+In cPanel Terminal:
+
+```bash
+cd /home/voxsignco/pearledu-app
+php -v                                          # must be 8.3+
+grep -E '^(APP_KEY|APP_DEBUG|DB_|SESSION_)' .env
+php artisan config:clear
+php artisan cache:clear
+tail -n 80 storage/logs/laravel.log             # real exception
+# After a browser hit, re-tail the log if it was empty.
+ls -la storage/logs bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+```
+
+Also confirm in **cPanel → Domains** that `pearledu.voxsign.co.ug` (and the
+apex) use document root `/home/voxsignco/pearledu-app/public`, and in
+**MultiPHP Manager** that the domain is on **PHP 8.3+** (same as CLI).
+
+To seed the platform admin after a failed `PlatformSeeder` (config was
+cached, so `env()` looked empty):
+
+```bash
+cd /home/voxsignco/pearledu-app
+php artisan config:clear
+php artisan db:seed --class=PlatformSeeder --force
+php artisan config:cache
+```
+
 ## Uploading the 3D avatar model (manual step, not part of git deploy)
 
 `thirg glb.glb` is gitignored (see `.gitignore`) and is never part of a git

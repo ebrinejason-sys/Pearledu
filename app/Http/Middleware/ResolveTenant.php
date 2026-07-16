@@ -42,11 +42,18 @@ class ResolveTenant {
             return $next($request);
         }
 
+        // Do not wrap in optional() — Optional is truthy even when empty, so
+        // `$school ? forSchool($school->id)` can pass null into forSchool().
         $school = School::where('slug', $label)->where('status', 'active')->first()
-            ?? optional(School::query()->whereIn('id', \App\Models\SchoolDomain::query()
-                    ->where('domain', $host)->whereNotNull('verified_at')->pluck('school_id'))->first());
+            ?? School::query()->whereIn('id', \App\Models\SchoolDomain::query()
+                ->where('domain', $host)->whereNotNull('verified_at')->pluck('school_id'))->first();
 
-        $school ? $this->context->forSchool($school->id) : $this->context->clear();
+        if ($school?->id) {
+            $this->context->forSchool((int) $school->id);
+        } else {
+            $this->context->clear();
+        }
+
         return $next($request);
     }
 

@@ -55,17 +55,10 @@
           background:var(--nav-glass);backdrop-filter:blur(14px);border:1px solid var(--line);
           border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
   .pe-brand{display:flex;align-items:center;gap:10px;padding-left:4px;color:var(--logo);min-width:0}
-  .vx-logo{
-    display:inline-block;flex-shrink:0;
-    height:var(--vx-logo-h,26px);
-    width:calc(var(--vx-logo-h,26px) * 5568 / 2428);
-    -webkit-mask-position:center;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;
-    mask-position:center;mask-size:contain;mask-repeat:no-repeat;
-  }
-  .pe-brand .vx-logo{background:var(--logo)}
+  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,26px);width:auto}
   .pe-brand-text{display:flex;flex-direction:column;line-height:1.12;min-width:0}
   @media(max-width:760px){
-    .pe-brand .vx-logo{--vx-logo-h:20px}
+    .pe-brand .vx-logo{--vx-logo-h:20px;height:20px}
     .pe-brand-tagline{display:none}
   }
   .pe-brand-name{font-family:var(--display);font-weight:700;font-size:16px;color:var(--fg)}

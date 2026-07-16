@@ -21,21 +21,14 @@
   .app-header__row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 20px}
   .topbar{background:var(--surface);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:14px}
   .brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--brand);white-space:nowrap}
-  .vx-logo{
-    display:inline-block;flex-shrink:0;
-    height:var(--vx-logo-h,28px);
-    width:calc(var(--vx-logo-h,28px) * 5568 / 2428);
-    -webkit-mask-position:center;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;
-    mask-position:center;mask-size:contain;mask-repeat:no-repeat;
-  }
-  .brand .vx-logo{background:var(--brand)}
+  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,28px);width:auto}
   .brand__wordmark{font-weight:800;font-size:18px;color:var(--brand)}
   .brand__wordmark b{color:var(--accent)}
   .auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin:24px 0 8px;text-decoration:none}
   .auth-brand .brand__wordmark{font-size:22px}
   @media(max-width:800px){
     .brand__wordmark{font-size:16px}
-    .brand .vx-logo{--vx-logo-h:22px}
+    .brand .vx-logo{--vx-logo-h:22px;height:22px}
     .wrap{padding:16px 14px 32px}
     .page-header{margin-bottom:16px}
     table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -119,6 +112,7 @@
   .pill{display:inline-block;background:var(--accent-soft);color:var(--brand);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
   .pill--muted{background:var(--bg);color:var(--muted)}
 </style>
+@yield('head')
 </head>
 <body class="{{ request()->cookie('sidebar_collapsed') === '1' ? 'sidebar-collapsed' : '' }}">
   @auth
