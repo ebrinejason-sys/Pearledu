@@ -110,13 +110,16 @@ class NavigationBuilder
     /** @return list<array{key: string, label: string, items: list<array>}> */
     private function platformSections(): array
     {
+        $entered = (bool) session('platform.entered_school_id');
+
         return [
             [
                 'key' => 'general',
                 'label' => 'General',
-                'items' => [
+                'items' => array_values(array_filter([
                     $this->item('Dashboard', 'platform.dashboard', icon: 'dashboard'),
-                ],
+                    $entered ? $this->item('School workspace', 'platform.workspace', icon: 'workspace') : null,
+                ])),
             ],
             [
                 'key' => 'schools',
@@ -124,6 +127,23 @@ class NavigationBuilder
                 'items' => [
                     $this->item('Schools', 'platform.schools.index', icon: 'schools', active: request()->routeIs('platform.schools.*') && ! request()->routeIs('platform.schools.create')),
                     $this->item('Onboard school', 'platform.schools.create', icon: 'add', highlight: true),
+                ],
+            ],
+            [
+                'key' => 'school_data',
+                'label' => $entered ? 'School data entry' : 'School data entry',
+                'items' => array_values(array_filter([
+                    $entered ? $this->item('Students', 'platform.students.index', icon: 'students', active: request()->routeIs('platform.students.*')) : null,
+                    $entered ? $this->item('Classes', 'platform.classes.index', icon: 'classes', active: request()->routeIs('platform.classes.*')) : null,
+                    $entered ? $this->item('Staff', 'platform.staff.index', icon: 'staff', active: request()->routeIs('platform.staff.*')) : null,
+                    ! $entered ? $this->item('Enter a school…', 'platform.schools.index', icon: 'workspace') : null,
+                ])),
+            ],
+            [
+                'key' => 'operations',
+                'label' => 'Operations',
+                'items' => [
+                    $this->item('Invitations', 'platform.invitations.index', icon: 'invites', active: request()->routeIs('platform.invitations.*')),
                 ],
             ],
             [

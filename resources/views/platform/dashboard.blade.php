@@ -5,9 +5,9 @@
     <div>
       <p class="page-header__eyebrow">VoxSign · PearlEdu console</p>
       <h2 class="page-header__title">Platform overview</h2>
-      <p style="margin:8px 0 0;max-width:62ch;color:var(--muted);font-size:14px;line-height:1.55">
-        Provision schools, invite school admins, manage SMS credits, and support tenants.
-        Day-to-day academics (students, classes, guardians) live inside each school’s own workspace.
+      <p style="margin:8px 0 0;max-width:68ch;color:var(--muted);font-size:14px;line-height:1.55">
+        Full organisation console: onboard schools, invite staff, enter a school workspace for data entry
+        (students, classes, guardians), manage SMS credits, and publish pricing.
       </p>
     </div>
     <div class="page-header__actions">
@@ -16,30 +16,67 @@
     </div>
   </div>
 
+  @if($enteredSchool)
+    <div class="status" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div>
+        <strong>Working in {{ $enteredSchool->name }}</strong>
+        — {{ number_format($workspaceStats['students']) }} students ·
+        {{ number_format($workspaceStats['classes']) }} classes ·
+        {{ number_format($workspaceStats['open_invites']) }} open invites
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn" href="{{ route('platform.workspace') }}">Open workspace</a>
+        <a class="btn ghost" href="{{ route('platform.students.create') }}">Add student</a>
+        <form method="post" action="{{ route('platform.schools.leave') }}">@csrf<button class="btn ghost" type="submit">Exit</button></form>
+      </div>
+    </div>
+  @endif
+
   <div class="grid g4">
     <div class="card stat"><div class="l">Schools</div><div class="v">{{ $stats['schools'] }}</div></div>
     <div class="card stat"><div class="l">Active</div><div class="v">{{ $stats['active'] }}</div></div>
     <div class="card stat"><div class="l">Learners (all schools)</div><div class="v">{{ number_format($stats['learners']) }}</div></div>
-    <div class="card stat"><div class="l">Pending admin invites</div><div class="v">{{ number_format($stats['pending_invites']) }}</div></div>
+    <div class="card stat"><div class="l">Open invitations</div><div class="v">{{ number_format($stats['pending_invites']) }}</div></div>
   </div>
 
-  <div class="grid g2" style="margin-bottom:16px">
+  <h3 style="margin:8px 0 12px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Organisation</h3>
+  <div class="grid g2" style="margin-bottom:8px">
     <a class="card dash-action" href="{{ route('platform.schools.create') }}">
       <h3>Onboard a school</h3>
-      <p>Create the tenant, set levels and theme, then email the school admin invitation so they can accept and activate.</p>
+      <p>Provision tenant, levels, theme, and email the first school-admin invitation.</p>
     </a>
     <a class="card dash-action" href="{{ route('platform.schools.index') }}">
-      <h3>Manage schools</h3>
-      <p>Review provisioning status, open a school’s detail page, enter school scope, or imitate a member for support.</p>
+      <h3>Schools directory</h3>
+      <p>Edit school details, enter a workspace for data entry, or imitate a member for support.</p>
     </a>
+    <a class="card dash-action" href="{{ route('platform.invitations.index') }}">
+      <h3>Invitations desk</h3>
+      <p>Track open, expired, and accepted invites. Resend activation links in one place.</p>
+      <span class="dash-action__meta">{{ number_format($stats['staff_invites']) }} staff invites open</span>
+    </a>
+    @if($enteredSchool)
+      <a class="card dash-action" href="{{ route('platform.workspace') }}">
+        <h3>School workspace · {{ $enteredSchool->name }}</h3>
+        <p>Students, classes, staff invites, and guardian linking for the school you entered.</p>
+      </a>
+    @else
+      <a class="card dash-action" href="{{ route('platform.schools.index') }}">
+        <h3>Enter a school workspace</h3>
+        <p>Pick a school and click <strong>Enter workspace</strong> to create students and classes as platform admin.</p>
+      </a>
+    @endif
+  </div>
+
+  <h3 style="margin:20px 0 12px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Communications &amp; marketing</h3>
+  <div class="grid g2" style="margin-bottom:16px">
     <a class="card dash-action" href="{{ route('platform.sms.index') }}">
       <h3>SMS &amp; credits</h3>
-      <p>Configure the SMS provider and top up school credit balances used for parent/guardian notifications.</p>
+      <p>Provider settings and per-school credit top-ups for parent notifications.</p>
       <span class="dash-action__meta">{{ number_format($stats['sms_sent']) }} messages sent · {{ $stats['operators'] }} platform {{ Str::plural('operator', $stats['operators']) }}</span>
     </a>
     <a class="card dash-action" href="{{ route('platform.pricing.index') }}">
       <h3>Pricing plans</h3>
-      <p>Edit the public pricing cards shown on the VoxSign marketing site for schools evaluating PearlEdu.</p>
+      <p>Public plans shown on the VoxSign marketing site.</p>
     </a>
   </div>
 
@@ -83,14 +120,20 @@
             @endif
           </td>
           <td><span class="pill">{{ $s->status }}</span></td>
-          <td><a href="{{ route('platform.schools.show', $s) }}">Open</a></td>
+          <td style="white-space:nowrap">
+            <a href="{{ route('platform.schools.show', $s) }}">Open</a>
+            ·
+            <form method="post" action="{{ route('platform.schools.enter', $s) }}" style="display:inline">
+              @csrf
+              <button type="submit" class="btn-link" style="background:none;border:0;padding:0;color:var(--brand);font:inherit;font-weight:600;cursor:pointer">Enter</button>
+            </form>
+          </td>
         </tr>
       @empty
         <tr>
           <td colspan="6" style="color:var(--muted)">
             No schools yet.
-            <a href="{{ route('platform.schools.create') }}">Onboard your first school</a>
-            to provision a tenant and invite its admin.
+            <a href="{{ route('platform.schools.create') }}">Onboard your first school</a>.
           </td>
         </tr>
       @endforelse

@@ -31,11 +31,11 @@ class InvitationMailer
         ));
     }
 
-    /** Re-issue a fresh token and email it (platform operators only). */
+    /** Re-issue a fresh token and email it (platform operators only). Expired invites can be renewed. */
     public function resend(SchoolInvitation $invitation, School $school, ?int $operatorId = null): string
     {
-        if ($invitation->isAccepted() || $invitation->isExpired()) {
-            throw new RuntimeException('This invitation is no longer valid.');
+        if ($invitation->isAccepted()) {
+            throw new RuntimeException('This invitation was already accepted.');
         }
 
         $raw = \Illuminate\Support\Str::random(48);

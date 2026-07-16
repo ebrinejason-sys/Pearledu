@@ -9,6 +9,10 @@
     'add' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
     'account' => '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
     'pricing' => '<path d="M20.6 13.4 12.6 21.4a2 2 0 0 1-2.8 0L2 13.6V4a2 2 0 0 1 2-2h9.6l7 7a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    'workspace' => '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 4.5v5"/>',
+    'classes' => '<path d="M4 6h16v12H4z"/><path d="M8 6v12M4 10h16"/>',
+    'staff' => '<circle cx="9" cy="8" r="3"/><path d="M3.5 19c.7-3 2.8-4.8 5.5-4.8S14 16 14.7 19"/><path d="M16 11h5M18.5 8.5v5"/>',
+    'invites' => '<path d="M4 6.5h16v11H4z"/><path d="M4 7l8 6 8-6"/>',
     'dot' => '<circle cx="12" cy="12" r="3"/>',
   ];
   $collapsed = request()->cookie('sidebar_collapsed') === '1';

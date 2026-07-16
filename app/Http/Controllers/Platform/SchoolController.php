@@ -66,17 +66,45 @@ class SchoolController extends Controller {
             ])
             ->sortBy(fn ($m) => $m['user']->full_name)
             ->values();
-        return view('platform.schools.show', compact('school', 'members'));
+        $openInvites = SchoolInvitation::query()
+            ->where('school_id', $school->id)
+            ->whereNull('accepted_at')
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
+        return view('platform.schools.show', [
+            'school' => $school,
+            'members' => $members,
+            'openInvites' => $openInvites,
+            'themes' => config('themes.themes'),
+        ]);
+    }
+
+    public function update(Request $request, School $school) {
+        $data = $request->validate([
+            'name' => 'required|string|max:160',
+            'district' => 'nullable|string|max:120',
+            'emis_number' => 'nullable|string|max:60',
+            'theme' => 'required|string|in:'.implode(',', array_keys(config('themes.themes', []))),
+            'status' => 'required|in:pending,active,suspended,archived',
+        ]);
+
+        $school->update($data);
+        $this->audit->record('school.updated', $school, $data);
+
+        return back()->with('status', 'School details saved.');
     }
 
     public function enter(Request $request, School $school) {
         $request->session()->put('platform.entered_school_id', $school->id);
         $this->audit->record('school.entered', $school, ['slug'=>$school->slug]);
-        return redirect()->route('platform.schools.show', $school);
+        return redirect()->route('platform.workspace')
+            ->with('status', 'Working in '.$school->name.'. You can enter students, classes, and staff for this school.');
     }
 
     public function leave(Request $request) {
         $request->session()->forget('platform.entered_school_id');
-        return redirect()->route('platform.schools.index');
+        return redirect()->route('platform.schools.index')
+            ->with('status', 'Left school workspace.');
     }
 }

@@ -24,7 +24,9 @@
       'brandHref' => ($nav['zone'] ?? '') === 'platform' ? route('platform.dashboard') : route('app.home'),
     ])
 
-    @if(!empty($nav['school']))
+    @if(!empty($nav['school']) && ($nav['zone'] ?? '') === 'platform')
+      <span class="context-pill" title="School workspace">Workspace · {{ $nav['school']['name'] }}</span>
+    @elseif(!empty($nav['school']))
       <span class="context-pill" title="Current school">{{ $nav['school']['name'] }}</span>
     @elseif(($nav['zone'] ?? '') === 'platform')
       <span class="context-pill context-pill--platform">Platform console</span>
