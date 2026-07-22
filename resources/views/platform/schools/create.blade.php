@@ -10,9 +10,29 @@
         <div><label>District</label><input name="district" value="{{ old('district') }}"></div>
         <div><label>EMIS number (optional)</label><input name="emis_number" value="{{ old('emis_number') }}"></div>
         <div><label>Theme</label>
-          <select name="theme">
-            @foreach($themes as $key => $t)<option value="{{ $key }}">{{ $t['label'] }}</option>@endforeach
+          <select name="theme" id="school-theme">
+            @foreach($themes as $key => $t)
+              <option value="{{ $key }}" @selected(old('theme', 'pearledu') === $key)>{{ $t['label'] }}</option>
+            @endforeach
           </select>
+          <div class="theme-swatches" style="display:grid;gap:10px;margin-top:12px">
+            @foreach($themes as $key => $t)
+              @php($tok = $t['tokens'] ?? [])
+              <label class="theme-swatch" style="display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);cursor:pointer;background:var(--surface)">
+                <input type="radio" name="_theme_preview" value="{{ $key }}" style="width:auto;margin:0" @checked(old('theme', 'pearledu') === $key) onclick="document.getElementById('school-theme').value=this.value">
+                <span style="display:flex;gap:4px;flex-shrink:0" aria-hidden="true">
+                  <i style="width:18px;height:18px;border-radius:4px;background:{{ $tok['brand'] ?? '#ccc' }}"></i>
+                  <i style="width:18px;height:18px;border-radius:4px;background:{{ $tok['accent'] ?? '#ccc' }}"></i>
+                  <i style="width:18px;height:18px;border-radius:4px;background:{{ $tok['sidebar'] ?? '#ccc' }}"></i>
+                  <i style="width:18px;height:18px;border-radius:4px;background:{{ $tok['bg'] ?? '#eee' }};border:1px solid {{ $tok['line'] ?? '#ddd' }}"></i>
+                </span>
+                <span style="min-width:0">
+                  <strong style="display:block;font-size:13px;color:var(--ink)">{{ $t['label'] }}</strong>
+                  <span style="font-size:12px;color:var(--muted)">{{ $t['description'] ?? '' }}</span>
+                </span>
+              </label>
+            @endforeach
+          </div>
         </div>
       </div>
       <label>Levels offered</label>

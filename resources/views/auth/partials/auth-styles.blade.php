@@ -5,32 +5,32 @@
     display:flex;flex-direction:column;justify-content:center;align-items:center;
     padding:48px clamp(24px,4vw,56px);gap:22px;
   }
-  .vx-auth-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;color:#fff;text-decoration:none;width:100%;max-width:360px}
+  .vx-auth-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;color:var(--on-brand);text-decoration:none;width:100%;max-width:360px}
   .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,32px);width:auto}
   .vx-auth-brand span b{opacity:.8}
   .vx-auth-card{width:100%;max-width:360px}
-  .vx-auth-card h1{margin:0 0 12px;font-size:24px;color:#fff}
-  .vx-auth-lead{margin:0 0 18px;font-size:14px;line-height:1.55;color:rgba(255,255,255,.78)}
-  .vx-auth-status{background:rgba(66,158,189,.18);border:1px solid rgba(159,231,245,.35);color:#fff;padding:10px 12px;border-radius:var(--radius);font-size:14px;margin-bottom:14px}
+  .vx-auth-card h1{margin:0 0 12px;font-size:24px;color:var(--on-brand);font-family:var(--font-display)}
+  .vx-auth-lead{margin:0 0 18px;font-size:14px;line-height:1.55;color:color-mix(in srgb, var(--on-brand) 78%, transparent)}
+  .vx-auth-status{background:color-mix(in srgb, var(--focus) 18%, transparent);border:1px solid color-mix(in srgb, var(--sidebar-ink) 35%, transparent);color:var(--on-brand);padding:10px 12px;border-radius:var(--radius);font-size:14px;margin-bottom:14px}
   .vx-auth-card label{display:block;color:var(--sidebar-ink);font-size:13px;margin:12px 0 4px}
-  .vx-auth-card input{display:block;box-sizing:border-box;width:100%;padding:12px;border-radius:var(--radius);font:inherit;font-size:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff}
-  .vx-auth-card input::placeholder{color:rgba(255,255,255,.5)}
+  .vx-auth-card input{display:block;box-sizing:border-box;width:100%;padding:12px;border-radius:var(--radius);font:inherit;font-size:16px;background:var(--sidebar-hover);border:1px solid color-mix(in srgb, var(--on-brand) 18%, transparent);color:var(--on-brand)}
+  .vx-auth-card input::placeholder{color:color-mix(in srgb, var(--on-brand) 50%, transparent)}
   .vx-auth-remember{display:flex;align-items:center;gap:8px;font-size:13px}
   .vx-auth-remember input{width:auto}
   .vx-auth-links{margin:16px 0 0;font-size:13px}
-  .vx-auth-links a{color:#fff;text-decoration:underline;text-underline-offset:3px}
-  .vx-auth-divider{margin:22px 0 16px;border:0;border-top:1px solid rgba(255,255,255,.14)}
-  .vx-auth-card .btn{width:100%;min-height:48px;margin-top:16px;padding:12px 16px;background:var(--accent);color:var(--ink);border:0;border-radius:var(--radius);font:inherit;font-weight:700;font-size:15px;letter-spacing:.2px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15),0 4px 12px rgba(0,0,0,.12);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease}
+  .vx-auth-links a{color:var(--on-brand);text-decoration:underline;text-underline-offset:3px}
+  .vx-auth-divider{margin:22px 0 16px;border:0;border-top:1px solid color-mix(in srgb, var(--on-brand) 14%, transparent)}
+  .vx-auth-card .btn{width:100%;min-height:48px;margin-top:16px;padding:12px 16px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:var(--radius);font:inherit;font-weight:700;font-size:15px;letter-spacing:.2px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15),0 4px 12px rgba(0,0,0,.12);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease}
   .vx-auth-card .btn:hover{background:color-mix(in srgb,var(--accent) 88%,#fff)}
   .vx-auth-card .btn:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(0,0,0,.15)}
-  .vx-auth-card .btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
-  .vx-auth-card .btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.28);box-shadow:none}
-  .vx-auth-card .btn-ghost:hover{background:rgba(255,255,255,.08)}
-  .vx-auth-card .btn-link{display:inline;width:auto;margin:0;padding:0;background:none;border:0;box-shadow:none;color:rgba(255,255,255,.85);font:inherit;font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-  .vx-auth-card .btn-link:hover{color:#fff}
+  .vx-auth-card .btn:focus-visible{outline:2px solid var(--on-brand);outline-offset:2px}
+  .vx-auth-card .btn-ghost{background:transparent;color:var(--on-brand);border:1.5px solid color-mix(in srgb, var(--on-brand) 28%, transparent);box-shadow:none}
+  .vx-auth-card .btn-ghost:hover{background:var(--sidebar-hover)}
+  .vx-auth-card .btn-link{display:inline;width:auto;margin:0;padding:0;background:none;border:0;box-shadow:none;color:color-mix(in srgb, var(--on-brand) 85%, transparent);font:inherit;font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+  .vx-auth-card .btn-link:hover{color:var(--on-brand)}
   .vx-auth-card .err{color:#FFD3D3;font-size:13px;margin-top:6px}
-  .vx-auth-card p{margin:0 0 14px;font-size:14px;line-height:1.55;color:rgba(255,255,255,.78)}
-  .vx-auth-card code{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.25);color:#9FE7F5;font-size:12px;word-break:break-all}
+  .vx-auth-card p{margin:0 0 14px;font-size:14px;line-height:1.55;color:color-mix(in srgb, var(--on-brand) 78%, transparent)}
+  .vx-auth-card code{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.25);color:var(--sidebar-ink);font-size:12px;word-break:break-all}
   .vx-auth-qr{display:inline-flex;align-items:center;justify-content:center;margin:4px 0 14px;padding:14px;background:#fff;border-radius:calc(var(--radius) + 4px);box-shadow:0 8px 24px rgba(0,0,0,.18)}
   .vx-auth-qr svg{display:block;width:180px;height:180px}
   .vx-auth-manual{margin:0 0 16px;font-size:13px;line-height:1.55;color:rgba(255,255,255,.72)}

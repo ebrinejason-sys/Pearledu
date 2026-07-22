@@ -36,7 +36,12 @@ class AppServiceProvider extends ServiceProvider {
 
     public function boot(): void {
         View::composer('*', function ($view) {
-            $view->with('themeCss', app(ThemeManager::class)->cssVariables());
+            $theme = app(ThemeManager::class);
+            $view->with([
+                'themeCss' => $theme->cssVariables(),
+                'themeFontUrl' => $theme->fontUrl(),
+                'themeColor' => $theme->themeColor(),
+            ]);
         });
         View::composer(['layouts.app', 'layouts.partials.topbar', 'layouts.partials.sidebar'], function ($view) {
             if (auth()->check()) {

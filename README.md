@@ -10,7 +10,12 @@ Laravel 13 · PostgreSQL · multi-tenant with database-enforced isolation. Built
 
 **Tenant isolation (two layers, fail-closed)** — Eloquent global scope AND PostgreSQL `FORCE ROW LEVEL SECURITY`. No service-role/bypass key exists; "platform sees all" is an RLS policy branch, not a privileged connection. `php artisan db:verify-security` refuses to run on a superuser/`BYPASSRLS` role.
 
-**Themes (3)** — `pearledu` (green/gold), `moodle` (Boost blue/orange), `emis` (Ugandan-government blue/gold). Resolution: user preference -> school theme -> default. Palettes live in `config/themes.php`; the layout injects them as CSS variables.
+**Themes (3)** — full semantic palettes in `config/themes.php`:
+- `pearledu` — deep lagoon navy + amber (Plus Jakarta Sans)
+- `moodle` — academic Boost blue + orange (Nunito Sans)
+- `emis` — formal government navy + gold (IBM Plex Sans)
+
+Resolution: user preference → school theme → default. App/auth layouts inject CSS variables, load the theme font, and drive buttons/sidebar/status/danger from tokens (not hardcoded hexes).
 
 **Auth (invite-only)** — hierarchical invites by **email and/or phone**; accept link sets password then opens the dashboard. Login with **email or phone + password**. Multi-role staff (union permissions). Roles include deputy head teacher. Platform 2FA email OTP unchanged.
 

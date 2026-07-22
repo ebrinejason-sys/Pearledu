@@ -36,6 +36,16 @@
             <option value="{{ $key }}" @selected(old('theme', $school->theme) === $key)>{{ $theme['label'] ?? $key }}</option>
           @endforeach
         </select>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+          @foreach($themes as $key => $theme)
+            @php($tok = $theme['tokens'] ?? [])
+            <span title="{{ $theme['description'] ?? $key }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+              <i style="width:14px;height:14px;border-radius:3px;background:{{ $tok['brand'] ?? '#ccc' }};display:inline-block"></i>
+              <i style="width:14px;height:14px;border-radius:3px;background:{{ $tok['accent'] ?? '#ccc' }};display:inline-block"></i>
+              {{ $theme['label'] ?? $key }}
+            </span>
+          @endforeach
+        </div>
         <label>Status</label>
         <select name="status" required>
           @foreach(['pending','active','suspended','archived'] as $status)
