@@ -30,7 +30,7 @@ class LoginPageTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('vx-auth-panel', false);
         $response->assertSee('vx-auth-stage', false);
-        $response->assertSee('vx-illustration-card', false);
+        $response->assertDontSee('vx-illustration-card', false);
         $response->assertSee('login-illustration', false);
     }
 
@@ -44,12 +44,13 @@ class LoginPageTest extends TestCase
         $response->assertDontSee('#12B3A6', false);
     }
 
-    public function test_login_page_hides_avatar_stage_on_narrow_viewports(): void
+    public function test_login_page_keeps_illustration_visible_on_narrow_viewports(): void
     {
         $response = $this->get('/login');
 
         $response->assertSee('@media(max-width:860px)', false);
-        $response->assertSee('.vx-auth-stage{display:none}', false);
+        $response->assertDontSee('.vx-auth-stage{display:none}', false);
+        $response->assertSee('grid-template-columns:1fr', false);
     }
 
     public function test_login_form_still_renders_fields_and_csrf(): void

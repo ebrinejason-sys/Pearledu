@@ -59,9 +59,7 @@
     </div>
     <div class="vx-auth-stage">
       <div class="vx-stage-inner">
-        <div class="vx-illustration-card">
-          <img src="{{ asset('images/auth/login-illustration.png') }}" alt="" class="vx-login-illustration">
-        </div>
+        <img src="{{ asset('images/auth/login-illustration.png') }}" alt="" class="vx-login-illustration" width="640" height="480">
         <p class="vx-stage-copy"><strong>Run your whole school from one dashboard.</strong><br>Academics, attendance, fees and communication — together.</p>
       </div>
     </div>
