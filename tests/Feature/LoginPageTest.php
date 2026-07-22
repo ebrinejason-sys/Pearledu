@@ -92,4 +92,15 @@ class LoginPageTest extends TestCase
         $response->assertSee('voxsign-logo.svg', false);
         $response->assertDontSee('logo.png', false);
     }
+
+    public function test_login_page_uses_equal_split_and_shared_favicons(): void
+    {
+        $response = $this->get('/login');
+
+        $response->assertStatus(200);
+        $response->assertSee('grid-template-columns:1fr 1fr', false);
+        $response->assertSee('favicon.svg', false);
+        $response->assertSee('favicon.ico', false);
+        $response->assertSee('apple-touch-icon.png', false);
+    }
 }

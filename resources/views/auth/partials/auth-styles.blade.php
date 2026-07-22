@@ -1,14 +1,14 @@
 <style>
-  .vx-auth-split{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);min-height:100vh;min-height:100dvh}
+  .vx-auth-split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh;min-height:100dvh}
   .vx-auth-panel{
     background:var(--sidebar);color:var(--sidebar-ink);
-    display:flex;flex-direction:column;justify-content:center;
-    padding:40px 32px;gap:22px;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    padding:48px clamp(24px,4vw,56px);gap:22px;
   }
-  .vx-auth-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;color:#fff;text-decoration:none}
+  .vx-auth-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;color:#fff;text-decoration:none;width:100%;max-width:360px}
   .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,32px);width:auto}
   .vx-auth-brand span b{opacity:.8}
-  .vx-auth-card{width:100%;max-width:300px}
+  .vx-auth-card{width:100%;max-width:360px}
   .vx-auth-card h1{margin:0 0 12px;font-size:24px;color:#fff}
   .vx-auth-lead{margin:0 0 18px;font-size:14px;line-height:1.55;color:rgba(255,255,255,.78)}
   .vx-auth-status{background:rgba(66,158,189,.18);border:1px solid rgba(159,231,245,.35);color:#fff;padding:10px 12px;border-radius:var(--radius);font-size:14px;margin-bottom:14px}
