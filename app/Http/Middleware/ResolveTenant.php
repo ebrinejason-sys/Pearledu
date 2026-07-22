@@ -20,9 +20,12 @@ class ResolveTenant {
             return $next($request);
         }
 
+        // PearlEdu marketing (/) and the platform console (/platform, /login) share this host.
+        // Pin platform RLS here so route-model binding (e.g. /platform/schools/{school})
+        // can see rows — SubstituteBindings runs before the `platform` middleware.
         if ($host === config('tenancy.pearledu_landing_host')) {
             $request->attributes->set('is_pearledu_landing', true);
-            $this->context->clear();
+            $this->context->forPlatform();
             return $next($request);
         }
 
@@ -38,12 +41,13 @@ class ResolveTenant {
 
         $label = $this->label($host, $base);
         if ($label === null || in_array($label, config('tenancy.platform_subdomains'), true)) {
-            $this->context->clear();                     // platform host
+            // Platform console hosts must see all schools under RLS for bindings + indexes.
+            $this->context->forPlatform();
             return $next($request);
         }
 
-        // Do not wrap in optional() — Optional is truthy even when empty, so
-        // `$school ? forSchool($school->id)` can pass null into forSchool().
+        // Resolve tenant slug with a brief platform pin (RLS otherwise hides schools).
+        $this->context->forPlatform();
         $school = School::where('slug', $label)->where('status', 'active')->first()
             ?? School::query()->whereIn('id', \App\Models\SchoolDomain::query()
                 ->where('domain', $host)->whereNotNull('verified_at')->pluck('school_id'))->first();
