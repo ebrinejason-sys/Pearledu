@@ -12,13 +12,15 @@ Laravel 13 · PostgreSQL · multi-tenant with database-enforced isolation. Built
 
 **Themes (3)** — `pearledu` (green/gold), `moodle` (Boost blue/orange), `emis` (Ugandan-government blue/gold). Resolution: user preference -> school theme -> default. Palettes live in `config/themes.php`; the layout injects them as CSS variables.
 
-**Auth** — invitation-based activation (hashed, single-use, expiring tokens), login with per-email+IP rate limiting, session regeneration, last-login tracking, 2FA columns scaffolded, `permission:` route middleware (union of a user's active roles).
+**Auth (invite-only)** — hierarchical invites by **email and/or phone**; accept link sets password then opens the dashboard. Login with **email or phone + password**. Multi-role staff (union permissions). Roles include deputy head teacher. Platform 2FA email OTP unchanged.
+
+**School MIS modules** — academic years/terms, subjects, teaching assignments, enrollments, attendance (+ optional SMS), assessment/marks/broadsheet/report cards, promotions, non-colliding timetable, fees (cash + MoMo methods), announcements, admissions, LMS, CBT, library, inventory, transport, hostel, HR leave, clinic, helpdesk, EMIS CSV export.
 
 **Onboarding** — `SchoolProvisioner` onboards atomically, auto-assigns `pearledu{N}` subdomain, seeds class scaffold, creates the contact person as School Admin, and issues their activation invite.
 
-**SMS reselling** — platform-controlled provider + per-segment credit price; append-only credit ledger with locked balance writes; platform tops schools up; schools spend credit to message parents/staff. Charge-then-dispatch with automatic refund on failure. Drivers: `fake` (no delivery), `log` (log-only). Any other `SMS_DRIVER` fails closed until a real provider gateway is added.
+**SMS reselling** — platform-controlled provider + per-segment credit price; append-only credit ledger; drivers: `fake`, `log`, `twilio`.
 
-**Account deletion** — `AccountDeletionService` hard-deletes the identity + personal links; de-identifies any learner record the school must keep; retains de-identified audit. Self-service at Account -> Delete account.
+**Account deletion** — `AccountDeletionService` hard-deletes identity + personal links; de-identifies learner records schools must keep.
 
 **Email** — Resend via SMTP (`.env.example`).
 
@@ -51,4 +53,4 @@ php artisan test --filter=TenantIsolationTest
 
 ## Honest status
 
-Real, working implementations: themes, auth/invitations, onboarding, SMS-credit reselling, account deletion, platform dashboard, RLS + guard. Lint-clean (98/98) but not yet executed — no Postgres/Composer in the build sandbox, so run migrations + tests on a real Postgres before trusting. Still planned: MTN/Airtel MoMo, full 2FA enforcement, self-service data export, fees/assessment/attendance modules (covered by the multi-agent kit).
+Core MIS surfaces above are implemented end-to-end (migrations, RLS, services, school routes/UI). Still planned for deeper polish: live MoMo gateway callbacks, full CBT exam-taking UI for students, live video classes, and broader school-user 2FA. Run migrations + `db:verify-security` + tests on real Postgres before production trust.

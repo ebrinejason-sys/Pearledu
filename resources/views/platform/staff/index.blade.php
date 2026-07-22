@@ -5,9 +5,11 @@
     <div>
       <p class="page-header__eyebrow"><a href="{{ route('platform.workspace') }}">{{ $school->name }}</a> · People</p>
       <h2 class="page-header__title">Staff &amp; accounts</h2>
-      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Invite school operators. They set a password via the email link.</p>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Invite by email or phone. Recipients set a password via the link. Multiple roles allowed.</p>
     </div>
   </div>
+
+  @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
 
   <div class="grid g2">
     <div class="card">
@@ -18,17 +20,21 @@
         <input name="full_name" value="{{ old('full_name') }}" required>
         @error('full_name')<div class="err">{{ $message }}</div>@enderror
         <label>Email</label>
-        <input name="email" type="email" value="{{ old('email') }}" required>
+        <input name="email" type="email" value="{{ old('email') }}">
         @error('email')<div class="err">{{ $message }}</div>@enderror
-        <label>Phone (optional)</label>
-        <input name="phone" value="{{ old('phone') }}">
-        <label>Role</label>
-        <select name="role_key" required>
+        <label>Phone</label>
+        <input name="phone" value="{{ old('phone') }}" placeholder="07XXXXXXXX">
+        @error('phone')<div class="err">{{ $message }}</div>@enderror
+        <label>Roles</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
           @foreach($roles as $role)
-            <option value="{{ $role->key }}" @selected(old('role_key', 'school_admin') === $role->key)>{{ $role->label }}</option>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:500">
+              <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" @checked(collect(old('role_keys', ['school_admin']))->contains($role->key))>
+              {{ $role->label }}
+            </label>
           @endforeach
-        </select>
-        @error('role_key')<div class="err">{{ $message }}</div>@enderror
+        </div>
+        @error('role_keys')<div class="err">{{ $message }}</div>@enderror
         <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
       </form>
     </div>
@@ -45,7 +51,7 @@
             <tr>
               <td>
                 <strong>{{ $invite->user?->full_name ?? '—' }}</strong><br>
-                <span style="color:var(--muted);font-size:12px">{{ $invite->email }}</span>
+                <span style="color:var(--muted);font-size:12px">{{ $invite->email ?: $invite->phone }}</span>
               </td>
               <td><span class="pill">{{ $invite->role_key }}</span></td>
               <td>{{ $invite->expires_at->diffForHumans() }}</td>
@@ -64,7 +70,7 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>Email</th>
+          <th>Contact</th>
           <th>Roles</th>
           <th>Status</th>
           <th></th>

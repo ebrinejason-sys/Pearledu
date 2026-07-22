@@ -1,12 +1,39 @@
 <?php
+use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\AdmissionController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AppHomeController;
+use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\CbtController;
+use App\Http\Controllers\ClinicController;
+use App\Http\Controllers\EmisController;
+use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\FeeController;
+use App\Http\Controllers\HelpdeskController;
+use App\Http\Controllers\HostelController;
+use App\Http\Controllers\HrController;
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\LibraryController;
+use App\Http\Controllers\LmsController;
+use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\SmsController;
+use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\TeachingAssignmentController;
+use App\Http\Controllers\TimetableController;
+use App\Http\Controllers\TransportController;
 use App\Http\Middleware\RequireSchoolMembership;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(function () {
     Route::get('/home', [AppHomeController::class, 'index'])->name('app.home');
+
+    Route::middleware('permission:staff.manage')->group(function () {
+        Route::get('/staff', [StaffController::class, 'index'])->name('app.staff.index');
+        Route::post('/staff', [StaffController::class, 'store'])->name('app.staff.store');
+    });
 
     Route::middleware('permission:sms.send')->group(function () {
         Route::get('/sms', [SmsController::class, 'index'])->name('app.sms');
@@ -25,5 +52,115 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/students/{student}/guardians', [StudentController::class, 'storeGuardian'])->name('app.students.guardians.store');
         Route::put('/students/{student}/guardians/{guardianship}/primary', [StudentController::class, 'makePrimary'])->name('app.students.guardians.primary');
         Route::delete('/students/{student}/guardians/{guardianship}', [StudentController::class, 'destroyGuardian'])->name('app.students.guardians.destroy');
+
+        Route::get('/enrollments', [EnrollmentController::class, 'index'])->name('app.enrollments.index');
+        Route::post('/enrollments', [EnrollmentController::class, 'store'])->name('app.enrollments.store');
+    });
+
+    Route::middleware('permission:school.manage')->group(function () {
+        Route::get('/academic-years', [AcademicYearController::class, 'index'])->name('app.years.index');
+        Route::post('/academic-years', [AcademicYearController::class, 'store'])->name('app.years.store');
+        Route::post('/academic-years/{year}/terms', [AcademicYearController::class, 'storeTerm'])->name('app.years.terms.store');
+        Route::get('/subjects', [SubjectController::class, 'index'])->name('app.subjects.index');
+        Route::post('/subjects', [SubjectController::class, 'store'])->name('app.subjects.store');
+        Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('app.subjects.destroy');
+        Route::get('/teaching-assignments', [TeachingAssignmentController::class, 'index'])->name('app.teaching.index');
+        Route::post('/teaching-assignments', [TeachingAssignmentController::class, 'store'])->name('app.teaching.store');
+        Route::delete('/teaching-assignments/{assignment}', [TeachingAssignmentController::class, 'destroy'])->name('app.teaching.destroy');
+    });
+
+    Route::middleware('permission:attendance.mark')->group(function () {
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('app.attendance.index');
+        Route::post('/attendance', [AttendanceController::class, 'store'])->name('app.attendance.store');
+    });
+
+    Route::middleware('permission:assessment.enter')->group(function () {
+        Route::get('/assessment', [AssessmentController::class, 'index'])->name('app.assessment.index');
+        Route::post('/assessment/periods', [AssessmentController::class, 'storePeriod'])->name('app.assessment.periods.store');
+        Route::get('/assessment/marks', [AssessmentController::class, 'marks'])->name('app.assessment.marks');
+        Route::post('/assessment/marks', [AssessmentController::class, 'storeMarks'])->name('app.assessment.marks.store');
+        Route::get('/assessment/broadsheet', [AssessmentController::class, 'broadsheet'])->name('app.assessment.broadsheet');
+        Route::get('/assessment/report-cards', [AssessmentController::class, 'reportCards'])->name('app.assessment.reports');
+    });
+
+    Route::middleware('permission:promotions.approve')->group(function () {
+        Route::get('/promotions', [PromotionController::class, 'index'])->name('app.promotions.index');
+        Route::post('/promotions', [PromotionController::class, 'store'])->name('app.promotions.store');
+        Route::post('/promotions/{batch}/commit', [PromotionController::class, 'commit'])->name('app.promotions.commit');
+    });
+
+    Route::middleware('permission:timetable.manage')->group(function () {
+        Route::get('/timetable', [TimetableController::class, 'index'])->name('app.timetable.index');
+        Route::post('/timetable/slots', [TimetableController::class, 'storeSlot'])->name('app.timetable.slots.store');
+        Route::delete('/timetable/slots/{slot}', [TimetableController::class, 'destroySlot'])->name('app.timetable.slots.destroy');
+    });
+
+    Route::middleware('permission:finance.manage')->group(function () {
+        Route::get('/fees', [FeeController::class, 'index'])->name('app.fees.index');
+        Route::post('/fees/structures', [FeeController::class, 'storeStructure'])->name('app.fees.structures.store');
+        Route::post('/fees/invoices', [FeeController::class, 'storeInvoice'])->name('app.fees.invoices.store');
+        Route::post('/fees/payments', [FeeController::class, 'storePayment'])->name('app.fees.payments.store');
+    });
+
+    Route::middleware('permission:announcements.manage')->group(function () {
+        Route::get('/announcements', [AnnouncementController::class, 'index'])->name('app.announcements.index');
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('app.announcements.store');
+    });
+
+    Route::middleware('permission:admissions.manage')->group(function () {
+        Route::get('/admissions', [AdmissionController::class, 'index'])->name('app.admissions.index');
+        Route::post('/admissions', [AdmissionController::class, 'store'])->name('app.admissions.store');
+        Route::post('/admissions/{application}/decide', [AdmissionController::class, 'decide'])->name('app.admissions.decide');
+    });
+
+    Route::middleware('permission:lms.manage')->group(function () {
+        Route::get('/lms', [LmsController::class, 'index'])->name('app.lms.index');
+        Route::post('/lms/materials', [LmsController::class, 'storeMaterial'])->name('app.lms.materials.store');
+        Route::post('/lms/assignments', [LmsController::class, 'storeAssignment'])->name('app.lms.assignments.store');
+    });
+
+    Route::middleware('permission:cbt.manage')->group(function () {
+        Route::get('/cbt', [CbtController::class, 'index'])->name('app.cbt.index');
+        Route::post('/cbt/exams', [CbtController::class, 'storeExam'])->name('app.cbt.exams.store');
+        Route::post('/cbt/questions', [CbtController::class, 'storeQuestion'])->name('app.cbt.questions.store');
+    });
+
+    Route::middleware('permission:library.manage')->group(function () {
+        Route::get('/library', [LibraryController::class, 'index'])->name('app.library.index');
+        Route::post('/library/books', [LibraryController::class, 'storeBook'])->name('app.library.books.store');
+        Route::post('/library/loans', [LibraryController::class, 'storeLoan'])->name('app.library.loans.store');
+    });
+
+    Route::middleware('permission:inventory.manage')->group(function () {
+        Route::get('/inventory', [InventoryController::class, 'index'])->name('app.inventory.index');
+        Route::post('/inventory', [InventoryController::class, 'store'])->name('app.inventory.store');
+    });
+
+    Route::middleware('permission:transport.manage')->group(function () {
+        Route::get('/transport', [TransportController::class, 'index'])->name('app.transport.index');
+        Route::post('/transport/routes', [TransportController::class, 'storeRoute'])->name('app.transport.routes.store');
+    });
+
+    Route::middleware('permission:hostel.manage')->group(function () {
+        Route::get('/hostel', [HostelController::class, 'index'])->name('app.hostel.index');
+        Route::post('/hostel/rooms', [HostelController::class, 'storeRoom'])->name('app.hostel.rooms.store');
+        Route::post('/hostel/allocations', [HostelController::class, 'storeAllocation'])->name('app.hostel.allocations.store');
+    });
+
+    Route::middleware('permission:hr.manage')->group(function () {
+        Route::get('/hr', [HrController::class, 'index'])->name('app.hr.index');
+        Route::post('/hr/leave', [HrController::class, 'storeLeave'])->name('app.hr.leave.store');
+    });
+
+    Route::middleware('permission:clinic.manage')->group(function () {
+        Route::get('/clinic', [ClinicController::class, 'index'])->name('app.clinic.index');
+        Route::post('/clinic/visits', [ClinicController::class, 'storeVisit'])->name('app.clinic.visits.store');
+    });
+
+    Route::get('/helpdesk', [HelpdeskController::class, 'index'])->name('app.helpdesk.index');
+    Route::post('/helpdesk', [HelpdeskController::class, 'store'])->name('app.helpdesk.store');
+
+    Route::middleware('permission:emis.manage')->group(function () {
+        Route::get('/emis/export', [EmisController::class, 'export'])->name('app.emis.export');
     });
 });

@@ -17,7 +17,7 @@ class TenantActivationTest extends TestCase
         $this->seed();
     }
 
-    public function test_first_real_login_on_tenant_subdomain_marks_school_ready(): void
+    public function test_accepting_invite_activates_account_and_marks_school_ready(): void
     {
         $result = app(SchoolProvisioner::class)->onboard(
             school: ['name' => 'Ready Test School', 'district' => 'Kampala'],
@@ -34,20 +34,13 @@ class TenantActivationTest extends TestCase
             'token' => $result['invite_token'],
             'password' => 'password12345',
             'password_confirmation' => 'password12345',
-        ])->assertRedirect('/login');
-
-        $school->refresh();
-        $this->assertSame('invite_accepted', $school->provisioningState());
-        $this->assertNull($school->activated_at);
-
-        $this->post("http://{$school->slug}.voxsign.test/login", [
-            'email' => 'rita@readytest.test',
-            'password' => 'password12345',
         ])->assertRedirect(route('app.home'));
 
+        $this->assertAuthenticated();
         $school->refresh();
         $this->assertNotNull($school->activated_at);
         $this->assertSame('ready', $school->provisioningState());
+        $this->assertSame('active', User::where('email', 'rita@readytest.test')->value('status'));
     }
 
     public function test_uninvited_admin_login_attempt_does_not_activate_school(): void
@@ -61,11 +54,11 @@ class TenantActivationTest extends TestCase
         $school = $result['school'];
 
         $response = $this->post("http://{$school->slug}.voxsign.test/login", [
-            'email' => 'ivy@slowstart.test',
+            'identifier' => 'ivy@slowstart.test',
             'password' => 'whatever-not-set-yet',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors('identifier');
         $school->refresh();
         $this->assertNull($school->activated_at);
     }

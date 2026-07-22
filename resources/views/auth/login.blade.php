@@ -49,10 +49,10 @@
         @if(session('status'))<div class="vx-auth-status">{{ session('status') }}</div>@endif
         <form method="post" action="/login">
           @csrf
-          <label>Email</label><input name="email" type="email" value="{{ old('email') }}" required autofocus>
+          <label>Email or phone</label><input name="identifier" type="text" value="{{ old('identifier') }}" required autofocus autocomplete="username" placeholder="you@school.com or 07…">
           <label>Password</label><input name="password" type="password" required>
           <label class="vx-auth-remember"><input type="checkbox" name="remember"> Remember me</label>
-          @error('email')<div class="err">{{ $message }}</div>@enderror
+          @error('identifier')<div class="err">{{ $message }}</div>@enderror
           <button class="btn" type="submit">Sign in</button>
         </form>
       </div>

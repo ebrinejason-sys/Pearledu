@@ -1,13 +1,17 @@
 <?php
+
 namespace App\Services\Provisioning;
+
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\SchoolInvitation;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
-use App\Services\Auth\InvitationMailer;
+use App\Services\Auth\InvitationDispatcher;
+use App\Services\Authorization\InvitePolicy;
 use App\Services\Tenancy\TenantContext;
+use App\Support\PhoneNormalizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -16,103 +20,174 @@ use RuntimeException;
 
 class StaffInvitationService
 {
-    /** @var list<string> */
-    public const INVITABLE_ROLES = [
-        'school_admin',
-        'director',
-        'head_teacher',
-        'bursar',
-        'class_teacher',
-        'subject_teacher',
-    ];
+    /** @deprecated Use InvitePolicy::PLATFORM_INVITABLE */
+    public const INVITABLE_ROLES = InvitePolicy::PLATFORM_INVITABLE;
 
     public function __construct(
         private AuditLogger $audit,
         private TenantContext $context,
-        private InvitationMailer $mailer,
+        private InvitationDispatcher $dispatcher,
+        private InvitePolicy $policy,
     ) {}
 
     /**
-     * Invite (or re-invite) a staff member to a school and email the accept link.
+     * Invite (or re-invite) a staff member. Email and/or phone required.
+     * Supports one or many role_keys (multi-role).
      *
-     * @param  array{full_name: string, email: string, phone?: ?string, role_key: string}  $data
-     * @return array{user: User, invitation: SchoolInvitation, token: string}
+     * @param  array{
+     *   full_name: string,
+     *   email?: ?string,
+     *   phone?: ?string,
+     *   role_key?: string,
+     *   role_keys?: list<string>
+     * }  $data
+     * @return array{user: User, invitations: list<SchoolInvitation>, tokens: list<string>}
      */
-    public function invite(School $school, array $data, int $operatorId): array
+    public function invite(School $school, array $data, User $inviter, bool $asPlatform = false): array
     {
-        if (! in_array($data['role_key'], self::INVITABLE_ROLES, true)) {
-            throw ValidationException::withMessages(['role_key' => 'That role cannot be invited from the platform console.']);
+        $roleKeys = $this->normalizeRoleKeys($data);
+        foreach ($roleKeys as $roleKey) {
+            if (! $this->policy->canInvite($inviter, $roleKey, $school->id, $asPlatform)) {
+                throw ValidationException::withMessages([
+                    'role_keys' => "You are not allowed to invite the role: {$roleKey}.",
+                ]);
+            }
         }
 
-        return DB::transaction(function () use ($school, $data, $operatorId) {
-            $this->context->forPlatform();
+        $email = isset($data['email']) && $data['email'] !== ''
+            ? strtolower(trim((string) $data['email']))
+            : null;
+        $phone = PhoneNormalizer::normalize($data['phone'] ?? null);
 
-            $email = strtolower(trim($data['email']));
-            $user = User::whereRaw('lower(email) = ?', [$email])->first();
+        if (! $email && ! $phone) {
+            throw ValidationException::withMessages([
+                'email' => 'Provide an email address or a phone number.',
+            ]);
+        }
 
-            if ($user?->is_platform) {
-                throw ValidationException::withMessages(['email' => 'Platform operators cannot be invited as school staff.']);
+        return DB::transaction(function () use ($school, $data, $inviter, $asPlatform, $roleKeys, $email, $phone) {
+            if ($asPlatform || $inviter->isPlatformOperator()) {
+                $this->context->forPlatform();
             }
 
-            if (! $user) {
-                $user = User::create([
-                    'full_name' => $data['full_name'],
-                    'email' => $email,
-                    'phone' => $data['phone'] ?? null,
-                    'status' => 'invited',
+            $user = $this->resolveUser($email, $phone, $data['full_name']);
+
+            if ($user->is_platform) {
+                throw ValidationException::withMessages([
+                    'email' => 'Platform operators cannot be invited as school staff.',
                 ]);
-            } elseif ($user->status === 'disabled') {
-                throw ValidationException::withMessages(['email' => 'That account is disabled.']);
-            } else {
-                $user->forceFill([
-                    'full_name' => $data['full_name'],
-                    'phone' => $data['phone'] ?? $user->phone,
-                ])->save();
             }
 
-            $roleId = Role::where('key', $data['role_key'])->value('id');
-            if (! $roleId) {
-                throw new RuntimeException('Role is not seeded: '.$data['role_key']);
+            if ($user->status === 'disabled') {
+                throw ValidationException::withMessages([
+                    'email' => 'That account is disabled.',
+                ]);
             }
 
-            RoleAssignment::firstOrCreate([
-                'user_id' => $user->id,
-                'role_id' => $roleId,
-                'school_id' => $school->id,
-            ], [
-                'is_active' => true,
-                'assigned_by' => $operatorId,
-            ]);
+            $user->forceFill([
+                'full_name' => $data['full_name'],
+                'email' => $email ?? $user->email,
+                'phone' => $phone ?? $user->phone,
+            ])->save();
 
-            // Supersede any open invite for this user/school/role.
-            SchoolInvitation::query()
-                ->where('school_id', $school->id)
-                ->where('user_id', $user->id)
-                ->where('role_key', $data['role_key'])
-                ->whereNull('accepted_at')
-                ->delete();
+            $invitations = [];
+            $tokens = [];
 
-            $raw = Str::random(48);
-            $invitation = SchoolInvitation::create([
-                'school_id' => $school->id,
-                'user_id' => $user->id,
-                'email' => $email,
-                'phone' => $data['phone'] ?? null,
-                'role_key' => $data['role_key'],
-                'token_hash' => Hash::make($raw),
-                'expires_at' => now()->addDays(7),
-                'invited_by' => $operatorId,
-            ]);
+            foreach ($roleKeys as $roleKey) {
+                $roleId = Role::where('key', $roleKey)->value('id');
+                if (! $roleId) {
+                    throw new RuntimeException('Role is not seeded: '.$roleKey);
+                }
 
-            $this->audit->record('staff.invited', $invitation, [
-                'school_id' => $school->id,
-                'role' => $data['role_key'],
-                'email' => $email,
-            ]);
+                // New invites stay inactive until accept (except re-invite of already-active members adding a role).
+                $isActive = $user->status === 'active';
 
-            $this->mailer->send($invitation, $raw, $school);
+                RoleAssignment::firstOrCreate([
+                    'user_id' => $user->id,
+                    'role_id' => $roleId,
+                    'school_id' => $school->id,
+                ], [
+                    'is_active' => $isActive,
+                    'assigned_by' => $inviter->id,
+                ]);
 
-            return ['user' => $user, 'invitation' => $invitation, 'token' => $raw];
+                SchoolInvitation::query()
+                    ->where('school_id', $school->id)
+                    ->where('user_id', $user->id)
+                    ->where('role_key', $roleKey)
+                    ->whereNull('accepted_at')
+                    ->delete();
+
+                $raw = Str::random(48);
+                $invitation = SchoolInvitation::create([
+                    'school_id' => $school->id,
+                    'user_id' => $user->id,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'role_key' => $roleKey,
+                    'token_hash' => Hash::make($raw),
+                    'expires_at' => now()->addDays(7),
+                    'invited_by' => $inviter->id,
+                ]);
+
+                $this->audit->record('staff.invited', $invitation, [
+                    'school_id' => $school->id,
+                    'role' => $roleKey,
+                    'email' => $email,
+                    'phone' => $phone,
+                ]);
+
+                // One delivery covers all roles when inviting multi-role at once — send once per invite call after loop for first token only
+                $invitations[] = $invitation;
+                $tokens[] = $raw;
+            }
+
+            // Deliver a single activation link (first invitation token); accept activates all pending roles for user.
+            if ($invitations !== []) {
+                $this->dispatcher->send($invitations[0], $tokens[0], $school);
+            }
+
+            return ['user' => $user, 'invitations' => $invitations, 'tokens' => $tokens];
         });
+    }
+
+    /**
+     * @param  array{role_key?: string, role_keys?: list<string>}  $data
+     * @return list<string>
+     */
+    private function normalizeRoleKeys(array $data): array
+    {
+        $keys = $data['role_keys'] ?? null;
+        if (is_array($keys) && $keys !== []) {
+            return array_values(array_unique(array_map('strval', $keys)));
+        }
+
+        if (! empty($data['role_key'])) {
+            return [(string) $data['role_key']];
+        }
+
+        throw ValidationException::withMessages(['role_keys' => 'Select at least one role.']);
+    }
+
+    private function resolveUser(?string $email, ?string $phone, string $fullName): User
+    {
+        $user = null;
+        if ($email) {
+            $user = User::whereRaw('lower(email) = ?', [$email])->first();
+        }
+        if (! $user && $phone) {
+            $user = User::where('phone', $phone)->first();
+        }
+
+        if ($user) {
+            return $user;
+        }
+
+        return User::create([
+            'full_name' => $fullName,
+            'email' => $email,
+            'phone' => $phone,
+            'status' => 'invited',
+        ]);
     }
 }

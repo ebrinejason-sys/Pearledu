@@ -1,18 +1,26 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
+
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\TwoFactorService;
 use App\Services\Tenancy\TenantContext;
+use App\Support\PhoneNormalizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
-class LoginController extends Controller {
-    public function show() { return view('auth.login'); }
+class LoginController extends Controller
+{
+    public function show()
+    {
+        return view('auth.login');
+    }
 
     public function store(
         Request $request,
@@ -20,25 +28,31 @@ class LoginController extends Controller {
         TenantContext $context,
         TwoFactorService $twoFactor,
     ): RedirectResponse {
-        $data = $request->validate(['email'=>'required|email','password'=>'required|string']);
-        $key = 'login:'.strtolower($data['email']).'|'.$request->ip();
+        $data = $request->validate([
+            'identifier' => 'required|string|max:190',
+            'password' => 'required|string',
+        ]);
+
+        $identifier = trim($data['identifier']);
+        $key = 'login:'.strtolower($identifier).'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            throw ValidationException::withMessages(['email'=>'Too many attempts. Try again shortly.']);
+            throw ValidationException::withMessages(['identifier' => 'Too many attempts. Try again shortly.']);
         }
 
-        $user = User::whereRaw('lower(email) = lower(?)', [$data['email']])->first();
+        $user = $this->findByIdentifier($identifier);
+
         if ($user && in_array($user->status, ['invited', 'disabled'], true)) {
             RateLimiter::hit($key, 60);
             throw ValidationException::withMessages([
-                'email' => 'These credentials do not match our records.',
+                'identifier' => 'These credentials do not match our records.',
             ]);
         }
 
-        if (! Auth::validate(['email'=>$data['email'],'password'=>$data['password'],'status'=>'active'])) {
+        if (! $user || $user->status !== 'active' || ! $user->password || ! Hash::check($data['password'], $user->password)) {
             RateLimiter::hit($key, 60);
-            $audit->record('auth.failed', null, ['email'=>$data['email']]);
-            throw ValidationException::withMessages(['email'=>'These credentials do not match our records.']);
+            $audit->record('auth.failed', null, ['identifier' => $identifier]);
+            throw ValidationException::withMessages(['identifier' => 'These credentials do not match our records.']);
         }
 
         RateLimiter::clear($key);
@@ -49,7 +63,6 @@ class LoginController extends Controller {
             $request->session()->put('2fa_pending_user_id', $user->id);
             $request->session()->put('2fa_remember', $remember);
 
-            // Platform operators always complete sign-in with an email OTP (Resend).
             $twoFactor->sendEmailOtp($user, $request->ip());
             $request->session()->put('2fa_email_sent', true);
             $audit->record('auth.2fa.challenge_sent', $user);
@@ -64,10 +77,11 @@ class LoginController extends Controller {
         return redirect()->intended($this->home($user));
     }
 
-    public function completeLogin(Request $request, AuditLogger $audit, TenantContext $context): void {
+    public function completeLogin(Request $request, AuditLogger $audit, TenantContext $context): void
+    {
         $request->session()->regenerate();
         $user = Auth::user();
-        $user->forceFill(['last_login_at'=>now()])->save();
+        $user->forceFill(['last_login_at' => now()])->save();
         $audit->record('auth.login', $user);
 
         if (($school = $context->school()) && ! $school->activated_at) {
@@ -75,15 +89,39 @@ class LoginController extends Controller {
         }
     }
 
-    public function destroy(Request $request): RedirectResponse {
+    public function destroy(Request $request): RedirectResponse
+    {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/login');
     }
 
-    private function home($user): string {
-        if ($user->isPlatformOperator()) return route('platform.dashboard');
+    private function findByIdentifier(string $identifier): ?User
+    {
+        if (str_contains($identifier, '@')) {
+            return User::whereRaw('lower(email) = lower(?)', [$identifier])->first();
+        }
+
+        $phone = PhoneNormalizer::normalize($identifier);
+        if ($phone) {
+            $user = User::where('phone', $phone)->first();
+            if ($user) {
+                return $user;
+            }
+        }
+
+        return User::where('phone', $identifier)->first()
+            ?? User::whereRaw('lower(email) = lower(?)', [$identifier])->first();
+    }
+
+    private function home(User $user): string
+    {
+        if ($user->isPlatformOperator()) {
+            return route('platform.dashboard');
+        }
+
         return route('app.home');
     }
 }

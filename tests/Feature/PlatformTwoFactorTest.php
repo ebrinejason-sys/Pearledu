@@ -22,7 +22,7 @@ class PlatformTwoFactorTest extends TestCase
             'password' => Hash::make('password1234'),
         ]);
 
-        $this->post('/login', ['email' => $email, 'password' => 'password1234']);
+        $this->post('/login', ['identifier' => $email, 'password' => 'password1234']);
 
         return $user;
     }
@@ -51,7 +51,7 @@ class PlatformTwoFactorTest extends TestCase
             'password' => Hash::make('password1234'),
         ]);
 
-        $this->post('/login', ['email' => 'emailonly@test.local', 'password' => 'password1234'])
+        $this->post('/login', ['identifier' => 'emailonly@test.local', 'password' => 'password1234'])
             ->assertRedirect('/login/2fa/challenge');
 
         $this->verifyEmailToSetup($user);
@@ -139,7 +139,7 @@ class PlatformTwoFactorTest extends TestCase
             'two_factor_confirmed_at' => now(),
         ]);
 
-        $this->post('/login', ['email' => 'enrolled@test.local', 'password' => 'password1234']);
+        $this->post('/login', ['identifier' => 'enrolled@test.local', 'password' => 'password1234']);
 
         return [$user, $secret];
     }
@@ -213,7 +213,7 @@ class PlatformTwoFactorTest extends TestCase
         $this->assertAuthenticatedAs($user);
 
         Auth::logout();
-        $this->post('/login', ['email' => 'enrolled@test.local', 'password' => 'password1234']);
+        $this->post('/login', ['identifier' => 'enrolled@test.local', 'password' => 'password1234']);
         $response2 = $this->post('/login/2fa/challenge', ['recovery_code' => $plainCodes[0]]);
 
         $this->assertGuest();
@@ -247,7 +247,7 @@ class PlatformTwoFactorTest extends TestCase
             'two_factor_recovery_codes' => $service->hashRecoveryCodes($plainCodes),
         ])->save();
 
-        $this->post('/login', ['email' => 'lock-test@test.local', 'password' => 'password1234']);
+        $this->post('/login', ['identifier' => 'lock-test@test.local', 'password' => 'password1234']);
 
         $sawLockQuery = false;
         $blocked = false;

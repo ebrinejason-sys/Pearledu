@@ -52,7 +52,7 @@ class AuthEmailTest extends TestCase
         ]);
 
         $response = $this->post('/login', [
-            'email' => 'teacher@test.local',
+            'identifier' => 'teacher@test.local',
             'password' => 'password1234',
         ]);
 
@@ -70,7 +70,7 @@ class AuthEmailTest extends TestCase
         ]);
 
         $response = $this->post('/login', [
-            'email' => 'newadmin@test.local',
+            'identifier' => 'newadmin@test.local',
             'password' => 'password1234',
         ]);
 
@@ -94,7 +94,7 @@ class AuthEmailTest extends TestCase
         ]);
 
         $response = $this->post('/login', [
-            'email' => 'enrolledadmin@test.local',
+            'identifier' => 'enrolledadmin@test.local',
             'password' => 'password1234',
         ]);
 
@@ -121,7 +121,7 @@ class AuthEmailTest extends TestCase
         $originalSessionId = $priming->getCookie($sessionCookieName)->getValue();
 
         $response = $this->withCookie($sessionCookieName, $originalSessionId)->post('/login', [
-            'email' => 'rotate@test.local',
+            'identifier' => 'rotate@test.local',
             'password' => 'password1234',
         ]);
 

@@ -56,7 +56,7 @@ class NavigationBuilder
 
         return [
             'zone' => $zone,
-            'sections' => array_values(array_filter($sections, fn($s) => count($s['items']) > 0)),
+            'sections' => array_values(array_filter($sections, fn ($s) => count($s['items']) > 0)),
             'account' => $this->item('Account settings', 'account.settings', icon: 'account'),
             'user' => [
                 'name' => $user->full_name,
@@ -73,12 +73,18 @@ class NavigationBuilder
     /** @return list<array{key: string, label: string, items: list<array>}> */
     private function schoolSections(array $permissions, bool $isPlatformOperator): array
     {
+        $canAssess = $this->hasAny($permissions, ['assessment.enter', 'assessment.manage', 'assessment.view']);
+
         return [
             [
                 'key' => 'general',
                 'label' => 'General',
                 'items' => array_values(array_filter([
                     $this->item('Home', 'app.home', icon: 'home'),
+                    $this->has($permissions, 'staff.manage')
+                        ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.*'))
+                        : null,
+                    $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*')),
                 ])),
             ],
             [
@@ -88,6 +94,90 @@ class NavigationBuilder
                     $this->has($permissions, 'learners.manage')
                         ? $this->item('Students', 'app.students.index', icon: 'students', active: request()->routeIs('app.students.*'))
                         : null,
+                    $this->has($permissions, 'learners.manage')
+                        ? $this->item('Enrollments', 'app.enrollments.index', icon: 'enrollments', active: request()->routeIs('app.enrollments.*'))
+                        : null,
+                    $this->has($permissions, 'admissions.manage')
+                        ? $this->item('Admissions', 'app.admissions.index', icon: 'admissions', active: request()->routeIs('app.admissions.*'))
+                        : null,
+                    $this->has($permissions, 'emis.manage')
+                        ? $this->item('EMIS export', 'app.emis.export', icon: 'emis')
+                        : null,
+                ])),
+            ],
+            [
+                'key' => 'academics',
+                'label' => 'Academics',
+                'items' => array_values(array_filter([
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('Academic years', 'app.years.index', icon: 'years', active: request()->routeIs('app.years.*'))
+                        : null,
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('Subjects', 'app.subjects.index', icon: 'subjects', active: request()->routeIs('app.subjects.*'))
+                        : null,
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('Teaching', 'app.teaching.index', icon: 'teaching', active: request()->routeIs('app.teaching.*'))
+                        : null,
+                    $this->has($permissions, 'attendance.mark')
+                        ? $this->item('Attendance', 'app.attendance.index', icon: 'attendance', active: request()->routeIs('app.attendance.*'))
+                        : null,
+                    $canAssess
+                        ? $this->item('Assessment', 'app.assessment.index', icon: 'assessment', active: request()->routeIs('app.assessment.index') || request()->routeIs('app.assessment.periods.*') || request()->routeIs('app.assessment.marks*'))
+                        : null,
+                    $canAssess
+                        ? $this->item('Broadsheet', 'app.assessment.broadsheet', icon: 'broadsheet', active: request()->routeIs('app.assessment.broadsheet') || request()->routeIs('app.assessment.reports'))
+                        : null,
+                    $this->has($permissions, 'promotions.approve')
+                        ? $this->item('Promotions', 'app.promotions.index', icon: 'promotions', active: request()->routeIs('app.promotions.*'))
+                        : null,
+                    $this->has($permissions, 'timetable.manage')
+                        ? $this->item('Timetable', 'app.timetable.index', icon: 'timetable', active: request()->routeIs('app.timetable.*'))
+                        : null,
+                ])),
+            ],
+            [
+                'key' => 'finance',
+                'label' => 'Finance',
+                'items' => array_values(array_filter([
+                    $this->has($permissions, 'finance.manage')
+                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.*'))
+                        : null,
+                ])),
+            ],
+            [
+                'key' => 'learning',
+                'label' => 'Learning',
+                'items' => array_values(array_filter([
+                    $this->has($permissions, 'lms.manage')
+                        ? $this->item('LMS', 'app.lms.index', icon: 'lms', active: request()->routeIs('app.lms.*'))
+                        : null,
+                    $this->has($permissions, 'cbt.manage')
+                        ? $this->item('CBT', 'app.cbt.index', icon: 'cbt', active: request()->routeIs('app.cbt.*'))
+                        : null,
+                    $this->has($permissions, 'library.manage')
+                        ? $this->item('Library', 'app.library.index', icon: 'library', active: request()->routeIs('app.library.*'))
+                        : null,
+                ])),
+            ],
+            [
+                'key' => 'operations',
+                'label' => 'Operations',
+                'items' => array_values(array_filter([
+                    $this->has($permissions, 'inventory.manage')
+                        ? $this->item('Inventory', 'app.inventory.index', icon: 'inventory', active: request()->routeIs('app.inventory.*'))
+                        : null,
+                    $this->has($permissions, 'transport.manage')
+                        ? $this->item('Transport', 'app.transport.index', icon: 'transport', active: request()->routeIs('app.transport.*'))
+                        : null,
+                    $this->has($permissions, 'hostel.manage')
+                        ? $this->item('Hostel', 'app.hostel.index', icon: 'hostel', active: request()->routeIs('app.hostel.*'))
+                        : null,
+                    $this->has($permissions, 'hr.manage')
+                        ? $this->item('HR', 'app.hr.index', icon: 'hr', active: request()->routeIs('app.hr.*'))
+                        : null,
+                    $this->has($permissions, 'clinic.manage')
+                        ? $this->item('Clinic', 'app.clinic.index', icon: 'clinic', active: request()->routeIs('app.clinic.*'))
+                        : null,
                 ])),
             ],
             [
@@ -95,6 +185,9 @@ class NavigationBuilder
                 'label' => 'Communications',
                 'items' => array_values(array_filter([
                     $this->has($permissions, 'sms.send') ? $this->item('Send SMS', 'app.sms', icon: 'sms') : null,
+                    $this->has($permissions, 'announcements.manage')
+                        ? $this->item('Announcements', 'app.announcements.index', icon: 'announcements', active: request()->routeIs('app.announcements.*'))
+                        : null,
                 ])),
             ],
             [
@@ -182,5 +275,17 @@ class NavigationBuilder
     private function has(array $permissions, string $perm): bool
     {
         return in_array($perm, $permissions, true);
+    }
+
+    /** @param list<string> $perms */
+    private function hasAny(array $permissions, array $perms): bool
+    {
+        foreach ($perms as $perm) {
+            if ($this->has($permissions, $perm)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

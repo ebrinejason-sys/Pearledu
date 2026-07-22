@@ -57,7 +57,7 @@ class LoginPageTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertSee('name="_token"', false);
-        $response->assertSee('name="email"', false);
+        $response->assertSee('name="identifier"', false);
         $response->assertSee('name="password"', false);
         $response->assertSee('name="remember"', false);
     }
@@ -65,11 +65,11 @@ class LoginPageTest extends TestCase
     public function test_invalid_credentials_shows_error_message(): void
     {
         $response = $this->post('/login', [
-            'email' => 'nobody@example.test',
+            'identifier' => 'nobody@example.test',
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors('identifier');
     }
 
     public function test_login_page_renders_preloader_overlay_gated_by_session_storage(): void
