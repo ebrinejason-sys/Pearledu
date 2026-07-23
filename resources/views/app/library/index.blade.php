@@ -28,14 +28,23 @@
     </div>
   </div>
   <div class="card">
-    <h3 style="margin-top:0">Books</h3>
+    <h3 style="margin-top:0">Open loans</h3>
     <table>
-      <thead><tr><th>Title</th><th>Author</th><th>Copies</th></tr></thead>
+      <thead><tr><th>Book</th><th>Student</th><th>Due</th><th></th></tr></thead>
       <tbody>
-      @forelse($books as $b)
-        <tr><td>{{ $b->title }}</td><td>{{ $b->author ?: '—' }}</td><td>{{ $b->copies }}</td></tr>
+      @forelse($loans as $loan)
+        <tr>
+          <td>{{ $loan->book?->title ?? '—' }}</td>
+          <td>{{ $loan->student?->full_name ?? '—' }}</td>
+          <td>{{ $loan->due_on?->format('Y-m-d') ?? '—' }}</td>
+          <td>
+            <form method="post" action="{{ route('app.library.loans.return', $loan) }}">@csrf
+              <button class="btn ghost" type="submit">Return</button>
+            </form>
+          </td>
+        </tr>
       @empty
-        <tr><td colspan="3" style="color:var(--muted)">No books.</td></tr>
+        <tr><td colspan="4" style="color:var(--muted)">No open loans.</td></tr>
       @endforelse
       </tbody>
     </table>

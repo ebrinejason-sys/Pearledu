@@ -44,4 +44,53 @@
       </tbody>
     </table>
   </div>
+  <div class="card">
+    <h3 style="margin-top:0">Assignments</h3>
+    <table>
+      <thead><tr><th>Title</th><th>Due</th><th>Subject</th><th>Class</th></tr></thead>
+      <tbody>
+      @forelse($assignments as $a)
+        <tr>
+          <td>{{ $a->title }}</td>
+          <td>{{ $a->due_at?->format('Y-m-d H:i') ?: '—' }}</td>
+          <td>{{ $a->subject?->name ?: '—' }}</td>
+          <td>{{ $a->schoolClass?->name ?: '—' }}</td>
+        </tr>
+      @empty
+        <tr><td colspan="4" style="color:var(--muted)">None.</td></tr>
+      @endforelse
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Submissions to grade</h3>
+    <table>
+      <thead><tr><th>Assignment</th><th>Student</th><th>Submitted</th><th>Score</th><th>Grade</th></tr></thead>
+      <tbody>
+      @forelse($submissions as $sub)
+        <tr>
+          <td>{{ $sub->assignment?->title ?: '—' }}</td>
+          <td>{{ $sub->student?->full_name ?: '—' }}</td>
+          <td>{{ $sub->submitted_at?->format('Y-m-d H:i') ?: '—' }}</td>
+          <td>{{ $sub->score !== null ? $sub->score : '—' }}</td>
+          <td>
+            <form method="post" action="{{ route('app.lms.submissions.grade', $sub) }}" style="display:flex;gap:6px;align-items:end;flex-wrap:wrap">@csrf
+              <div>
+                <label>Score</label>
+                <input type="number" name="score" step="0.01" min="0" max="100" value="{{ $sub->score }}" required style="width:90px">
+              </div>
+              <div>
+                <label>Feedback</label>
+                <input name="feedback" value="{{ $sub->feedback }}" style="min-width:160px">
+              </div>
+              <button class="btn" type="submit">Save</button>
+            </form>
+          </td>
+        </tr>
+      @empty
+        <tr><td colspan="5" style="color:var(--muted)">No submissions yet.</td></tr>
+      @endforelse
+      </tbody>
+    </table>
+  </div>
 @endsection

@@ -19,16 +19,22 @@
         <tbody>
         @forelse($tickets as $t)
           <tr>
-            <td><strong>{{ $t->subject }}</strong><br><span style="color:var(--muted);font-size:13px">{{ Str::limit($t->body, 80) }}</span></td>
+            <td><strong>{{ $t->subject }}</strong><br><span style="color:var(--muted);font-size:13px">{{ \Illuminate\Support\Str::limit($t->body, 80) }}</span></td>
             <td>{{ $t->user?->full_name }}</td>
-            <td><span class="pill">{{ $t->status }}</span></td>
+            <td>
+              <span class="pill">{{ $t->status }}</span>
+              @if($t->status !== 'closed')
+                <form method="post" action="{{ route('app.helpdesk.close', $t) }}" style="display:inline">@csrf
+                  <button class="btn ghost" type="submit">Close</button>
+                </form>
+              @endif
+            </td>
           </tr>
         @empty
           <tr><td colspan="3" style="color:var(--muted)">No tickets.</td></tr>
         @endforelse
         </tbody>
       </table>
-      {{ $tickets->links() }}
     </div>
   </div>
 @endsection

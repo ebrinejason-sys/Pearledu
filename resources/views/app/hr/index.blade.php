@@ -22,14 +22,25 @@
           <tr>
             <td>{{ $leave->user?->full_name }}</td>
             <td>{{ $leave->starts_on?->format('Y-m-d') }} → {{ $leave->ends_on?->format('Y-m-d') }}</td>
-            <td><span class="pill">{{ $leave->status }}</span></td>
+            <td>
+              <span class="pill">{{ $leave->status }}</span>
+              @if($leave->status === 'pending')
+                <form method="post" action="{{ route('app.hr.leave.decide', $leave) }}" style="display:inline">@csrf
+                  <input type="hidden" name="decision" value="approved">
+                  <button class="btn ghost" type="submit">Approve</button>
+                </form>
+                <form method="post" action="{{ route('app.hr.leave.decide', $leave) }}" style="display:inline">@csrf
+                  <input type="hidden" name="decision" value="rejected">
+                  <button class="btn ghost" type="submit">Reject</button>
+                </form>
+              @endif
+            </td>
           </tr>
         @empty
           <tr><td colspan="3" style="color:var(--muted)">None.</td></tr>
         @endforelse
         </tbody>
       </table>
-      {{ $leaves->links() }}
     </div>
   </div>
 @endsection

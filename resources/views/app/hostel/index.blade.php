@@ -28,12 +28,37 @@
   <div class="card">
     <h3 style="margin-top:0">Rooms</h3>
     <table>
-      <thead><tr><th>Room</th><th>Capacity</th><th>Allocated</th></tr></thead>
+      <thead><tr><th>Room</th><th>Capacity</th><th>Occupied</th></tr></thead>
       <tbody>
       @forelse($rooms as $r)
         <tr><td>{{ $r->name }}</td><td>{{ $r->capacity }}</td><td>{{ $r->allocations_count }}</td></tr>
       @empty
         <tr><td colspan="3" style="color:var(--muted)">No rooms.</td></tr>
+      @endforelse
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Allocations</h3>
+    <table>
+      <thead><tr><th>Student</th><th>Room</th><th>Starts</th><th>Ends</th><th></th></tr></thead>
+      <tbody>
+      @forelse($allocations as $a)
+        <tr>
+          <td>{{ $a->student?->full_name }}</td>
+          <td>{{ $a->room?->name }}</td>
+          <td>{{ $a->starts_on?->format('Y-m-d') }}</td>
+          <td>{{ $a->ends_on?->format('Y-m-d') ?? 'current' }}</td>
+          <td>
+            @unless($a->ends_on)
+              <form method="post" action="{{ route('app.hostel.allocations.vacate', $a) }}">@csrf
+                <button class="btn ghost" type="submit">Vacate</button>
+              </form>
+            @endunless
+          </td>
+        </tr>
+      @empty
+        <tr><td colspan="5" style="color:var(--muted)">No allocations.</td></tr>
       @endforelse
       </tbody>
     </table>

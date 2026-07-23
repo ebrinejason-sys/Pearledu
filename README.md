@@ -58,4 +58,12 @@ php artisan test --filter=TenantIsolationTest
 
 ## Honest status
 
-Core MIS surfaces above are implemented end-to-end (migrations, RLS, services, school routes/UI). Still planned for deeper polish: live MoMo gateway callbacks, full CBT exam-taking UI for students, live video classes, and broader school-user 2FA. Run migrations + `db:verify-security` + tests on real Postgres before production trust.
+Core MIS surfaces are implemented end-to-end (migrations, RLS, services, school routes/UI), including:
+
+- **Parent/student portal** — results, fees (manual pay with MoMo/bank ref), timetable, announcements
+- **Fees** — structures, single + bulk class invoicing, staff + parent payment recording
+- **CBT** — publish + student take + auto-score; **LMS** — student submit + staff grade
+- **Public admissions** — `/apply` on school tenant hosts
+- **Ops polish** — library return, hostel vacate/capacity, HR leave approve/reject, helpdesk close
+
+Still planned for deeper polish: live MoMo gateway callbacks, UGSMS provider driver, parent phone OTP (deferred), live video classes, and broader school-user 2FA. Run migrations + `db:verify-security` + tests on real Postgres before production trust.

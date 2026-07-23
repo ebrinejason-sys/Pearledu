@@ -10,7 +10,7 @@ class LibraryController extends Controller {
     public function index(TenantContext $ctx) {
         $school = $ctx->school(); abort_unless($school, 404);
         $books = LibraryBook::where('school_id',$school->id)->orderBy('title')->get();
-        $loans = LibraryLoan::where('school_id',$school->id)->whereNull('returned_on')->orderByDesc('id')->get();
+        $loans = LibraryLoan::where('school_id',$school->id)->whereNull('returned_on')->with(['book','student'])->orderByDesc('id')->get();
         $students = Student::where('school_id',$school->id)->orderBy('full_name')->get();
         return view('app.library.index', compact('school','books','loans','students'));
     }
@@ -22,8 +22,15 @@ class LibraryController extends Controller {
     }
     public function storeLoan(Request $request, TenantContext $ctx) {
         $school = $ctx->school(); abort_unless($school, 404);
-        $data = $request->validate(['book_id'=>'required|integer','student_id'=>'required|integer','due_on'=>'nullable|date']);
-        LibraryLoan::create($data + ['school_id'=>$school->id,'loaned_on'=>now()->toDateString()]);
+        $data = $request->validate(['book_id'=>'required|integer','student_id'=>'required|integer','due_on'=>'nullable|date','loaned_on'=>'nullable|date']);
+        LibraryLoan::create($data + ['school_id'=>$school->id,'loaned_on'=>$data['loaned_on'] ?? now()->toDateString()]);
         return back()->with('status','Loan recorded.');
+    }
+
+    public function returnLoan(LibraryLoan $loan, TenantContext $ctx) {
+        $school = $ctx->school(); abort_unless($school && (int)$loan->school_id === (int)$school->id, 404);
+        abort_if($loan->returned_on, 422, 'Already returned.');
+        $loan->update(['returned_on' => now()->toDateString()]);
+        return back()->with('status','Book returned.');
     }
 }

@@ -26,11 +26,11 @@
           <td>{{ $app->applicant_name }}</td>
           <td>{{ $app->requestedClass?->name ?: '—' }}</td>
           <td><span class="pill">{{ $app->status }}</span></td>
-          <td style="display:flex;gap:6px">
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
             @foreach(['accepted','rejected','enrolled'] as $st)
               <form method="post" action="{{ route('app.admissions.decide', $app) }}">@csrf
-                <input type="hidden" name="status" value="{{ $st }}">
-                <button class="btn" type="submit">{{ ucfirst($st) }}</button>
+                <input type="hidden" name="decision" value="{{ $st }}">
+                <button class="btn ghost" type="submit">{{ ucfirst($st) }}</button>
               </form>
             @endforeach
           </td>
@@ -40,6 +40,5 @@
       @endforelse
       </tbody>
     </table>
-    {{ $applications->links() }}
   </div>
 @endsection

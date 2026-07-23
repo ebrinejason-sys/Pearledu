@@ -16,6 +16,7 @@ use App\Http\Controllers\HrController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\LmsController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StaffController;
@@ -29,6 +30,25 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(function () {
     Route::get('/home', [AppHomeController::class, 'index'])->name('app.home');
+
+    Route::middleware('permission:child.results.view,self.results.view,child.fees.view,fees.pay,self.timetable.view,announcements.view')->group(function () {
+        Route::get('/portal', [PortalController::class, 'home'])->name('app.portal.home');
+    });
+    Route::middleware('permission:child.results.view,self.results.view')->group(function () {
+        Route::get('/portal/results', [PortalController::class, 'results'])->name('app.portal.results');
+    });
+    Route::middleware('permission:child.fees.view,fees.pay')->group(function () {
+        Route::get('/portal/fees', [PortalController::class, 'fees'])->name('app.portal.fees');
+    });
+    Route::middleware('permission:fees.pay')->group(function () {
+        Route::post('/portal/fees/{invoice}/pay', [PortalController::class, 'pay'])->name('app.portal.fees.pay');
+    });
+    Route::middleware('permission:self.timetable.view')->group(function () {
+        Route::get('/portal/timetable', [PortalController::class, 'timetable'])->name('app.portal.timetable');
+    });
+    Route::middleware('permission:announcements.view')->group(function () {
+        Route::get('/portal/announcements', [PortalController::class, 'announcements'])->name('app.portal.announcements');
+    });
 
     Route::middleware('permission:staff.manage')->group(function () {
         Route::get('/staff', [StaffController::class, 'index'])->name('app.staff.index');
@@ -99,6 +119,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::get('/fees', [FeeController::class, 'index'])->name('app.fees.index');
         Route::post('/fees/structures', [FeeController::class, 'storeStructure'])->name('app.fees.structures.store');
         Route::post('/fees/invoices', [FeeController::class, 'storeInvoice'])->name('app.fees.invoices.store');
+        Route::post('/fees/invoices/bulk', [FeeController::class, 'storeBulkInvoices'])->name('app.fees.invoices.bulk');
         Route::post('/fees/payments', [FeeController::class, 'storePayment'])->name('app.fees.payments.store');
     });
 
@@ -113,22 +134,38 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/admissions/{application}/decide', [AdmissionController::class, 'decide'])->name('app.admissions.decide');
     });
 
-    Route::middleware('permission:lms.manage')->group(function () {
+    Route::middleware('permission:lms.manage,lms.view')->group(function () {
         Route::get('/lms', [LmsController::class, 'index'])->name('app.lms.index');
+    });
+    Route::middleware('permission:lms.manage')->group(function () {
         Route::post('/lms/materials', [LmsController::class, 'storeMaterial'])->name('app.lms.materials.store');
         Route::post('/lms/assignments', [LmsController::class, 'storeAssignment'])->name('app.lms.assignments.store');
+        Route::post('/lms/submissions/{submission}/grade', [LmsController::class, 'grade'])->name('app.lms.submissions.grade');
+    });
+    Route::middleware('permission:lms.view')->group(function () {
+        Route::post('/lms/assignments/{assignment}/submit', [LmsController::class, 'submit'])->name('app.lms.assignments.submit');
     });
 
-    Route::middleware('permission:cbt.manage')->group(function () {
+    Route::middleware('permission:cbt.manage,cbt.take')->group(function () {
         Route::get('/cbt', [CbtController::class, 'index'])->name('app.cbt.index');
+    });
+    Route::middleware('permission:cbt.manage')->group(function () {
         Route::post('/cbt/exams', [CbtController::class, 'storeExam'])->name('app.cbt.exams.store');
         Route::post('/cbt/questions', [CbtController::class, 'storeQuestion'])->name('app.cbt.questions.store');
+        Route::post('/cbt/exams/{exam}/publish', [CbtController::class, 'publish'])->name('app.cbt.exams.publish');
+    });
+    Route::middleware('permission:cbt.take')->group(function () {
+        Route::post('/cbt/exams/{exam}/start', [CbtController::class, 'start'])->name('app.cbt.exams.start');
+        Route::get('/cbt/attempts/{attempt}', [CbtController::class, 'take'])->name('app.cbt.attempts.take');
+        Route::post('/cbt/attempts/{attempt}/submit', [CbtController::class, 'submit'])->name('app.cbt.attempts.submit');
+        Route::get('/cbt/attempts/{attempt}/result', [CbtController::class, 'result'])->name('app.cbt.attempts.result');
     });
 
     Route::middleware('permission:library.manage')->group(function () {
         Route::get('/library', [LibraryController::class, 'index'])->name('app.library.index');
         Route::post('/library/books', [LibraryController::class, 'storeBook'])->name('app.library.books.store');
         Route::post('/library/loans', [LibraryController::class, 'storeLoan'])->name('app.library.loans.store');
+        Route::post('/library/loans/{loan}/return', [LibraryController::class, 'returnLoan'])->name('app.library.loans.return');
     });
 
     Route::middleware('permission:inventory.manage')->group(function () {
@@ -145,11 +182,13 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::get('/hostel', [HostelController::class, 'index'])->name('app.hostel.index');
         Route::post('/hostel/rooms', [HostelController::class, 'storeRoom'])->name('app.hostel.rooms.store');
         Route::post('/hostel/allocations', [HostelController::class, 'storeAllocation'])->name('app.hostel.allocations.store');
+        Route::post('/hostel/allocations/{allocation}/vacate', [HostelController::class, 'vacate'])->name('app.hostel.allocations.vacate');
     });
 
     Route::middleware('permission:hr.manage')->group(function () {
         Route::get('/hr', [HrController::class, 'index'])->name('app.hr.index');
         Route::post('/hr/leave', [HrController::class, 'storeLeave'])->name('app.hr.leave.store');
+        Route::post('/hr/leave/{leave}/decide', [HrController::class, 'decideLeave'])->name('app.hr.leave.decide');
     });
 
     Route::middleware('permission:clinic.manage')->group(function () {
@@ -159,6 +198,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
 
     Route::get('/helpdesk', [HelpdeskController::class, 'index'])->name('app.helpdesk.index');
     Route::post('/helpdesk', [HelpdeskController::class, 'store'])->name('app.helpdesk.store');
+    Route::post('/helpdesk/{ticket}/close', [HelpdeskController::class, 'close'])->name('app.helpdesk.close');
 
     Route::middleware('permission:emis.manage')->group(function () {
         Route::get('/emis/export', [EmisController::class, 'export'])->name('app.emis.export');

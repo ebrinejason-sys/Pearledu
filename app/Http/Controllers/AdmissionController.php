@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class AdmissionController extends Controller {
     public function index(TenantContext $ctx) {
         $school = $ctx->school(); abort_unless($school, 404);
-        $applications = AdmissionApplication::where('school_id',$school->id)->orderByDesc('id')->get();
+        $applications = AdmissionApplication::where('school_id',$school->id)->with('requestedClass')->orderByDesc('id')->get();
         $classes = SchoolClass::where('school_id',$school->id)->orderBy('name')->get();
         return view('app.admissions.index', compact('school','applications','classes'));
     }

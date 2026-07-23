@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 namespace App\Models;
 use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +16,11 @@ class CbtExam extends Model
     public function questions(): HasMany
     {
         return $this->hasMany(CbtQuestion::class, 'exam_id');
+    }
+
+    public function attempts(): HasMany
+    {
+        return $this->hasMany(CbtAttempt::class, 'exam_id');
     }
 
     public function subject(): BelongsTo

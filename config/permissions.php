@@ -34,8 +34,10 @@ return ['roles' => [
     ],
     'parent' => [
         'child.results.view', 'child.fees.view', 'fees.pay', 'self.timetable.view',
+        'announcements.view',
     ],
     'student' => [
         'self.results.view', 'self.timetable.view', 'lms.view', 'cbt.take',
+        'announcements.view',
     ],
 ]];

@@ -81,10 +81,38 @@ class NavigationBuilder
                 'label' => 'General',
                 'items' => array_values(array_filter([
                     $this->item('Home', 'app.home', icon: 'home'),
+                    $this->hasAny($permissions, [
+                        'child.results.view', 'self.results.view', 'child.fees.view',
+                        'fees.pay', 'self.timetable.view', 'announcements.view',
+                    ]) ? $this->item('My portal', 'app.portal.home', icon: 'home', active: request()->routeIs('app.portal.*')) : null,
                     $this->has($permissions, 'staff.manage')
                         ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.*'))
                         : null,
                     $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*')),
+                ])),
+            ],
+            [
+                'key' => 'family',
+                'label' => 'Family & learning',
+                'items' => array_values(array_filter([
+                    $this->hasAny($permissions, ['child.results.view', 'self.results.view'])
+                        ? $this->item('Results', 'app.portal.results', icon: 'assessment', active: request()->routeIs('app.portal.results'))
+                        : null,
+                    $this->hasAny($permissions, ['child.fees.view', 'fees.pay'])
+                        ? $this->item('My fees', 'app.portal.fees', icon: 'fees', active: request()->routeIs('app.portal.fees*'))
+                        : null,
+                    $this->has($permissions, 'self.timetable.view')
+                        ? $this->item('My timetable', 'app.portal.timetable', icon: 'timetable', active: request()->routeIs('app.portal.timetable'))
+                        : null,
+                    $this->has($permissions, 'announcements.view')
+                        ? $this->item('Announcements', 'app.portal.announcements', icon: 'announcements', active: request()->routeIs('app.portal.announcements'))
+                        : null,
+                    $this->has($permissions, 'lms.view')
+                        ? $this->item('LMS', 'app.lms.index', icon: 'lms', active: request()->routeIs('app.lms.*'))
+                        : null,
+                    $this->has($permissions, 'cbt.take')
+                        ? $this->item('CBT exams', 'app.cbt.index', icon: 'cbt', active: request()->routeIs('app.cbt.*'))
+                        : null,
                 ])),
             ],
             [
@@ -186,7 +214,7 @@ class NavigationBuilder
                 'items' => array_values(array_filter([
                     $this->has($permissions, 'sms.send') ? $this->item('Send SMS', 'app.sms', icon: 'sms') : null,
                     $this->has($permissions, 'announcements.manage')
-                        ? $this->item('Announcements', 'app.announcements.index', icon: 'announcements', active: request()->routeIs('app.announcements.*'))
+                        ? $this->item('Manage announcements', 'app.announcements.index', icon: 'announcements', active: request()->routeIs('app.announcements.*'))
                         : null,
                 ])),
             ],
