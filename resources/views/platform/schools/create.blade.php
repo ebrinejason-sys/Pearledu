@@ -7,7 +7,10 @@
       @csrf
       <div class="grid g2">
         <div><label>School name</label><input name="name" value="{{ old('name') }}" required></div>
-        <div><label>District</label><input name="district" value="{{ old('district') }}"></div>
+        <div>
+          @include('platform.partials.district-picker', ['selected' => old('district')])
+          @error('district')<div class="err">{{ $message }}</div>@enderror
+        </div>
         <div><label>EMIS number (optional)</label><input name="emis_number" value="{{ old('emis_number') }}"></div>
         <div><label>Theme</label>
           <select name="theme" id="school-theme">
@@ -47,7 +50,11 @@
         <div><label>Email</label><input name="admin[email]" type="email"></div>
         <div><label>Phone</label><input name="admin[phone]"></div>
       </div>
-      <p style="color:var(--muted);font-size:13px">The subdomain is assigned automatically as <code>pearledu{N}.{{ config('tenancy.base_domain') }}</code>. The contact person receives an invitation to set their password.</p>
+      <p style="color:var(--muted);font-size:13px">
+        Creates a <strong>tenant id</strong> for this school. Staff and parents sign in at
+        <code>{{ config('tenancy.pearledu_landing_host') }}/login</code> — only users linked to that tenant see its data.
+        PearlEdu operators manage schools at <code>/admin</code>.
+      </p>
       @foreach($errors->all() as $e)<div class="err">{{ $e }}</div>@endforeach
       <p><button class="btn" type="submit">Onboard school</button></p>
     </form>

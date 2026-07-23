@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 namespace App\Http\Controllers;
 use App\Services\Emis\EmisExportService;
 use App\Services\Tenancy\TenantContext;

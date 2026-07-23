@@ -43,18 +43,12 @@ class InvitationController extends Controller
             return redirect()->route('platform.dashboard')->with('status', 'Welcome — your account is ready.');
         }
 
-        // Pin school context on platform hosts (invite links usually open on pearledu.*).
+        // Same host for every school — pin tenant id from membership (no subdomain required).
         if ($school = $user->primarySchool()) {
-            $context->forSchool((int) $school->id);
+            session([TenantContext::SESSION_SCHOOL_ID => $school->tenantId()]);
+            $context->forSchool($school->tenantId());
             if (! $school->activated_at) {
                 $school->forceFill(['activated_at' => now()])->save();
-            }
-
-            // Prefer the school subdomain when configured; still works on pearledu.* via pin above.
-            $tenantHost = parse_url($school->subdomainUrl(), PHP_URL_HOST);
-            if ($tenantHost && $tenantHost !== $request->getHost()) {
-                return redirect()->away(rtrim($school->subdomainUrl(), '/').'/home')
-                    ->with('status', 'Welcome — your account is ready.');
             }
         }
 

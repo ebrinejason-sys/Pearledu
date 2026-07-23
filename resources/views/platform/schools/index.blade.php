@@ -6,7 +6,8 @@
       <p class="page-header__eyebrow">Organisation</p>
       <h2 class="page-header__title">Schools</h2>
       <p style="margin:8px 0 0;color:var(--muted);font-size:14px">
-        Open a school to edit details, or <strong>Enter workspace</strong> to create students, classes, and staff.
+        Each school is a tenant. Open to edit/delete, or <strong>Enter workspace</strong> to manage its data.
+        School users always sign in at <code>/login</code>.
       </p>
     </div>
     <div class="page-header__actions">
@@ -19,9 +20,9 @@
       <thead>
         <tr>
           <th>School</th>
-          <th>Subdomain</th>
+          <th>Tenant ID</th>
+          <th>District</th>
           <th>Learners</th>
-          <th>Theme</th>
           <th>Status</th>
           <th></th>
         </tr>
@@ -30,9 +31,9 @@
       @forelse($schools as $s)
         <tr>
           <td><strong>{{ $s->name }}</strong></td>
-          <td>{{ $s->slug }}.{{ config('tenancy.base_domain') }}</td>
+          <td><code>{{ $s->tenantId() }}</code></td>
+          <td>{{ $s->district ?: '—' }}</td>
           <td>{{ number_format($s->students_count) }}</td>
-          <td><span class="pill">{{ $s->theme }}</span></td>
           <td><span class="pill">{{ $s->status }}</span></td>
           <td style="white-space:nowrap">
             <a href="{{ route('platform.schools.show', $s) }}">Open</a>

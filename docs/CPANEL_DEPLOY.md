@@ -48,6 +48,18 @@ in `.cpanel.yml` on every deploy.
    php artisan db:seed --force      # optional, only if you want demo data
    ```
 
+6. **Sessions on the shared host** — set `SESSION_DOMAIN=.voxsign.co.ug` and
+   `APP_URL=https://pearledu.voxsign.co.ug` in `.env`. School users and
+   PearlEdu operators all use the same host:
+   - Schools: `https://pearledu.voxsign.co.ug/login` → `/home` (tenant from membership)
+   - PearlEdu admin/staff: `https://pearledu.voxsign.co.ug/admin`
+   - Legacy `/platform` and `/console` redirect to `/admin`
+
+7. **Subdomains are optional** — wildcard `*.voxsign.co.ug` may still point at
+   the same Document Root for legacy tenant hosts, but onboarding no longer
+   requires creating a subdomain first. Isolation is by `schools.id` (tenant id)
+   via role assignments + RLS.
+
 ## Ongoing deploys
 
 After pushing to `main` on GitHub:

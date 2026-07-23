@@ -23,8 +23,26 @@ class School extends Model
         return $this->badge_text ?: strtoupper(substr($this->name, 0, 3));
     }
 
+    /** Optional legacy subdomain URL (not required for login or day-to-day use). */
     public function subdomainUrl(): string {
         return 'https://'.$this->slug.'.'.config('tenancy.base_domain');
+    }
+
+    /** Shared portal URL — all schools use pearledu.*; data scopes by tenant id. */
+    public function portalUrl(): string {
+        $host = config('tenancy.pearledu_landing_host');
+
+        return 'https://'.$host;
+    }
+
+    /**
+     * Tenant id for this school.
+     * Onboard creates the school row; every user/role/student row links via school_id (= this id).
+     * RLS + app scopes enforce that only that school’s members (or platform operators) see its data.
+     */
+    public function tenantId(): int
+    {
+        return (int) $this->id;
     }
 
     public function smsBalance(): int {

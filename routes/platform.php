@@ -10,7 +10,11 @@ use App\Http\Controllers\Platform\StudentController;
 use App\Http\Controllers\Platform\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['web', 'auth', 'platform'])->prefix('platform')->name('platform.')->group(function () {
+/**
+ * PearlEdu operator console — admin/staff only.
+ * School users never use this path; they log in at /login and land on /home.
+ */
+Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('schools', [SchoolController::class, 'index'])->name('schools.index');
@@ -18,6 +22,7 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('platform')->name('platfo
     Route::post('schools', [SchoolController::class, 'store'])->name('schools.store');
     Route::get('schools/{school}', [SchoolController::class, 'show'])->name('schools.show');
     Route::put('schools/{school}', [SchoolController::class, 'update'])->name('schools.update');
+    Route::delete('schools/{school}', [SchoolController::class, 'destroy'])->name('schools.destroy');
     Route::post('schools/{school}/enter', [SchoolController::class, 'enter'])->name('schools.enter');
     Route::post('schools/leave', [SchoolController::class, 'leave'])->name('schools.leave');
     Route::post('schools/{school}/imitate/{user}', [\App\Http\Controllers\Platform\ImpersonationController::class, 'store'])->name('schools.imitate');
@@ -57,3 +62,13 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('platform')->name('platfo
         Route::post('staff', [StaffController::class, 'store'])->name('staff.store');
     });
 });
+
+// Legacy operator paths → /admin
+foreach (['platform', 'console'] as $legacy) {
+    Route::middleware('web')->any($legacy.'/{path?}', function (?string $path = null) {
+        $target = '/admin'.($path ? '/'.$path : '');
+        $qs = request()->getQueryString();
+
+        return redirect($target.($qs ? '?'.$qs : ''), 308);
+    })->where('path', '.*');
+}

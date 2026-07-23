@@ -26,8 +26,8 @@ class User extends Authenticatable
 
     public function activeAssignments() {
         return $this->roleAssignments()->where('is_active', true)
-            ->whereDate('starts_on', '<=', now())
-            ->where(fn($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', now()));
+            ->where(fn ($q) => $q->whereNull('starts_on')->orWhereDate('starts_on', '<=', now()))
+            ->where(fn ($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', now()));
     }
 
     public function guardianships(): HasMany { return $this->hasMany(Guardianship::class, 'guardian_user_id'); }
@@ -48,24 +48,25 @@ class User extends Authenticatable
         return School::whereIn('id', $this->activeAssignments()->whereNotNull('school_id')->pluck('school_id'))->get();
     }
 
-    /** First active school membership (school staff / parent / student). */
+    /**
+     * First active school membership on an active tenant
+     * (suspended/archived schools are not usable at /login → /home).
+     */
     public function primarySchool(): ?School
     {
-        $schoolId = $this->activeAssignments()->whereNotNull('school_id')->value('school_id');
+        $schoolId = $this->activeAssignments()
+            ->whereNotNull('school_id')
+            ->whereHas('school', fn ($q) => $q->where('status', 'active'))
+            ->value('school_id');
 
         return $schoolId ? School::find($schoolId) : null;
     }
 
-    /** Absolute app home for this user (tenant subdomain when available). */
+    /** Absolute app home for this user (same host; school from session/membership). */
     public function appHomeUrl(): string
     {
         if ($this->isPlatformOperator()) {
             return route('platform.dashboard');
-        }
-
-        $school = $this->primarySchool();
-        if ($school) {
-            return rtrim($school->subdomainUrl(), '/').'/home';
         }
 
         return route('app.home');

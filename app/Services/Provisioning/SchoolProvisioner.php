@@ -20,8 +20,9 @@ class SchoolProvisioner {
     ) {}
 
     /**
-     * Onboard a school atomically. Subdomain is AUTO-ASSIGNED as
-     * {prefix}{id} -> pearledu1, pearledu2, ... .{base_domain}.
+     * Onboard a school atomically.
+     * Creates the tenant (schools.id) and links the admin user’s role_assignment to that school_id.
+     * Shared login is pearledu.*/login — isolation is by school_id / RLS, not by subdomain.
      * Returns the raw invite token (deliver out-of-band via mail/SMS).
      */
     public function onboard(array $school, array $levels, array $admin, ?int $operatorId): array {
@@ -37,6 +38,7 @@ class SchoolProvisioner {
                 'status'      => 'active',
                 'created_by'  => $operatorId,
             ]);
+            // Stable slug for optional legacy host; tenant id remains schools.id.
             $created->update(['slug' => config('tenancy.tenant_slug_prefix').$created->id]);
 
             foreach (array_unique($levels) as $lvl) {
@@ -59,8 +61,13 @@ class SchoolProvisioner {
                 'expires_at' => now()->addDays(7), 'invited_by' => $operatorId,
             ]);
 
-            $this->audit->record('school.onboarded', $created, ['slug'=>$created->slug,'levels'=>$levels]);
-            return ['school'=>$created, 'admin'=>$adminUser, 'invite_token'=>$raw];
+            $this->audit->record('school.onboarded', $created, [
+                'tenant_id' => $created->tenantId(),
+                'slug' => $created->slug,
+                'levels' => $levels,
+            ]);
+
+            return ['school' => $created, 'admin' => $adminUser, 'invite_token' => $raw];
         });
     }
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\TransportAllocation;

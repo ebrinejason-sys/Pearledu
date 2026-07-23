@@ -7,7 +7,7 @@
   <p style="margin:0 0 24px;text-align:center">
     <a href="{{ $acceptUrl }}" style="display:inline-block;background:#053F5C;color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Accept invitation</a>
   </p>
-  <p style="margin:0;font-size:13px;color:#4A6270">Your school portal: <a href="{{ $schoolUrl }}" style="color:#429EBD">{{ $schoolUrl }}</a></p>
+  <p style="margin:0;font-size:13px;color:#4A6270">Sign in at: <a href="{{ $schoolUrl }}" style="color:#429EBD">{{ $schoolUrl }}</a> (same link for every school — your account loads your school’s data).</p>
 @endsection
 
 @section('footer')

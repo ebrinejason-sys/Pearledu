@@ -133,7 +133,7 @@ class GuardianLinkService
                 $school->name,
                 $student->full_name,
                 $acceptUrl,
-                $school->subdomainUrl(),
+                $school->portalUrl(),
             ));
 
             $this->audit->record('guardian.invited', $guardianship, [

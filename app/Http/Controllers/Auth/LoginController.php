@@ -71,6 +71,14 @@ class LoginController extends Controller
                 ->with('status', 'We emailed a 6-digit code to '.$user->email.'.');
         }
 
+        // School users must belong to an active tenant (schools.id).
+        if (! $user->primarySchool()) {
+            RateLimiter::hit($key, 60);
+            throw ValidationException::withMessages([
+                'identifier' => 'No active school is linked to this account. Contact PearlEdu support.',
+            ]);
+        }
+
         Auth::login($user, $remember);
         $this->completeLogin($request, $audit, $context);
 
@@ -84,7 +92,13 @@ class LoginController extends Controller
         $user->forceFill(['last_login_at' => now()])->save();
         $audit->record('auth.login', $user);
 
-        if (($school = $context->school()) && ! $school->activated_at) {
+        if ($user && ! $user->isPlatformOperator() && ($school = $user->primarySchool())) {
+            session([TenantContext::SESSION_SCHOOL_ID => $school->tenantId()]);
+            $context->forSchool($school->tenantId());
+            if (! $school->activated_at) {
+                $school->forceFill(['activated_at' => now()])->save();
+            }
+        } elseif (($school = $context->school()) && ! $school->activated_at) {
             $school->forceFill(['activated_at' => now()])->save();
         }
     }

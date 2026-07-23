@@ -3,8 +3,9 @@
 Laravel 13 · PostgreSQL · multi-tenant with database-enforced isolation. Built for Ugandan schools (pre-primary -> A-Level), hosted under `voxsign.co.ug`.
 
 - Marketing: `voxsign.co.ug`
-- Platform app / sign-in: `pearledu.voxsign.co.ug`
-- Tenant schools (auto): `pearledu1.voxsign.co.ug`, `pearledu2...` (wildcard DNS)
+- School app + sign-in (all tenants): `pearledu.voxsign.co.ug/login` — after login, `/home` loads data for that user’s school (`schools.id` = tenant id)
+- PearlEdu admin/staff: `pearledu.voxsign.co.ug/admin` (legacy `/platform` and `/console` redirect here)
+- Onboard creates the tenant + links users via `role_assignments.school_id`; RLS enforces isolation
 
 ## What's in this build
 

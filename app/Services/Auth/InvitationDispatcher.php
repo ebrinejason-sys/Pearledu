@@ -37,7 +37,7 @@ class InvitationDispatcher
                 $user,
                 $school->name,
                 $acceptUrl,
-                $school->subdomainUrl(),
+                $school->portalUrl(),
                 $invitation->expires_at,
             ));
             $sent = true;

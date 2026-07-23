@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 namespace App\Http\Controllers;
 use App\Models\FeeInvoice;
 use App\Models\FeeStructure;

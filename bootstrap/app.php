@@ -2,6 +2,7 @@
 use App\Http\Middleware\EnsurePlatformOperator;
 use App\Http\Middleware\EnsurePlatformSchoolEntered;
 use App\Http\Middleware\EnsureTwoFactorPending;
+use App\Http\Middleware\PinAuthenticatedTenant;
 use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\ResolveTenant;
 use Illuminate\Foundation\Application;
@@ -21,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [ResolveTenant::class]);
+        // After StartSession: pin school from auth/session on the shared pearledu host.
+        $middleware->web(append: [PinAuthenticatedTenant::class]);
         $middleware->alias([
             'platform'         => EnsurePlatformOperator::class,
             'platform.school'  => EnsurePlatformSchoolEntered::class,

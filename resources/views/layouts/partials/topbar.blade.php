@@ -53,7 +53,7 @@
           <p class="user-menu__email">{{ $nav['user']['email'] ?? '' }}</p>
           <a href="{{ route('account.settings') }}" class="user-menu__link {{ request()->routeIs('account.*') ? 'active' : '' }}">Account settings</a>
           @if(!empty($nav['user']['is_platform']))
-            <a href="{{ route('platform.dashboard') }}" class="user-menu__link">Platform console</a>
+            <a href="{{ route('platform.dashboard') }}" class="user-menu__link">PearlEdu admin</a>
           @endif
           @if(!empty($nav['impersonation']))
             <form method="post" action="{{ route('impersonation.stop') }}">

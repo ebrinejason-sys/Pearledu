@@ -20,9 +20,9 @@ class ResolveTenant {
             return $next($request);
         }
 
-        // PearlEdu marketing (/) and the platform console (/platform, /login) share this host.
-        // Pin platform RLS here so route-model binding (e.g. /platform/schools/{school})
-        // can see rows — SubstituteBindings runs before the `platform` middleware.
+        // PearlEdu marketing (/), shared school app (/home, /login, …), and operator console (/admin)
+        // share this host. Pin platform RLS so admin route-model binding can see all schools;
+        // PinAuthenticatedTenant upgrades to forSchool after session/auth for school users.
         if ($host === config('tenancy.pearledu_landing_host')) {
             $request->attributes->set('is_pearledu_landing', true);
             $this->context->forPlatform();

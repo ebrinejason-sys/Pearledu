@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\DB;
 /** Single source of truth for request scope; mirrors it into Postgres for RLS. */
 class TenantContext
 {
+    /** Session key for the school the user is working in (shared-host tenancy). */
+    public const SESSION_SCHOOL_ID = 'tenant.school_id';
+
     private ?int $schoolId = null;
     private bool $isPlatform = false;
 

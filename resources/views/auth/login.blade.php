@@ -46,6 +46,7 @@
       </a>
       <div class="vx-auth-card">
         <h1>Sign in</h1>
+        <p style="margin:0 0 14px;font-size:14px;color:var(--muted, #5a6b75)">One login for every school — your account opens your school’s dashboard.</p>
         @if(session('status'))<div class="vx-auth-status">{{ session('status') }}</div>@endif
         <form method="post" action="/login">
           @csrf

@@ -26,8 +26,8 @@
         <label>Name</label>
         <input name="name" value="{{ old('name', $school->name) }}" required>
         @error('name')<div class="err">{{ $message }}</div>@enderror
-        <label>District</label>
-        <input name="district" value="{{ old('district', $school->district) }}">
+        @include('platform.partials.district-picker', ['selected' => old('district', $school->district)])
+        @error('district')<div class="err">{{ $message }}</div>@enderror
         <label>EMIS number</label>
         <input name="emis_number" value="{{ old('emis_number', $school->emis_number) }}">
         <label>Theme</label>
@@ -55,7 +55,9 @@
         <p style="margin-top:14px"><button class="btn" type="submit">Save details</button></p>
       </form>
       <p style="margin:16px 0 0;color:var(--muted);font-size:13px">
-        Subdomain: <a href="{{ $school->subdomainUrl() }}">{{ $school->subdomainUrl() }}</a>
+        <strong>Tenant ID:</strong> {{ $school->tenantId() }}<br>
+        Portal login: <a href="{{ $school->portalUrl() }}/login">{{ $school->portalUrl() }}/login</a>
+        <span class="muted" style="display:block;margin-top:4px;font-size:13px">Optional legacy subdomain: <a href="{{ $school->subdomainUrl() }}">{{ $school->subdomainUrl() }}</a></span>
       </p>
       @php($provisioning = $school->provisioningState())
       <p style="margin:8px 0 0">
@@ -64,6 +66,22 @@
           {{ ['pending_invite' => 'Pending invite', 'invite_accepted' => 'Invite accepted', 'ready' => 'Ready'][$provisioning] }}
         </span>
       </p>
+
+      <div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--line)">
+        <h3 style="margin:0 0 8px;color:var(--danger, #b42318)">Delete school</h3>
+        <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">
+          Permanently removes this tenant and cascaded school data. Type the school name to confirm.
+        </p>
+        <form method="post" action="{{ route('platform.schools.destroy', $school) }}"
+              onsubmit="return confirm('Delete this school and all its tenant data? This cannot be undone.')">
+          @csrf
+          @method('DELETE')
+          <label>Confirm school name</label>
+          <input name="confirm_name" placeholder="{{ $school->name }}" required autocomplete="off">
+          @error('confirm_name')<div class="err">{{ $message }}</div>@enderror
+          <p style="margin-top:12px"><button class="btn" type="submit" style="background:var(--danger, #b42318);border-color:var(--danger, #b42318)">Delete school</button></p>
+        </form>
+      </div>
     </div>
 
     <div class="card">

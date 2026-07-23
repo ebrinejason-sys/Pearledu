@@ -26,7 +26,7 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
         $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
         $host = 'http://pearledu.voxsign.test';
 
-        $response = $this->actingAs($operator)->post($host.'/platform/schools', [
+        $response = $this->actingAs($operator)->post($host.'/admin/schools', [
             'name' => 'Buganda High',
             'district' => 'Kampala',
             'emis_number' => 'EMIS-404-FIX',
@@ -43,9 +43,49 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
 
         $response->assertRedirect(route('platform.schools.show', $school));
 
-        $show = $this->actingAs($operator)->get($host.'/platform/schools/'.$school->id);
+        $show = $this->actingAs($operator)->get($host.'/admin/schools/'.$school->id);
         $show->assertOk();
         $show->assertSee('Buganda High', false);
+        $show->assertSee('Tenant ID', false);
+    }
+
+    public function test_onboard_requires_uganda_district(): void
+    {
+        Mail::fake();
+
+        $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
+        $host = 'http://pearledu.voxsign.test';
+
+        $this->actingAs($operator)->post($host.'/admin/schools', [
+            'name' => 'No District School',
+            'district' => 'NotARealDistrict',
+            'theme' => 'pearledu',
+            'levels' => ['primary'],
+            'admin' => [
+                'full_name' => 'Contact',
+                'email' => 'nodistrict@test.example',
+            ],
+        ])->assertSessionHasErrors('district');
+    }
+
+    public function test_operator_can_delete_school(): void
+    {
+        $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
+        $school = app(SchoolProvisioner::class)->onboard(
+            school: ['name' => 'Delete Me Academy', 'district' => 'Jinja', 'theme' => 'pearledu'],
+            levels: ['primary'],
+            admin: ['full_name' => 'Del Admin', 'email' => 'del@delete.test'],
+            operatorId: $operator->id,
+        )['school'];
+
+        $host = 'http://pearledu.voxsign.test';
+        $id = $school->id;
+
+        $this->actingAs($operator)
+            ->delete($host.'/admin/schools/'.$id, ['confirm_name' => 'Delete Me Academy'])
+            ->assertRedirect(route('platform.schools.index'));
+
+        $this->assertNull(School::find($id));
     }
 
     public function test_school_show_is_reachable_when_another_school_is_entered(): void
@@ -64,7 +104,7 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
 
         $this->actingAs($operator)
             ->withSession(['platform.entered_school_id' => $existing->id])
-            ->get($host.'/platform/schools/'.$created->id)
+            ->get($host.'/admin/schools/'.$created->id)
             ->assertOk()
             ->assertSee('Second School', false);
     }

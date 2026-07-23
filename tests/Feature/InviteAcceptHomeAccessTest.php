@@ -34,9 +34,9 @@ class InviteAcceptHomeAccessTest extends TestCase
             'token' => $result['invite_token'],
             'password' => 'password12345',
             'password_confirmation' => 'password12345',
-        ])->assertRedirect();
+        ])->assertRedirect(route('app.home'));
 
-        // Simulate staying on the platform host (common when wildcard DNS lags).
+        // Same shared host — no subdomain; school scoped by membership/session.
         app(TenantContext::class)->clear();
 
         $this->get($host.'/home')->assertOk();

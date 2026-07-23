@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 namespace App\Http\Controllers;
 use App\Models\HelpdeskTicket;
 use App\Services\Tenancy\TenantContext;
