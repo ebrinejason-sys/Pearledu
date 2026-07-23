@@ -25,12 +25,19 @@
     <div class="card">
       <h3 style="margin-top:0">Catalogue</h3>
       <table>
-        <thead><tr><th>Name</th><th>Code</th><th></th></tr></thead>
+        <thead><tr><th>Name / code</th><th></th></tr></thead>
         <tbody>
         @forelse($subjects as $subject)
           <tr>
-            <td>{{ $subject->name }}</td>
-            <td>{{ $subject->code ?: '—' }}</td>
+            <td>
+              <form method="post" action="{{ route('app.subjects.update', $subject) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                @csrf
+                @method('PUT')
+                <input name="name" value="{{ $subject->name }}" required style="flex:1;min-width:120px">
+                <input name="code" value="{{ $subject->code }}" required style="width:100px">
+                <button class="btn" type="submit">Save</button>
+              </form>
+            </td>
             <td>
               <form method="post" action="{{ route('app.subjects.destroy', $subject) }}" onsubmit="return confirm('Remove subject?')">
                 @csrf @method('DELETE')
@@ -39,7 +46,7 @@
             </td>
           </tr>
         @empty
-          <tr><td colspan="3" style="color:var(--muted)">No subjects yet.</td></tr>
+          <tr><td colspan="2" style="color:var(--muted)">No subjects yet.</td></tr>
         @endforelse
         </tbody>
       </table>

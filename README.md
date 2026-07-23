@@ -19,7 +19,7 @@ Resolution: user preference → school theme → default. App/auth layouts injec
 
 **Auth (invite-only)** — hierarchical invites by **email and/or phone**; accept link sets password then opens the dashboard. Login with **email or phone + password**. Multi-role staff (union permissions). Roles include deputy head teacher. Platform 2FA email OTP unchanged.
 
-**School MIS modules** — academic years/terms, subjects, teaching assignments, enrollments, attendance (+ optional SMS), assessment/marks/broadsheet/report cards, promotions, non-colliding timetable, fees (cash + MoMo methods), announcements, admissions, LMS, CBT, library, inventory, transport, hostel, HR leave, clinic, helpdesk, EMIS CSV export.
+**School setup** — identity (logo/badge/motto on report cards), academic years + Term I–III template, subjects edit, fee structures with archive, transport student assignment, visual timetable grid, class-teacher ↔ class binding on invite.
 
 **Onboarding** — `SchoolProvisioner` onboards atomically, auto-assigns `pearledu{N}` subdomain, seeds class scaffold, creates the contact person as School Admin, and issues their activation invite.
 

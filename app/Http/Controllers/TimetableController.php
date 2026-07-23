@@ -16,29 +16,46 @@ use Illuminate\Validation\ValidationException;
 
 class TimetableController extends Controller
 {
-    public function index(TenantContext $context)
+    public function index(Request $request, TenantContext $context)
     {
         $school = $context->school();
         abort_unless($school, 404);
 
-        $slots = TimetableSlot::query()
+        $classes = SchoolClass::query()->orderBy('name')->get();
+        $classId = (int) $request->query('class_id', $classes->first()?->id ?? 0);
+
+        $slotsQuery = TimetableSlot::query()
             ->with(['period', 'schoolClass', 'subject', 'teacher', 'room'])
             ->orderBy('day_of_week')
-            ->orderBy('period_id')
-            ->get();
+            ->orderBy('period_id');
 
+        if ($classId) {
+            $slotsQuery->where('class_id', $classId);
+        }
+
+        $slots = $slotsQuery->get();
         $periods = TimetablePeriod::query()->orderBy('sequence')->get();
         $rooms = Room::query()->orderBy('name')->get();
-        $classes = SchoolClass::query()->orderBy('name')->get();
         $subjects = Subject::query()->orderBy('name')->get();
         $years = AcademicYear::query()->orderByDesc('starts_on')->get();
         $teachers = User::query()
-            ->whereHas('roleAssignments', fn ($q) => $q->where('school_id', $school->id)->where('is_active', true))
+            ->whereHas('roleAssignments', fn ($q) => $q->where('school_id', $school->id)
+                ->where('is_active', true)
+                ->whereHas('role', fn ($r) => $r->whereIn('key', [
+                    'class_teacher', 'subject_teacher', 'head_teacher', 'deputy_head_teacher', 'school_admin',
+                ])))
             ->orderBy('full_name')
             ->get(['id', 'full_name']);
 
+        $days = [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'];
+        $grid = [];
+        foreach ($slots as $slot) {
+            $grid[$slot->day_of_week][$slot->period_id] = $slot;
+        }
+
         return view('app.timetable.index', compact(
-            'school', 'slots', 'periods', 'rooms', 'classes', 'subjects', 'years', 'teachers'
+            'school', 'slots', 'periods', 'rooms', 'classes', 'subjects', 'years', 'teachers',
+            'classId', 'days', 'grid'
         ));
     }
 
@@ -95,15 +112,18 @@ class TimetableController extends Controller
             return back()->withInput()->withErrors($e->errors());
         }
 
-        return back()->with('status', 'Timetable slot added.');
+        return redirect()->route('app.timetable.index', ['class_id' => $data['class_id']])
+            ->with('status', 'Timetable slot added.');
     }
 
     public function destroySlot(TimetableSlot $slot, TenantContext $context)
     {
         $school = $context->school();
         abort_unless($school && $slot->school_id === $school->id, 404);
+        $classId = $slot->class_id;
         $slot->delete();
 
-        return back()->with('status', 'Slot removed.');
+        return redirect()->route('app.timetable.index', ['class_id' => $classId])
+            ->with('status', 'Slot removed.');
     }
 }

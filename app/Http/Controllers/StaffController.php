@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\RoleAssignment;
+use App\Models\SchoolClass;
 use App\Models\SchoolInvitation;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
@@ -19,15 +20,22 @@ class StaffController extends Controller
         $school = $context->school();
         abort_unless($school, 404);
 
+        $roleKeys = $policy->rolesInvitableBy($request->user(), $school->id, false);
+        $roles = Role::query()->whereIn('key', $roleKeys)->orderBy('label')->get();
+        $classes = SchoolClass::query()->where('school_id', $school->id)->orderBy('name')->get();
+
         $members = RoleAssignment::query()
             ->where('school_id', $school->id)
             ->where('is_active', true)
-            ->with(['user', 'role'])
+            ->with(['user', 'role', 'schoolClass'])
             ->get()
             ->groupBy('user_id')
             ->map(fn ($assignments) => [
                 'user' => $assignments->first()->user,
-                'roles' => $assignments->pluck('role.label')->unique()->values()->all(),
+                'roles' => $assignments->map(fn ($a) => [
+                    'label' => $a->role?->label,
+                    'class' => $a->schoolClass?->name,
+                ])->unique(fn ($r) => $r['label'].'|'.$r['class'])->values()->all(),
             ])
             ->sortBy(fn ($m) => $m['user']->full_name ?? '')
             ->values();
@@ -40,10 +48,7 @@ class StaffController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $roleKeys = $policy->rolesInvitableBy($request->user(), $school->id, false);
-        $roles = Role::query()->whereIn('key', $roleKeys)->orderBy('label')->get();
-
-        return view('app.staff.index', compact('school', 'members', 'openInvites', 'roles'));
+        return view('app.staff.index', compact('school', 'members', 'openInvites', 'roles', 'classes'));
     }
 
     public function store(Request $request, TenantContext $context, StaffInvitationService $inviter, InvitePolicy $policy)
@@ -58,12 +63,15 @@ class StaffController extends Controller
             'phone' => 'nullable|string|max:30|required_without:email',
             'role_keys' => 'required|array|min:1',
             'role_keys.*' => ['string', Rule::in($allowed)],
+            'class_id' => 'nullable|integer|exists:school_classes,id',
         ]);
 
         try {
             $result = $inviter->invite($school, $data, $request->user(), false);
         } catch (RuntimeException $e) {
             return back()->withInput()->withErrors(['email' => $e->getMessage()]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors());
         }
 
         $via = collect([

@@ -93,6 +93,7 @@ class MarksheetService
             ->where('assessment_period_id', $periodId)
             ->where('class_id', $classId)
             ->whereNotNull('score')
+            ->with('subject')
             ->get()
             ->groupBy('student_id');
 
@@ -110,6 +111,13 @@ class MarksheetService
                 'average' => $average,
                 'position' => null,
                 'subject_count' => $count,
+                'subjects' => $studentMarks->map(fn ($m) => [
+                    'name' => $m->subject?->name ?? 'Subject',
+                    'code' => $m->subject?->code,
+                    'score' => $m->score,
+                    'grade' => $m->grade,
+                    'comment' => $m->comment,
+                ])->values()->all(),
             ];
         }
 

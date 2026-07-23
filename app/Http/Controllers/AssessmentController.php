@@ -141,7 +141,11 @@ class AssessmentController extends Controller
         $reports = ($periodId && $classId)
             ? $marks->reportCards($periodId, $classId)
             : [];
+        $period = $periods->firstWhere('id', $periodId);
+        $klass = $classes->firstWhere('id', $classId);
 
-        return view('app.assessment.reports', compact('school', 'periods', 'classes', 'periodId', 'classId', 'reports'));
+        return view('app.assessment.reports', compact(
+            'school', 'periods', 'classes', 'periodId', 'classId', 'reports', 'period', 'klass'
+        ));
     }
 }

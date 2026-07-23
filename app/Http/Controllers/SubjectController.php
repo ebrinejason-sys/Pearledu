@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Subject;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SubjectController extends Controller
 {
@@ -25,7 +26,10 @@ class SubjectController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:120',
-            'code' => 'required|string|max:40',
+            'code' => [
+                'required', 'string', 'max:40',
+                Rule::unique('subjects', 'code')->where(fn ($q) => $q->where('school_id', $school->id)),
+            ],
         ]);
 
         Subject::create([
@@ -35,6 +39,26 @@ class SubjectController extends Controller
         ]);
 
         return back()->with('status', 'Subject created.');
+    }
+
+    public function update(Request $request, Subject $subject, TenantContext $context)
+    {
+        $school = $context->school();
+        abort_unless($school && (int) $subject->school_id === (int) $school->id, 404);
+
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'code' => [
+                'required', 'string', 'max:40',
+                Rule::unique('subjects', 'code')
+                    ->where(fn ($q) => $q->where('school_id', $school->id))
+                    ->ignore($subject->id),
+            ],
+        ]);
+
+        $subject->update($data);
+
+        return back()->with('status', 'Subject updated.');
     }
 
     public function destroy(Subject $subject, TenantContext $context)

@@ -13,15 +13,40 @@
   @endforeach
 
   <div class="card">
+    <form method="get" action="{{ route('app.timetable.index') }}" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+      <div>
+        <label>Class</label>
+        <select name="class_id">
+          @foreach($classes as $c)
+            <option value="{{ $c->id }}" @selected((int) $classId === (int) $c->id)>{{ $c->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <button class="btn" type="submit">Filter</button>
+    </form>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0">Add slot</h3>
     <form method="post" action="{{ route('app.timetable.slots.store') }}">
       @csrf
-      <label>Day (1=Mon … 7=Sun)</label>
-      <input type="number" name="day_of_week" min="1" max="7" value="{{ old('day_of_week', 1) }}" required>
+      <label>Day</label>
+      <select name="day_of_week" required>
+        @foreach($days as $num => $label)
+          <option value="{{ $num }}" @selected((string) old('day_of_week', '1') === (string) $num)>{{ $label }}</option>
+        @endforeach
+      </select>
+      <label>Academic year</label>
+      <select name="academic_year_id">
+        <option value="">—</option>
+        @foreach($years as $y)
+          <option value="{{ $y->id }}" @selected((string) old('academic_year_id') === (string) $y->id)>{{ $y->name }}</option>
+        @endforeach
+      </select>
       <label>Period</label>
       <select name="period_id">
         <option value="">Create new below…</option>
-        @foreach($periods as $p)<option value="{{ $p->id }}">{{ $p->name }} ({{ $p->starts_at }}–{{ $p->ends_at }})</option>@endforeach
+        @foreach($periods as $p)<option value="{{ $p->id }}" @selected((string) old('period_id') === (string) $p->id)>{{ $p->name }} ({{ $p->starts_at }}–{{ $p->ends_at }})</option>@endforeach
       </select>
       <label>Or new period name / start / end</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -30,7 +55,11 @@
         <input name="ends_at" type="time" value="{{ old('ends_at') }}">
       </div>
       <label>Class</label>
-      <select name="class_id" required>@foreach($classes as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
+      <select name="class_id" required>
+        @foreach($classes as $c)
+          <option value="{{ $c->id }}" @selected((int) old('class_id', $classId) === (int) $c->id)>{{ $c->name }}</option>
+        @endforeach
+      </select>
       <label>Subject</label>
       <select name="subject_id" required>@foreach($subjects as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select>
       <label>Teacher</label>
@@ -47,28 +76,43 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0">Slots</h3>
-    <table>
-      <thead><tr><th>Day</th><th>Period</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Room</th><th></th></tr></thead>
-      <tbody>
-      @forelse($slots as $slot)
-        <tr>
-          <td>{{ $slot->day_of_week }}</td>
-          <td>{{ $slot->period?->name }}</td>
-          <td>{{ $slot->schoolClass?->name }}</td>
-          <td>{{ $slot->subject?->name }}</td>
-          <td>{{ $slot->teacher?->full_name }}</td>
-          <td>{{ $slot->room?->name ?: '—' }}</td>
-          <td>
-            <form method="post" action="{{ route('app.timetable.slots.destroy', $slot) }}">@csrf @method('DELETE')
-              <button class="btn" type="submit">Remove</button>
-            </form>
-          </td>
-        </tr>
-      @empty
-        <tr><td colspan="7" style="color:var(--muted)">No slots.</td></tr>
-      @endforelse
-      </tbody>
-    </table>
+    <h3 style="margin-top:0">Grid</h3>
+    @if($periods->isEmpty())
+      <p style="color:var(--muted)">No periods yet. Add a slot with a new period to get started.</p>
+    @else
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Day</th>
+              @foreach($periods as $period)
+                <th>{{ $period->name }}<br><span style="font-weight:400;color:var(--muted);font-size:12px">{{ $period->starts_at }}–{{ $period->ends_at }}</span></th>
+              @endforeach
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($days as $dayNum => $dayLabel)
+              <tr>
+                <td><strong>{{ $dayLabel }}</strong></td>
+                @foreach($periods as $period)
+                  @php($slot = $grid[$dayNum][$period->id] ?? null)
+                  <td>
+                    @if($slot)
+                      <div>{{ $slot->subject?->name }}</div>
+                      <div style="color:var(--muted);font-size:12px">{{ \Illuminate\Support\Str::of($slot->teacher?->full_name ?? '')->before(' ') }}</div>
+                      <form method="post" action="{{ route('app.timetable.slots.destroy', $slot) }}" style="margin-top:6px">@csrf @method('DELETE')
+                        <button class="btn" type="submit">Remove</button>
+                      </form>
+                    @else
+                      <span style="color:var(--muted)">—</span>
+                    @endif
+                  </td>
+                @endforeach
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    @endif
   </div>
 @endsection

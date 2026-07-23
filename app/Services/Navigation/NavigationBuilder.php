@@ -81,6 +81,9 @@ class NavigationBuilder
                 'label' => 'General',
                 'items' => array_values(array_filter([
                     $this->item('Home', 'app.home', icon: 'home'),
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('School identity', 'app.settings.school', icon: 'platform', active: request()->routeIs('app.settings.*'))
+                        : null,
                     $this->hasAny($permissions, [
                         'child.results.view', 'self.results.view', 'child.fees.view',
                         'fees.pay', 'self.timetable.view', 'announcements.view',

@@ -38,6 +38,15 @@
           @endforeach
         </div>
         @error('role_keys')<div class="err">{{ $message }}</div>@enderror
+        <label>Class</label>
+        <select name="class_id">
+          <option value="">—</option>
+          @foreach($classes as $c)
+            <option value="{{ $c->id }}" @selected((string) old('class_id') === (string) $c->id)>{{ $c->name }}</option>
+          @endforeach
+        </select>
+        <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Required when Class teacher is checked.</p>
+        @error('class_id')<div class="err">{{ $message }}</div>@enderror
         <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
       </form>
       @endif
@@ -77,7 +86,11 @@
         <tr>
           <td><strong>{{ $user->full_name }}</strong></td>
           <td>{{ $user->email ?? $user->phone ?? '—' }}</td>
-          <td>@foreach($member['roles'] as $role)<span class="pill">{{ $role }}</span> @endforeach</td>
+          <td>
+            @foreach($member['roles'] as $role)
+              <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
+            @endforeach
+          </td>
           <td>{{ $user->status }}</td>
         </tr>
       @empty

@@ -2,7 +2,13 @@
 @section('title', 'Timetable')
 @section('content')
   @php
-    $days = [1=>'Monday',2=>'Tuesday',3=>'Wednesday',4=>'Thursday',5=>'Friday',6=>'Saturday',7=>'Sunday'];
+    $dayNames = [1=>'Monday',2=>'Tuesday',3=>'Wednesday',4=>'Thursday',5=>'Friday',6=>'Saturday',7=>'Sunday'];
+    $periods = $slots->pluck('period')->filter()->unique('id')->sortBy('sequence')->values();
+    $grid = [];
+    foreach ($slots as $slot) {
+      $grid[$slot->day_of_week][$slot->period_id] = $slot;
+    }
+    $usedDays = $slots->pluck('day_of_week')->unique()->sort()->values();
   @endphp
   <div class="page-header">
     <div>
@@ -13,21 +19,42 @@
   </div>
   @include('app.portal._learner_switcher')
   <div class="card">
-    <table>
-      <thead><tr><th>Day</th><th>Period</th><th>Subject</th><th>Teacher</th><th>Room</th></tr></thead>
-      <tbody>
-        @forelse($slots as $slot)
-          <tr>
-            <td>{{ $days[$slot->day_of_week] ?? $slot->day_of_week }}</td>
-            <td>{{ $slot->period?->name ?? $slot->period_id }}</td>
-            <td>{{ $slot->subject?->name ?? '—' }}</td>
-            <td>{{ $slot->teacher?->full_name ?? '—' }}</td>
-            <td>{{ $slot->room?->name ?? '—' }}</td>
-          </tr>
-        @empty
-          <tr><td colspan="5">No timetable slots for this class yet.</td></tr>
-        @endforelse
-      </tbody>
-    </table>
+    @if($slots->isEmpty() || $periods->isEmpty())
+      <p style="color:var(--muted);margin:0">No timetable slots for this class yet.</p>
+    @else
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Day</th>
+              @foreach($periods as $period)
+                <th>{{ $period->name }}<br><span style="font-weight:400;color:var(--muted);font-size:12px">{{ $period->starts_at }}–{{ $period->ends_at }}</span></th>
+              @endforeach
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($usedDays as $dayNum)
+              <tr>
+                <td><strong>{{ $dayNames[$dayNum] ?? $dayNum }}</strong></td>
+                @foreach($periods as $period)
+                  @php($slot = $grid[$dayNum][$period->id] ?? null)
+                  <td>
+                    @if($slot)
+                      <div>{{ $slot->subject?->name ?? '—' }}</div>
+                      <div style="color:var(--muted);font-size:12px">{{ $slot->teacher?->full_name ?? '—' }}</div>
+                      @if($slot->room)
+                        <div style="color:var(--muted);font-size:12px">{{ $slot->room->name }}</div>
+                      @endif
+                    @else
+                      <span style="color:var(--muted)">—</span>
+                    @endif
+                  </td>
+                @endforeach
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    @endif
   </div>
 @endsection

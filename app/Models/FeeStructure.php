@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class FeeStructure extends Model
 {
     use BelongsToSchool;
-    protected $fillable = ['school_id', 'class_id', 'term_id', 'name', 'amount', 'currency'];
-    protected $casts = ['amount' => 'decimal:2'];
+    protected $fillable = ['school_id', 'class_id', 'term_id', 'name', 'amount', 'currency', 'is_active'];
+    protected $casts = ['amount' => 'decimal:2', 'is_active' => 'boolean'];
 
     public function schoolClass(): BelongsTo
     {

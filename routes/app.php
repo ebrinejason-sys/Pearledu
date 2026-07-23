@@ -18,6 +18,7 @@ use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\SchoolSettingsController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
@@ -78,11 +79,17 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     });
 
     Route::middleware('permission:school.manage')->group(function () {
+        Route::get('/settings/school', [SchoolSettingsController::class, 'edit'])->name('app.settings.school');
+        Route::put('/settings/school', [SchoolSettingsController::class, 'update'])->name('app.settings.school.update');
+
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->name('app.years.index');
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->name('app.years.store');
+        Route::post('/academic-years/{year}/current', [AcademicYearController::class, 'setCurrent'])->name('app.years.current');
         Route::post('/academic-years/{year}/terms', [AcademicYearController::class, 'storeTerm'])->name('app.years.terms.store');
+        Route::put('/terms/{term}', [AcademicYearController::class, 'updateTerm'])->name('app.years.terms.update');
         Route::get('/subjects', [SubjectController::class, 'index'])->name('app.subjects.index');
         Route::post('/subjects', [SubjectController::class, 'store'])->name('app.subjects.store');
+        Route::put('/subjects/{subject}', [SubjectController::class, 'update'])->name('app.subjects.update');
         Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('app.subjects.destroy');
         Route::get('/teaching-assignments', [TeachingAssignmentController::class, 'index'])->name('app.teaching.index');
         Route::post('/teaching-assignments', [TeachingAssignmentController::class, 'store'])->name('app.teaching.store');
@@ -118,6 +125,8 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     Route::middleware('permission:finance.manage')->group(function () {
         Route::get('/fees', [FeeController::class, 'index'])->name('app.fees.index');
         Route::post('/fees/structures', [FeeController::class, 'storeStructure'])->name('app.fees.structures.store');
+        Route::put('/fees/structures/{structure}', [FeeController::class, 'updateStructure'])->name('app.fees.structures.update');
+        Route::post('/fees/structures/{structure}/archive', [FeeController::class, 'archiveStructure'])->name('app.fees.structures.archive');
         Route::post('/fees/invoices', [FeeController::class, 'storeInvoice'])->name('app.fees.invoices.store');
         Route::post('/fees/invoices/bulk', [FeeController::class, 'storeBulkInvoices'])->name('app.fees.invoices.bulk');
         Route::post('/fees/payments', [FeeController::class, 'storePayment'])->name('app.fees.payments.store');
@@ -176,6 +185,8 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     Route::middleware('permission:transport.manage')->group(function () {
         Route::get('/transport', [TransportController::class, 'index'])->name('app.transport.index');
         Route::post('/transport/routes', [TransportController::class, 'storeRoute'])->name('app.transport.routes.store');
+        Route::post('/transport/allocations', [TransportController::class, 'storeAllocation'])->name('app.transport.allocations.store');
+        Route::post('/transport/allocations/{allocation}/end', [TransportController::class, 'endAllocation'])->name('app.transport.allocations.end');
     });
 
     Route::middleware('permission:hostel.manage')->group(function () {

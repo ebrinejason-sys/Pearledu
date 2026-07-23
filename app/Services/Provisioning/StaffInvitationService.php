@@ -39,7 +39,8 @@ class StaffInvitationService
      *   email?: ?string,
      *   phone?: ?string,
      *   role_key?: string,
-     *   role_keys?: list<string>
+     *   role_keys?: list<string>,
+     *   class_id?: ?int
      * }  $data
      * @return array{user: User, invitations: list<SchoolInvitation>, tokens: list<string>}
      */
@@ -54,6 +55,13 @@ class StaffInvitationService
             }
         }
 
+        $classId = isset($data['class_id']) && $data['class_id'] !== '' ? (int) $data['class_id'] : null;
+        if (in_array('class_teacher', $roleKeys, true) && ! $classId) {
+            throw ValidationException::withMessages([
+                'class_id' => 'Select a class for the class teacher role.',
+            ]);
+        }
+
         $email = isset($data['email']) && $data['email'] !== ''
             ? strtolower(trim((string) $data['email']))
             : null;
@@ -65,7 +73,7 @@ class StaffInvitationService
             ]);
         }
 
-        return DB::transaction(function () use ($school, $data, $inviter, $asPlatform, $roleKeys, $email, $phone) {
+        return DB::transaction(function () use ($school, $data, $inviter, $asPlatform, $roleKeys, $email, $phone, $classId) {
             if ($asPlatform || $inviter->isPlatformOperator()) {
                 $this->context->forPlatform();
             }
@@ -101,15 +109,20 @@ class StaffInvitationService
 
                 // New invites stay inactive until accept (except re-invite of already-active members adding a role).
                 $isActive = $user->status === 'active';
+                $assignmentClassId = $roleKey === 'class_teacher' ? $classId : null;
 
-                RoleAssignment::firstOrCreate([
-                    'user_id' => $user->id,
-                    'role_id' => $roleId,
-                    'school_id' => $school->id,
-                ], [
-                    'is_active' => $isActive,
-                    'assigned_by' => $inviter->id,
-                ]);
+                RoleAssignment::updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'role_id' => $roleId,
+                        'school_id' => $school->id,
+                    ],
+                    [
+                        'is_active' => $isActive,
+                        'assigned_by' => $inviter->id,
+                        'class_id' => $assignmentClassId,
+                    ]
+                );
 
                 SchoolInvitation::query()
                     ->where('school_id', $school->id)

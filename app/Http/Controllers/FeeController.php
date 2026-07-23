@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class FeeController extends Controller {
     public function index(TenantContext $ctx) {
         $school = $ctx->school(); abort_unless($school, 404);
-        $structures = FeeStructure::where('school_id',$school->id)->orderByDesc('id')->get();
+        $structures = FeeStructure::where('school_id',$school->id)->with(['schoolClass','term'])->orderByDesc('id')->get();
         $invoices = FeeInvoice::where('school_id',$school->id)->with('student')->orderByDesc('id')->limit(100)->get();
         $classes = SchoolClass::where('school_id',$school->id)->orderBy('name')->get();
         $terms = Term::where('school_id',$school->id)->orderBy('sequence')->get();
@@ -24,8 +24,28 @@ class FeeController extends Controller {
     public function storeStructure(Request $request, TenantContext $ctx) {
         $school = $ctx->school(); abort_unless($school, 404);
         $data = $request->validate(['name'=>'required|string|max:120','amount'=>'required|numeric|min:0','class_id'=>'nullable|integer','term_id'=>'nullable|integer']);
-        FeeStructure::create($data + ['school_id'=>$school->id,'currency'=>'UGX']);
+        FeeStructure::create($data + ['school_id'=>$school->id,'currency'=>'UGX','is_active'=>true]);
         return back()->with('status','Fee structure created.');
+    }
+
+    public function updateStructure(Request $request, FeeStructure $structure, TenantContext $ctx) {
+        $school = $ctx->school();
+        abort_unless($school && (int)$structure->school_id === (int)$school->id, 404);
+        $data = $request->validate([
+            'name'=>'required|string|max:120',
+            'amount'=>'required|numeric|min:0',
+            'class_id'=>'nullable|integer',
+            'term_id'=>'nullable|integer',
+        ]);
+        $structure->update($data);
+        return back()->with('status','Fee structure updated.');
+    }
+
+    public function archiveStructure(FeeStructure $structure, TenantContext $ctx) {
+        $school = $ctx->school();
+        abort_unless($school && (int)$structure->school_id === (int)$school->id, 404);
+        $structure->update(['is_active' => ! $structure->is_active]);
+        return back()->with('status', $structure->is_active ? 'Structure reactivated.' : 'Structure archived.');
     }
 
     public function storeInvoice(Request $request, TenantContext $ctx) {
