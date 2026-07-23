@@ -30,11 +30,18 @@ class TenantActivationTest extends TestCase
 
         $invitation = SchoolInvitation::where('school_id', $school->id)->latest('id')->first();
 
-        $this->post("/invitations/{$invitation->id}/accept", [
+        $response = $this->post("/invitations/{$invitation->id}/accept", [
             'token' => $result['invite_token'],
             'password' => 'password12345',
             'password_confirmation' => 'password12345',
-        ])->assertRedirect(route('app.home'));
+        ]);
+
+        // May land on tenant subdomain /home or same-host app.home when hosts match.
+        $response->assertRedirect();
+        $this->assertTrue(
+            str_ends_with(parse_url($response->headers->get('Location'), PHP_URL_PATH) ?? '', '/home')
+            || $response->headers->get('Location') === route('app.home')
+        );
 
         $this->assertAuthenticated();
         $school->refresh();

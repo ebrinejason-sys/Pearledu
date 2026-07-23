@@ -39,12 +39,23 @@ class InvitationController extends Controller
         $user->forceFill(['last_login_at' => now()])->save();
         $audit->record('auth.login', $user);
 
-        if (($school = $context->school()) && ! $school->activated_at) {
-            $school->forceFill(['activated_at' => now()])->save();
-        }
-
         if ($user->isPlatformOperator()) {
             return redirect()->route('platform.dashboard')->with('status', 'Welcome — your account is ready.');
+        }
+
+        // Pin school context on platform hosts (invite links usually open on pearledu.*).
+        if ($school = $user->primarySchool()) {
+            $context->forSchool((int) $school->id);
+            if (! $school->activated_at) {
+                $school->forceFill(['activated_at' => now()])->save();
+            }
+
+            // Prefer the school subdomain when configured; still works on pearledu.* via pin above.
+            $tenantHost = parse_url($school->subdomainUrl(), PHP_URL_HOST);
+            if ($tenantHost && $tenantHost !== $request->getHost()) {
+                return redirect()->away(rtrim($school->subdomainUrl(), '/').'/home')
+                    ->with('status', 'Welcome — your account is ready.');
+            }
         }
 
         return redirect()->route('app.home')->with('status', 'Welcome — your account is ready.');

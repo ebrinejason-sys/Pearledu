@@ -118,10 +118,6 @@ class LoginController extends Controller
 
     private function home(User $user): string
     {
-        if ($user->isPlatformOperator()) {
-            return route('platform.dashboard');
-        }
-
-        return route('app.home');
+        return $user->appHomeUrl();
     }
 }
