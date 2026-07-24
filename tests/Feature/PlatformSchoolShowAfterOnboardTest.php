@@ -86,6 +86,7 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
             ->assertRedirect(route('platform.schools.index'));
 
         $this->assertNull(School::find($id));
+        $this->assertDatabaseMissing('schools', ['id' => $id]);
     }
 
     public function test_school_show_is_reachable_when_another_school_is_entered(): void

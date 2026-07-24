@@ -8,6 +8,7 @@ use App\Models\School;
 use App\Models\SchoolInvitation;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\InvitationMailer;
+use App\Services\Provisioning\SchoolDeletionService;
 use App\Services\Provisioning\SchoolProvisioner;
 use App\Support\UgandaDistricts;
 use Illuminate\Http\Request;
@@ -116,7 +117,7 @@ class SchoolController extends Controller
         return back()->with('status', 'School details saved.');
     }
 
-    public function destroy(Request $request, School $school)
+    public function destroy(Request $request, School $school, SchoolDeletionService $deleter)
     {
         $request->validate([
             'confirm_name' => ['required', 'string', Rule::in([$school->name])],
@@ -124,22 +125,16 @@ class SchoolController extends Controller
             'confirm_name.in' => 'Type the school name exactly to confirm deletion.',
         ]);
 
-        $payload = [
-            'school_id' => $school->id,
-            'tenant_id' => $school->tenantId(),
-            'name' => $school->name,
-            'slug' => $school->slug,
-        ];
-
         if ((int) $request->session()->get('platform.entered_school_id') === (int) $school->id) {
             $request->session()->forget('platform.entered_school_id');
         }
 
-        $school->delete();
-        $this->audit->record('school.deleted', null, $payload);
+        $result = $deleter->delete($school);
 
         return redirect()->route('platform.schools.index')
-            ->with('status', 'Deleted '.$payload['name'].' (tenant #'.$payload['tenant_id'].').');
+            ->with('status', 'Deleted '.$result['name'].' (tenant #'.$result['tenant_id'].').'
+                .' Cascaded school database rows removed'
+                .($result['users_removed'] ? '; '.$result['users_removed'].' orphaned user(s) soft-deleted.' : '.'));
     }
 
     public function enter(Request $request, School $school)

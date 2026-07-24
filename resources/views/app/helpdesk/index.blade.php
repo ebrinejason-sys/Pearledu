@@ -1,7 +1,9 @@
 @extends('layouts.app')
 @section('title','Helpdesk · '.$school->name)
 @section('content')
-  <div class="page-header"><div><p class="page-header__eyebrow">Support</p><h2 class="page-header__title">Helpdesk</h2></div></div>
+  <div class="page-header"><div><p class="page-header__eyebrow">Support</p><h2 class="page-header__title">Helpdesk</h2>
+    <p style="margin:8px 0 0;color:var(--muted);font-size:14px">PearlEdu support staff see these tickets in the admin inbox.</p>
+  </div></div>
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
   <div class="grid g2">
     <div class="card">

@@ -41,6 +41,16 @@ class PlatformSeeder extends Seeder {
             $user->forceFill(['is_platform' => true])->save();
         }
 
+        $roleId = \App\Models\Role::where('key', 'platform_admin')->value('id');
+        if ($roleId) {
+            \App\Models\RoleAssignment::firstOrCreate([
+                'user_id' => $user->id,
+                'role_id' => $roleId,
+                'school_id' => null,
+                'is_active' => true,
+            ], ['assigned_by' => null]);
+        }
+
         SmsSetting::current();   // ensure the single settings row exists
     }
 }

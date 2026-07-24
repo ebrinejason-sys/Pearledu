@@ -1,12 +1,14 @@
 <?php
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\InvitationController;
+use App\Http\Controllers\Platform\OperatorController;
 use App\Http\Controllers\Platform\PricingPlanController;
 use App\Http\Controllers\Platform\SchoolClassController;
 use App\Http\Controllers\Platform\SchoolController;
 use App\Http\Controllers\Platform\SmsCreditController;
 use App\Http\Controllers\Platform\StaffController;
 use App\Http\Controllers\Platform\StudentController;
+use App\Http\Controllers\Platform\SupportTicketController;
 use App\Http\Controllers\Platform\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +28,17 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.
     Route::post('schools/{school}/enter', [SchoolController::class, 'enter'])->name('schools.enter');
     Route::post('schools/leave', [SchoolController::class, 'leave'])->name('schools.leave');
     Route::post('schools/{school}/imitate/{user}', [\App\Http\Controllers\Platform\ImpersonationController::class, 'store'])->name('schools.imitate');
+
+    Route::get('operators', [OperatorController::class, 'index'])->name('operators.index');
+    Route::get('operators/create', [OperatorController::class, 'create'])->name('operators.create');
+    Route::post('operators', [OperatorController::class, 'store'])->name('operators.store');
+    Route::put('operators/{operator}', [OperatorController::class, 'update'])->name('operators.update');
+    Route::post('operators/{operator}/reset-password', [OperatorController::class, 'resetPassword'])->name('operators.reset-password');
+
+    Route::get('support', [SupportTicketController::class, 'index'])->name('support.index');
+    Route::get('support/{ticket}', [SupportTicketController::class, 'show'])->name('support.show');
+    Route::put('support/{ticket}', [SupportTicketController::class, 'update'])->name('support.update');
+    Route::post('support/{ticket}/assign', [SupportTicketController::class, 'assign'])->name('support.assign');
 
     Route::get('invitations', [InvitationController::class, 'index'])->name('invitations.index');
     Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');

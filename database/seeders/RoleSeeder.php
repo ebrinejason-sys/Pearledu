@@ -11,6 +11,9 @@ class RoleSeeder extends Seeder
     {
         $roles = [
             ['key' => 'platform_admin', 'scope' => 'platform', 'label' => 'Platform Admin'],
+            ['key' => 'platform_ops', 'scope' => 'platform', 'label' => 'Platform Operations'],
+            ['key' => 'emis_data_entrant', 'scope' => 'platform', 'label' => 'EMIS Data Entrant'],
+            ['key' => 'support_agent', 'scope' => 'platform', 'label' => 'Support Agent'],
             ['key' => 'school_admin', 'scope' => 'school', 'label' => 'School Admin'],
             ['key' => 'director', 'scope' => 'school', 'label' => 'Director'],
             ['key' => 'head_teacher', 'scope' => 'school', 'label' => 'Head Teacher'],

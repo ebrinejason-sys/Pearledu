@@ -267,6 +267,8 @@ class NavigationBuilder
                 'key' => 'operations',
                 'label' => 'Operations',
                 'items' => [
+                    $this->item('Support inbox', 'platform.support.index', icon: 'helpdesk', active: request()->routeIs('platform.support.*')),
+                    $this->item('PearlEdu staff', 'platform.operators.index', icon: 'staff', active: request()->routeIs('platform.operators.*')),
                     $this->item('Invitations', 'platform.invitations.index', icon: 'invites', active: request()->routeIs('platform.invitations.*')),
                 ],
             ],

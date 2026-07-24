@@ -70,7 +70,9 @@
       <div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--line)">
         <h3 style="margin:0 0 8px;color:var(--danger, #b42318)">Delete school</h3>
         <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">
-          Permanently removes this tenant and cascaded school data. Type the school name to confirm.
+          Permanently removes this tenant and <strong>cascades school database rows</strong>
+          (students, fees, marks, tickets, etc.). Orphaned school-only users are soft-deleted.
+          Type the school name to confirm.
         </p>
         <form method="post" action="{{ route('platform.schools.destroy', $school) }}"
               onsubmit="return confirm('Delete this school and all its tenant data? This cannot be undone.')">
