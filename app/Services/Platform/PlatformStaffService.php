@@ -2,14 +2,17 @@
 
 namespace App\Services\Platform;
 
+use App\Mail\Auth\PlatformStaffWelcomeMail;
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /** Create and manage PearlEdu platform staff (not school tenants). */
 class PlatformStaffService
@@ -40,7 +43,7 @@ class PlatformStaffService
 
     /**
      * @param  array{full_name:string,email:string,phone?:string|null,role_key:string,password?:string|null}  $data
-     * @return array{user: User, temporary_password: ?string}
+     * @return array{user: User, temporary_password: string, emailed: bool, mail_error: ?string}
      */
     public function create(array $data, int $createdBy): array
     {
@@ -48,7 +51,7 @@ class PlatformStaffService
             throw new RuntimeException('Invalid PearlEdu staff role.');
         }
 
-        return DB::transaction(function () use ($data, $createdBy) {
+        $result = DB::transaction(function () use ($data, $createdBy) {
             $this->context->forPlatform();
 
             $email = strtolower(trim($data['email']));
@@ -56,19 +59,17 @@ class PlatformStaffService
                 throw new RuntimeException('A user with that email already exists.');
             }
 
-            $tempPassword = null;
-            $password = $data['password'] ?? null;
-            if (! $password) {
-                $tempPassword = Str::password(14);
-                $password = $tempPassword;
-            }
+            // Always issue a password we can email (admin-provided or auto-generated).
+            $temporaryPassword = ! empty($data['password'])
+                ? (string) $data['password']
+                : Str::password(14);
 
             $user = new User([
                 'full_name' => $data['full_name'],
                 'email' => $email,
                 'phone' => $data['phone'] ?? null,
                 'status' => 'active',
-                'password' => $password,
+                'password' => $temporaryPassword,
             ]);
             $user->forceFill(['is_platform' => true])->save();
 
@@ -89,8 +90,26 @@ class PlatformStaffService
                 'role_key' => $data['role_key'],
             ]);
 
-            return ['user' => $user, 'temporary_password' => $tempPassword];
+            return [
+                'user' => $user->fresh(),
+                'temporary_password' => $temporaryPassword,
+                'role_key' => $data['role_key'],
+            ];
         });
+
+        $mail = $this->sendWelcomeEmail(
+            $result['user'],
+            $result['role_key'],
+            $result['temporary_password'],
+            isPasswordReset: false,
+        );
+
+        return [
+            'user' => $result['user'],
+            'temporary_password' => $result['temporary_password'],
+            'emailed' => $mail['ok'],
+            'mail_error' => $mail['error'],
+        ];
     }
 
     public function updateRole(User $user, string $roleKey, int $updatedBy): void
@@ -134,7 +153,10 @@ class PlatformStaffService
         $this->audit->record('platform.staff.status', $user, ['status' => $status]);
     }
 
-    public function resetPassword(User $user): string
+    /**
+     * @return array{temporary_password: string, emailed: bool, mail_error: ?string}
+     */
+    public function resetPassword(User $user): array
     {
         if (! $user->is_platform) {
             throw new RuntimeException('Only PearlEdu staff can be updated here.');
@@ -145,7 +167,14 @@ class PlatformStaffService
 
         $this->audit->record('platform.staff.password_reset', $user);
 
-        return $temp;
+        $roleKey = $this->platformRoleKey($user) ?? 'platform_ops';
+        $mail = $this->sendWelcomeEmail($user, $roleKey, $temp, isPasswordReset: true);
+
+        return [
+            'temporary_password' => $temp,
+            'emailed' => $mail['ok'],
+            'mail_error' => $mail['error'],
+        ];
     }
 
     public function platformRoleKey(User $user): ?string
@@ -157,5 +186,40 @@ class PlatformStaffService
             ->first()
             ?->role
             ?->key;
+    }
+
+    /** @return array{ok: bool, error: ?string} */
+    private function sendWelcomeEmail(User $user, string $roleKey, string $temporaryPassword, bool $isPasswordReset): array
+    {
+        if (! $user->email) {
+            return ['ok' => false, 'error' => 'Staff account has no email address.'];
+        }
+
+        $loginUrl = rtrim((string) config('app.url'), '/').'/login';
+        $host = config('tenancy.pearledu_landing_host');
+        if ($host) {
+            $loginUrl = 'https://'.$host.'/login';
+        }
+
+        try {
+            Mail::to($user->email)->send(new PlatformStaffWelcomeMail(
+                user: $user,
+                roleLabel: self::roleLabels()[$roleKey] ?? $roleKey,
+                temporaryPassword: $temporaryPassword,
+                loginUrl: $loginUrl,
+                isPasswordReset: $isPasswordReset,
+            ));
+
+            $this->audit->record(
+                $isPasswordReset ? 'platform.staff.password_emailed' : 'platform.staff.welcome_emailed',
+                $user,
+            );
+
+            return ['ok' => true, 'error' => null];
+        } catch (Throwable $e) {
+            report($e);
+
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
     }
 }

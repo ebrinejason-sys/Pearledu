@@ -59,8 +59,12 @@ class OperatorController extends Controller
         }
 
         $status = 'Created PearlEdu staff: '.$result['user']->full_name.' ('.$data['role_key'].').';
-        if ($result['temporary_password']) {
-            $status .= ' Temporary password: '.$result['temporary_password'].' — share securely, then ask them to change it.';
+        if ($result['emailed']) {
+            $status .= ' Login details (including temporary password) were emailed to '.$result['user']->email.' via Resend.';
+        } else {
+            $status .= ' Account created, but the email could not be sent'
+                .($result['mail_error'] ? ': '.$result['mail_error'] : '.')
+                .' Temporary password: '.$result['temporary_password'];
         }
 
         return redirect()->route('platform.operators.index')->with('status', $status);
@@ -91,11 +95,19 @@ class OperatorController extends Controller
         abort_if((int) $operator->id === (int) $request->user()->id, 422, 'Reset another account’s password, not your own, from here.');
 
         try {
-            $temp = $this->staff->resetPassword($operator);
+            $result = $this->staff->resetPassword($operator);
         } catch (RuntimeException $e) {
             return back()->withErrors(['password' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'New temporary password for '.$operator->full_name.': '.$temp);
+        if ($result['emailed']) {
+            return back()->with('status', 'New temporary password emailed to '.$operator->email.'.');
+        }
+
+        return back()->with('status',
+            'Password reset, but email failed'
+            .($result['mail_error'] ? ': '.$result['mail_error'] : '.')
+            .' Temporary password: '.$result['temporary_password']
+        );
     }
 }
