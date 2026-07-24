@@ -36,6 +36,11 @@ class NavigationBuilder
             ? $user->activeAssignments()->where('school_id', $schoolId)->with('role')->get()->pluck('role.label')->unique()->values()->all()
             : [];
 
+        if ($isPlatformOperator && $roleLabels === []) {
+            $platformRole = app(\App\Services\Platform\PlatformStaffService::class)->resolvedRoleKey($user);
+            $roleLabels = [\App\Services\Platform\PlatformStaffService::roleLabels()[$platformRole] ?? 'Platform admin'];
+        }
+
         $impersonation = null;
         if ($this->impersonation->isActive()) {
             $operator = $this->impersonation->operator();

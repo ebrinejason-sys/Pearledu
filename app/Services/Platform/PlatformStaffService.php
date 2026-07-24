@@ -25,6 +25,14 @@ class PlatformStaffService
         'support_agent',
     ];
 
+    /** Higher = more power. Admins manage anyone strictly below them. */
+    public const ROLE_RANK = [
+        'platform_admin' => 100,
+        'platform_ops' => 70,
+        'emis_data_entrant' => 40,
+        'support_agent' => 30,
+    ];
+
     public function __construct(
         private TenantContext $context,
         private AuditLogger $audit,
@@ -41,17 +49,91 @@ class PlatformStaffService
         ];
     }
 
+    public function rank(?string $roleKey): int
+    {
+        return self::ROLE_RANK[$roleKey] ?? 0;
+    }
+
+    /**
+     * Roles the actor may assign (strictly below their own rank).
+     * Platform admins may also assign platform_admin.
+     *
+     * @return array<string, string>
+     */
+    public function assignableRoles(User $actor): array
+    {
+        $actorKey = $this->resolvedRoleKey($actor);
+        $actorRank = $this->rank($actorKey);
+        $labels = self::roleLabels();
+
+        if ($actorKey === 'platform_admin') {
+            return $labels;
+        }
+
+        return array_filter(
+            $labels,
+            fn ($label, $key) => $this->rank($key) < $actorRank,
+            ARRAY_FILTER_USE_BOTH
+        );
+    }
+
+    public function canManage(User $actor, User $target): bool
+    {
+        if (! $actor->is_platform || ! $target->is_platform) {
+            return false;
+        }
+        if ((int) $actor->id === (int) $target->id) {
+            return false; // never manage yourself via staff tools
+        }
+
+        return $this->rank($this->resolvedRoleKey($actor)) > $this->rank($this->resolvedRoleKey($target));
+    }
+
+    public function assertCanManage(User $actor, User $target): void
+    {
+        if (! $this->canManage($actor, $target)) {
+            throw new RuntimeException('You can only manage PearlEdu staff below your own role.');
+        }
+    }
+
+    public function assertCanAssign(User $actor, string $roleKey): void
+    {
+        if (! isset(self::ROLE_RANK[$roleKey])) {
+            throw new RuntimeException('Invalid PearlEdu staff role.');
+        }
+        if (! array_key_exists($roleKey, $this->assignableRoles($actor))) {
+            throw new RuntimeException('You cannot assign a role at or above your own level.');
+        }
+    }
+
+    /**
+     * Resolve platform role; heal legacy is_platform users with no assignment as platform_admin.
+     */
+    public function resolvedRoleKey(User $user): string
+    {
+        $key = $this->platformRoleKey($user);
+        if ($key) {
+            return $key;
+        }
+
+        if ($user->is_platform) {
+            $this->assignRoleQuietly($user, 'platform_admin', null);
+
+            return 'platform_admin';
+        }
+
+        return 'support_agent';
+    }
+
     /**
      * @param  array{full_name:string,email:string,phone?:string|null,role_key:string,password?:string|null}  $data
      * @return array{user: User, temporary_password: string, emailed: bool, mail_error: ?string}
      */
-    public function create(array $data, int $createdBy): array
+    public function create(array $data, User $actor): array
     {
-        if (! in_array($data['role_key'], self::ROLE_KEYS, true)) {
-            throw new RuntimeException('Invalid PearlEdu staff role.');
-        }
+        $this->assertCanAssign($actor, $data['role_key']);
 
-        $result = DB::transaction(function () use ($data, $createdBy) {
+        $result = DB::transaction(function () use ($data, $actor) {
             $this->context->forPlatform();
 
             $email = strtolower(trim($data['email']));
@@ -59,7 +141,6 @@ class PlatformStaffService
                 throw new RuntimeException('A user with that email already exists.');
             }
 
-            // Always issue a password we can email (admin-provided or auto-generated).
             $temporaryPassword = ! empty($data['password'])
                 ? (string) $data['password']
                 : Str::password(14);
@@ -73,21 +154,11 @@ class PlatformStaffService
             ]);
             $user->forceFill(['is_platform' => true])->save();
 
-            $roleId = Role::where('key', $data['role_key'])->value('id');
-            if (! $roleId) {
-                throw new RuntimeException('Role is not seeded. Run RoleSeeder.');
-            }
-
-            RoleAssignment::create([
-                'user_id' => $user->id,
-                'role_id' => $roleId,
-                'school_id' => null,
-                'is_active' => true,
-                'assigned_by' => $createdBy,
-            ]);
+            $this->assignRoleQuietly($user, $data['role_key'], (int) $actor->id);
 
             $this->audit->record('platform.staff.created', $user, [
                 'role_key' => $data['role_key'],
+                'by' => $actor->id,
             ]);
 
             return [
@@ -112,63 +183,98 @@ class PlatformStaffService
         ];
     }
 
-    public function updateRole(User $user, string $roleKey, int $updatedBy): void
+    /**
+     * @param  array{full_name:string,email:string,phone?:string|null,role_key:string,status:string}  $data
+     */
+    public function update(User $target, array $data, User $actor): void
     {
-        if (! $user->is_platform) {
-            throw new RuntimeException('Only PearlEdu staff can be updated here.');
-        }
-        if (! in_array($roleKey, self::ROLE_KEYS, true)) {
-            throw new RuntimeException('Invalid PearlEdu staff role.');
-        }
+        $this->assertCanManage($actor, $target);
+        $this->assertCanAssign($actor, $data['role_key']);
 
         $this->context->forPlatform();
-        $roleId = Role::where('key', $roleKey)->value('id');
-        abort_unless($roleId, 500);
 
-        RoleAssignment::query()
-            ->where('user_id', $user->id)
-            ->whereNull('school_id')
-            ->where('is_active', true)
-            ->update(['is_active' => false, 'ends_on' => now()]);
+        $email = strtolower(trim($data['email']));
+        $taken = User::whereRaw('lower(email) = ?', [$email])
+            ->where('id', '!=', $target->id)
+            ->exists();
+        if ($taken) {
+            throw new RuntimeException('A user with that email already exists.');
+        }
 
-        RoleAssignment::create([
-            'user_id' => $user->id,
-            'role_id' => $roleId,
-            'school_id' => null,
-            'is_active' => true,
-            'assigned_by' => $updatedBy,
+        $target->update([
+            'full_name' => $data['full_name'],
+            'email' => $email,
+            'phone' => $data['phone'] ?? null,
+            'status' => $data['status'],
         ]);
 
-        $this->audit->record('platform.staff.role_updated', $user, ['role_key' => $roleKey]);
+        $this->assignRoleQuietly($target, $data['role_key'], (int) $actor->id);
+        $this->audit->record('platform.staff.updated', $target, [
+            'role_key' => $data['role_key'],
+            'status' => $data['status'],
+            'by' => $actor->id,
+        ]);
     }
 
-    public function setStatus(User $user, string $status): void
+    public function delete(User $target, User $actor): void
     {
-        if (! $user->is_platform) {
-            throw new RuntimeException('Only PearlEdu staff can be updated here.');
-        }
-        abort_unless(in_array($status, ['active', 'disabled'], true), 422);
+        $this->assertCanManage($actor, $target);
 
-        $user->update(['status' => $status]);
-        $this->audit->record('platform.staff.status', $user, ['status' => $status]);
+        if ($this->resolvedRoleKey($target) === 'platform_admin') {
+            $otherAdmins = User::query()
+                ->where('is_platform', true)
+                ->where('id', '!=', $target->id)
+                ->where('status', 'active')
+                ->get()
+                ->filter(fn (User $u) => $this->resolvedRoleKey($u) === 'platform_admin')
+                ->count();
+
+            if ($otherAdmins < 1) {
+                throw new RuntimeException('Cannot delete the last Platform Admin.');
+            }
+        }
+
+        DB::transaction(function () use ($target, $actor) {
+            $this->context->forPlatform();
+
+            RoleAssignment::query()
+                ->where('user_id', $target->id)
+                ->whereNull('school_id')
+                ->update(['is_active' => false, 'ends_on' => now()]);
+
+            $target->forceFill([
+                'is_platform' => false,
+                'status' => 'disabled',
+                'email' => 'deleted+'.$target->id.'.'.time().'@invalid.local',
+                'phone' => null,
+            ])->save();
+
+            if (! $target->trashed()) {
+                $target->delete();
+            }
+
+            $this->audit->record('platform.staff.deleted', null, [
+                'user_id' => $target->id,
+                'email' => $target->email,
+                'by' => $actor->id,
+            ]);
+        });
     }
 
     /**
      * @return array{temporary_password: string, emailed: bool, mail_error: ?string}
      */
-    public function resetPassword(User $user): array
+    public function resetPassword(User $target, User $actor): array
     {
-        if (! $user->is_platform) {
-            throw new RuntimeException('Only PearlEdu staff can be updated here.');
-        }
+        $this->assertCanManage($actor, $target);
 
         $temp = Str::password(14);
-        $user->forceFill(['password' => $temp])->save();
+        $target->forceFill(['password' => $temp])->save();
 
-        $this->audit->record('platform.staff.password_reset', $user);
+        $this->audit->record('platform.staff.password_reset', $target, ['by' => $actor->id]);
 
-        $roleKey = $this->platformRoleKey($user) ?? 'platform_ops';
-        $mail = $this->sendWelcomeEmail($user, $roleKey, $temp, isPasswordReset: true);
+        $roleKey = $this->resolvedRoleKey($target);
+        $mail = $this->sendWelcomeEmail($target, $roleKey, $temp, isPasswordReset: true);
 
         return [
             'temporary_password' => $temp,
@@ -186,6 +292,28 @@ class PlatformStaffService
             ->first()
             ?->role
             ?->key;
+    }
+
+    private function assignRoleQuietly(User $user, string $roleKey, ?int $assignedBy): void
+    {
+        $roleId = Role::where('key', $roleKey)->value('id');
+        if (! $roleId) {
+            throw new RuntimeException('Role is not seeded. Run RoleSeeder.');
+        }
+
+        RoleAssignment::query()
+            ->where('user_id', $user->id)
+            ->whereNull('school_id')
+            ->where('is_active', true)
+            ->update(['is_active' => false, 'ends_on' => now()]);
+
+        RoleAssignment::create([
+            'user_id' => $user->id,
+            'role_id' => $roleId,
+            'school_id' => null,
+            'is_active' => true,
+            'assigned_by' => $assignedBy,
+        ]);
     }
 
     /** @return array{ok: bool, error: ?string} */

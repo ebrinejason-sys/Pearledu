@@ -32,7 +32,9 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.
     Route::get('operators', [OperatorController::class, 'index'])->name('operators.index');
     Route::get('operators/create', [OperatorController::class, 'create'])->name('operators.create');
     Route::post('operators', [OperatorController::class, 'store'])->name('operators.store');
+    Route::get('operators/{operator}/edit', [OperatorController::class, 'edit'])->name('operators.edit');
     Route::put('operators/{operator}', [OperatorController::class, 'update'])->name('operators.update');
+    Route::delete('operators/{operator}', [OperatorController::class, 'destroy'])->name('operators.destroy');
     Route::post('operators/{operator}/reset-password', [OperatorController::class, 'resetPassword'])->name('operators.reset-password');
 
     Route::get('support', [SupportTicketController::class, 'index'])->name('support.index');

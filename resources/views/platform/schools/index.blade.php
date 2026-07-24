@@ -46,13 +46,7 @@
               <button type="submit" class="btn-link-action">Enter workspace</button>
             </form>
             ·
-            <form
-              method="post"
-              action="{{ route('platform.schools.destroy', $s) }}"
-              style="display:inline"
-              data-school-name="{{ $s->name }}"
-              onsubmit="return confirmSchoolDelete(this)"
-            >
+            <form method="post" action="{{ route('platform.schools.destroy', $s) }}" style="display:inline" class="js-school-delete" data-school-name="{{ e($s->name) }}">
               @csrf
               @method('DELETE')
               <input type="hidden" name="confirm_name" value="">
@@ -79,18 +73,24 @@
   .btn-link-danger{color:var(--danger,#b42318)}
 </style>
 <script>
-function confirmSchoolDelete(form) {
-  var name = form.getAttribute('data-school-name') || '';
-  if (!window.confirm('Delete “‘ + name + '” and all of its tenant database data? This cannot be undone.')) {
-    return false;
-  }
-  var typed = window.prompt('Type the school name exactly to confirm:\n' + name);
-  if (typed !== name) {
-    window.alert('Name did not match. School was not deleted.');
-    return false;
-  }
-  form.querySelector('input[name="confirm_name"]').value = typed;
-  return true;
-}
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('form.js-school-delete').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var name = form.getAttribute('data-school-name') || '';
+      if (!window.confirm('Delete this school and ALL of its tenant database data?\n\n' + name + '\n\nThis cannot be undone.')) {
+        e.preventDefault();
+        return;
+      }
+      var typed = window.prompt('Type the school name exactly to confirm:\n' + name);
+      if (typed !== name) {
+        window.alert('Name did not match. School was not deleted.');
+        e.preventDefault();
+        return;
+      }
+      var input = form.querySelector('input[name="confirm_name"]');
+      if (input) input.value = typed;
+    });
+  });
+});
 </script>
 @endsection

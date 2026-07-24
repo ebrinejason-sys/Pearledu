@@ -38,7 +38,7 @@
       <label>Password (optional)</label>
       <input name="password" type="password" minlength="10" autocomplete="new-password" placeholder="Leave blank to auto-generate">
       <p style="margin:6px 0 0;font-size:12px;color:var(--muted)">
-        A temporary password is always emailed to the staff member via Resend (auto-generated if you leave this blank).
+        A temporary password is always emailed via Resend (auto-generated if blank). You can only create roles below your own level.
       </p>
 
       @foreach($errors->all() as $e)<div class="err">{{ $e }}</div>@endforeach
