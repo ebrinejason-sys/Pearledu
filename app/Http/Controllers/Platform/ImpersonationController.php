@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Http\Controllers\Platform;
+
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\User;
@@ -11,10 +13,22 @@ class ImpersonationController extends Controller
 {
     public function store(Request $request, School $school, User $user, ImpersonationService $impersonation): RedirectResponse
     {
-        $impersonation->start($request->user(), $user, $school);
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+            'ticket_id' => ['nullable', 'string', 'max:64'],
+            'elevated_write' => ['sometimes', 'boolean'],
+        ]);
+
+        $impersonation->start($request->user(), $user, $school, [
+            'reason' => $data['reason'],
+            'ticket_id' => $data['ticket_id'] ?? null,
+            'elevated_write' => (bool) ($data['elevated_write'] ?? false),
+        ]);
+
+        $mode = ! empty($data['elevated_write']) ? 'elevated write' : 'read-only';
 
         return redirect()
             ->route('app.home')
-            ->with('status', "Now viewing as {$user->full_name} at {$school->name}.");
+            ->with('status', "Now viewing as {$user->full_name} at {$school->name} ({$mode}).");
     }
 }

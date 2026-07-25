@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\SmsSetting;
+use App\Services\Audit\AuditLogger;
 use App\Services\Sms\SmsCreditService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ class SmsCreditController extends Controller {
     public function __construct(
         private SmsCreditService $credits,
         private TenantContext $context,
+        private AuditLogger $audit,
     ) {}
 
     public function index() {
@@ -41,7 +43,14 @@ class SmsCreditController extends Controller {
             'segment_credits' => 'required|integer|min:1|max:100',
             'is_enabled' => 'boolean',
         ]);
-        SmsSetting::current()->update($data + ['is_enabled' => $request->boolean('is_enabled')]);
+        $settings = SmsSetting::current();
+        $fields = ['provider', 'sender_id', 'segment_credits', 'is_enabled'];
+        $before = $settings->only($fields);
+        $settings->update($data + ['is_enabled' => $request->boolean('is_enabled')]);
+        $this->audit->record('sms.settings.updated', $settings, [
+            'before' => $before,
+            'after' => $settings->fresh()->only($fields),
+        ], actor: $request->user());
 
         return back()->with('status', 'SMS settings updated.');
     }

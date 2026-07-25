@@ -1,11 +1,17 @@
 @if(!empty($nav['impersonation']))
   <div class="impersonation-banner" role="status">
     <div class="impersonation-banner__text">
-      <strong>Imitation mode</strong> — viewing as {{ $nav['impersonation']['target_name'] }}
+      <strong>Imitation mode{{ !empty($nav['impersonation']['read_only']) ? ' (read-only)' : ' (elevated write)' }}</strong>
+      — viewing as {{ $nav['impersonation']['target_name'] }}
       @if($nav['impersonation']['school_name'])
         at {{ $nav['impersonation']['school_name'] }}
       @endif
-      <span class="impersonation-banner__meta">Operator: {{ $nav['impersonation']['operator_name'] }}</span>
+      <span class="impersonation-banner__meta">
+        Operator: {{ $nav['impersonation']['operator_name'] }}
+        @if(!empty($nav['impersonation']['reason']))
+          · Reason: {{ $nav['impersonation']['reason'] }}
+        @endif
+      </span>
     </div>
     <form method="post" action="{{ route('impersonation.stop') }}">
       @csrf

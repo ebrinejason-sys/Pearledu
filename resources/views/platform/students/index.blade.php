@@ -11,6 +11,9 @@
     </div>
   </div>
 
+  @if(session('status'))<div class="status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
+  @error('school')<div class="err" style="margin-bottom:16px">{{ $message }}</div>@enderror
+
   <div class="card" style="margin-bottom:16px">
     <form method="get" action="{{ route('platform.students.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <div style="flex:1;min-width:220px">
@@ -26,7 +29,11 @@
 
   <div class="card">
     @if($students->isEmpty())
-      <p style="color:var(--muted);margin:0">No students yet. <a href="{{ route('platform.students.create') }}">Add the first learner</a>.</p>
+      @if($q !== '')
+        <p style="color:var(--muted);margin:0">No students match “{{ $q }}”. <a href="{{ route('platform.students.index') }}">Clear the search</a>.</p>
+      @else
+        <p style="color:var(--muted);margin:0">No students have been added to {{ $school->name }}. <a href="{{ route('platform.students.create') }}">Add the first learner</a>.</p>
+      @endif
     @else
       <table>
         <thead>

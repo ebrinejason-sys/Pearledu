@@ -68,21 +68,37 @@
       </p>
 
       <div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--line)">
-        <h3 style="margin:0 0 8px;color:var(--danger, #b42318)">Delete school</h3>
-        <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">
-          Permanently removes this tenant and <strong>cascades school database rows</strong>
-          (students, fees, marks, tickets, etc.). Orphaned school-only users are soft-deleted.
-          Type the school name to confirm.
-        </p>
-        <form method="post" action="{{ route('platform.schools.destroy', $school) }}"
-              onsubmit="return confirm('Delete this school and all its tenant data? This cannot be undone.')">
-          @csrf
-          @method('DELETE')
-          <label>Confirm school name</label>
-          <input name="confirm_name" placeholder="{{ $school->name }}" required autocomplete="off">
-          @error('confirm_name')<div class="err">{{ $message }}</div>@enderror
-          <p style="margin-top:12px"><button class="btn" type="submit" style="background:var(--danger, #b42318);border-color:var(--danger, #b42318)">Delete school</button></p>
-        </form>
+        @if($school->status === 'deletion_scheduled')
+          <h3 style="margin:0 0 8px;color:var(--warning, #b54708)">Deletion scheduled</h3>
+          <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">
+            Scheduled {{ optional($school->deletion_scheduled_at)->toDayDateTimeString() }}.
+            Purge eligible after {{ optional($school->purgeEligibleAt())->toDayDateTimeString() }}.
+            @if($school->deletion_reason)
+              <br>Reason: {{ $school->deletion_reason }}
+            @endif
+          </p>
+          <form method="post" action="{{ route('platform.schools.restore', $school) }}">
+            @csrf
+            <button type="submit" class="btn">Restore school</button>
+          </form>
+        @else
+          <h3 style="margin:0 0 8px;color:var(--danger, #b42318)">Delete school</h3>
+          <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">
+            Schedules deletion ({{ \App\Services\Provisioning\SchoolDeletionService::RETENTION_DAYS }}-day retention).
+            Tenant data is kept until purge. Type the school name to confirm.
+          </p>
+          <form method="post" action="{{ route('platform.schools.destroy', $school) }}"
+                onsubmit="return confirm('Schedule deletion of this school? Data is retained for a grace period.')">
+            @csrf
+            @method('DELETE')
+            <label>Reason (optional)</label>
+            <input type="text" name="deletion_reason" maxlength="500" placeholder="Ticket or reason">
+            <label style="margin-top:8px">Confirm school name</label>
+            <input name="confirm_name" placeholder="{{ $school->name }}" required autocomplete="off">
+            @error('confirm_name')<div class="err">{{ $message }}</div>@enderror
+            <p style="margin-top:12px"><button class="btn" type="submit" style="background:var(--danger, #b42318);border-color:var(--danger, #b42318)">Schedule deletion</button></p>
+          </form>
+        @endif
       </div>
     </div>
 
@@ -148,9 +164,11 @@
           <td>{{ $user->status }}</td>
           <td>
             @if($user->status === 'active' && ! $user->is_platform)
-              <form method="post" action="{{ route('platform.schools.imitate', [$school, $user]) }}" style="display:inline">
+              <form method="post" action="{{ route('platform.schools.imitate', [$school, $user]) }}" style="display:grid;gap:6px;min-width:220px">
                 @csrf
-                <button type="submit" class="btn ghost">Imitate</button>
+                <input type="text" name="reason" required minlength="8" maxlength="500" placeholder="Support reason (required)" style="font-size:12px;padding:6px 8px">
+                <input type="text" name="ticket_id" maxlength="64" placeholder="Ticket # (optional)" style="font-size:12px;padding:6px 8px">
+                <button type="submit" class="btn ghost">Imitate (read-only)</button>
               </form>
             @else
               <span style="color:var(--muted);font-size:13px">—</span>

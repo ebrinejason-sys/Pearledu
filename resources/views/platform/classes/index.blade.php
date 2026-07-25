@@ -8,6 +8,8 @@
     </div>
   </div>
 
+  @if(session('status'))<div class="status" style="margin-bottom:12px">{{ session('status') }}</div>@endif
+  @error('school')<div class="err" style="margin-bottom:12px">{{ $message }}</div>@enderror
   @error('class')<div class="err" style="margin-bottom:12px">{{ $message }}</div>@enderror
 
   <div class="grid g2">
@@ -39,7 +41,10 @@
     <div class="card">
       <h3 style="margin-top:0">Current classes</h3>
       @if($classes->isEmpty())
-        <p style="color:var(--muted);margin:0">No classes yet.</p>
+        <p style="color:var(--muted);margin:0">
+          No classes have been created for {{ $school->name }}.
+          @if(!empty($levels)) Use the form to create the first class. @endif
+        </p>
       @else
         <table>
           <thead>

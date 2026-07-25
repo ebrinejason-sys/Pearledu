@@ -64,6 +64,10 @@ class SupportTicketController extends Controller
 
     public function update(Request $request, HelpdeskTicket $ticket)
     {
+        abort_unless(
+            $request->user()->hasPlatformPermission('platform.support.manage'),
+            403
+        );
         $this->context->forPlatform();
 
         $data = $request->validate([
@@ -89,6 +93,10 @@ class SupportTicketController extends Controller
 
     public function assign(Request $request, HelpdeskTicket $ticket)
     {
+        abort_unless(
+            $request->user()->hasPlatformPermission('platform.support.manage'),
+            403
+        );
         $this->context->forPlatform();
 
         $data = $request->validate([

@@ -1,19 +1,24 @@
 <?php
+
 namespace App\Http\Controllers\Platform;
+
 use App\Http\Controllers\Controller;
-use App\Models\School;
 use App\Models\SchoolClass;
 use App\Services\Audit\AuditLogger;
+use App\Services\Tenancy\EnteredSchoolGuard;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class SchoolClassController extends Controller
 {
-    public function __construct(private AuditLogger $audit) {}
+    public function __construct(
+        private AuditLogger $audit,
+        private EnteredSchoolGuard $entered,
+    ) {}
 
     public function index(Request $request)
     {
-        $school = $this->school($request);
+        $school = $this->entered->school($request);
         $classes = SchoolClass::query()
             ->withCount('students')
             ->orderBy('level')
@@ -27,7 +32,7 @@ class SchoolClassController extends Controller
 
     public function store(Request $request)
     {
-        $school = $this->school($request);
+        $school = $this->entered->school($request);
         $levels = $school->offerings()->pluck('level')->all();
 
         $data = $request->validate([
@@ -41,7 +46,7 @@ class SchoolClassController extends Controller
             ],
         ]);
 
-        $class = SchoolClass::create($data);
+        $class = SchoolClass::create($data + ['school_id' => $school->id]);
         $this->audit->record('platform.class.created', $class, ['school_id' => $school->id]);
 
         return back()->with('status', 'Class “'.$class->name.'” created.');
@@ -49,21 +54,17 @@ class SchoolClassController extends Controller
 
     public function destroy(Request $request, SchoolClass $schoolClass)
     {
-        $school = $this->school($request);
-        abort_unless((int) $schoolClass->school_id === (int) $school->id, 404);
+        $this->entered->assertClass($request, $schoolClass);
 
         if ($schoolClass->students()->exists()) {
             return back()->withErrors(['class' => 'Reassign or archive students in this class before deleting it.']);
         }
 
         $schoolClass->delete();
-        $this->audit->record('platform.class.deleted', $schoolClass, ['school_id' => $school->id]);
+        $this->audit->record('platform.class.deleted', $schoolClass, [
+            'school_id' => $this->entered->enteredSchoolId($request),
+        ]);
 
         return back()->with('status', 'Class removed.');
-    }
-
-    private function school(Request $request): School
-    {
-        return School::findOrFail($request->session()->get('platform.entered_school_id'));
     }
 }

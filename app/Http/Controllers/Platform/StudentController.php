@@ -1,27 +1,28 @@
 <?php
+
 namespace App\Http\Controllers\Platform;
+
 use App\Http\Controllers\Controller;
 use App\Models\Guardianship;
-use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Services\Audit\AuditLogger;
 use App\Services\Students\GuardianLinkService;
-use App\Services\Tenancy\TenantContext;
+use App\Services\Tenancy\EnteredSchoolGuard;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
     public function __construct(
-        private TenantContext $context,
         private GuardianLinkService $guardians,
         private AuditLogger $audit,
+        private EnteredSchoolGuard $entered,
     ) {}
 
     public function index(Request $request)
     {
-        $school = $this->school($request);
+        $school = $this->entered->school($request);
         $q = trim((string) $request->query('q', ''));
 
         $students = Student::query()
@@ -42,7 +43,7 @@ class StudentController extends Controller
     public function create(Request $request)
     {
         return view('platform.students.create', [
-            'school' => $this->school($request),
+            'school' => $this->entered->school($request),
             'classes' => $this->classesForSchool(),
             'statuses' => $this->statuses(),
         ]);
@@ -50,8 +51,8 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
-        $school = $this->school($request);
-        $student = Student::create($this->validated($request));
+        $school = $this->entered->school($request);
+        $student = Student::create($this->validated($request) + ['school_id' => $school->id]);
         $this->audit->record('platform.student.created', $student, ['school_id' => $school->id]);
 
         return redirect()
@@ -61,21 +62,21 @@ class StudentController extends Controller
 
     public function show(Request $request, Student $student)
     {
-        $this->assertSchoolStudent($request, $student);
+        $this->entered->assertStudent($request, $student);
         $student->load(['schoolClass', 'guardianships.guardian']);
 
         return view('platform.students.show', [
-            'school' => $this->school($request),
+            'school' => $this->entered->school($request),
             'student' => $student,
         ]);
     }
 
     public function edit(Request $request, Student $student)
     {
-        $this->assertSchoolStudent($request, $student);
+        $this->entered->assertStudent($request, $student);
 
         return view('platform.students.edit', [
-            'school' => $this->school($request),
+            'school' => $this->entered->school($request),
             'student' => $student,
             'classes' => $this->classesForSchool(),
             'statuses' => $this->statuses(),
@@ -84,7 +85,7 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
-        $this->assertSchoolStudent($request, $student);
+        $this->entered->assertStudent($request, $student);
         $student->update($this->validated($request, $student));
         $this->audit->record('platform.student.updated', $student);
 
@@ -95,7 +96,7 @@ class StudentController extends Controller
 
     public function destroy(Request $request, Student $student)
     {
-        $this->assertSchoolStudent($request, $student);
+        $this->entered->assertStudent($request, $student);
         $student->delete();
         $this->audit->record('platform.student.archived', $student);
 
@@ -106,7 +107,7 @@ class StudentController extends Controller
 
     public function storeGuardian(Request $request, Student $student)
     {
-        $this->assertSchoolStudent($request, $student);
+        $this->entered->assertStudent($request, $student);
         $mode = $request->input('mode', 'attach');
 
         if ($mode === 'invite') {
@@ -150,8 +151,7 @@ class StudentController extends Controller
 
     public function makePrimary(Request $request, Student $student, Guardianship $guardianship)
     {
-        $this->assertSchoolStudent($request, $student);
-        abort_unless($guardianship->student_id === $student->id, 404);
+        $this->entered->assertGuardianship($request, $student, $guardianship);
         $this->guardians->makePrimary($guardianship);
 
         return back()->with('status', 'Primary guardian updated.');
@@ -159,29 +159,15 @@ class StudentController extends Controller
 
     public function destroyGuardian(Request $request, Student $student, Guardianship $guardianship)
     {
-        $this->assertSchoolStudent($request, $student);
-        abort_unless($guardianship->student_id === $student->id, 404);
+        $this->entered->assertGuardianship($request, $student, $guardianship);
         $this->guardians->detach($guardianship);
 
         return back()->with('status', 'Guardian detached.');
     }
 
-    private function school(Request $request): School
-    {
-        return School::findOrFail($request->session()->get('platform.entered_school_id'));
-    }
-
-    private function assertSchoolStudent(Request $request, Student $student): void
-    {
-        abort_unless(
-            (int) $student->school_id === (int) $request->session()->get('platform.entered_school_id'),
-            404
-        );
-    }
-
     private function validated(Request $request, ?Student $student = null): array
     {
-        $schoolId = $this->context->schoolId();
+        $schoolId = $this->entered->enteredSchoolId($request);
 
         $data = $request->validate([
             'full_name' => 'required|string|max:160',

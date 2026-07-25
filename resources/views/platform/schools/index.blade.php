@@ -16,7 +16,30 @@
   </div>
 
   @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
+  @error('school')<div class="err">{{ $message }}</div>@enderror
   @error('confirm_name')<div class="err">{{ $message }}</div>@enderror
+
+  <form method="get" action="{{ route('platform.schools.index') }}" class="card school-filters">
+    <label>
+      <span>Search</span>
+      <input type="search" name="q" value="{{ request('q') }}" placeholder="Name, slug, or EMIS number">
+    </label>
+    <label>
+      <span>Status</span>
+      <select name="status">
+        <option value="">All statuses</option>
+        @foreach(['pending' => 'Pending', 'active' => 'Active', 'suspended' => 'Suspended', 'archived' => 'Archived', 'deletion_scheduled' => 'Deletion scheduled'] as $value => $label)
+          <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+        @endforeach
+      </select>
+    </label>
+    <div class="school-filters__actions">
+      <button class="btn" type="submit">Filter</button>
+      @if(request()->filled('q') || request()->filled('status'))
+        <a class="btn ghost" href="{{ route('platform.schools.index') }}">Clear</a>
+      @endif
+    </div>
+  </form>
 
   <div class="card">
     <table>
@@ -65,12 +88,19 @@
       </tbody>
     </table>
   </div>
+  <div class="school-pagination">{{ $schools->links() }}</div>
 @endsection
 
 @section('head')
 <style>
   .btn-link-action{background:none;border:0;padding:0;color:var(--brand);font:inherit;font-weight:600;cursor:pointer}
   .btn-link-danger{color:var(--danger,#b42318)}
+  .school-filters{display:grid;grid-template-columns:minmax(220px,2fr) minmax(160px,1fr) auto;gap:12px;align-items:end;margin-bottom:16px}
+  .school-filters label{display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:600}
+  .school-filters input,.school-filters select{width:100%}
+  .school-filters__actions{display:flex;gap:8px}
+  .school-pagination{margin-top:16px}
+  @media (max-width:720px){.school-filters{grid-template-columns:1fr}}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {

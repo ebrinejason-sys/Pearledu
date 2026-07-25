@@ -6,10 +6,12 @@ use App\Models\PricingPlan;
 use App\Models\User;
 use Database\Seeders\PricingPlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActsAsPlatformOperator;
 use Tests\TestCase;
 
 class PricingPlanAdminTest extends TestCase
 {
+    use ActsAsPlatformOperator;
     use RefreshDatabase;
 
     private User $operator;
@@ -26,6 +28,7 @@ class PricingPlanAdminTest extends TestCase
             'password' => 'password1234',
         ]);
         $this->operator->forceFill(['is_platform' => true])->save();
+        $this->ensurePlatformAdminRole($this->operator);
     }
 
     public function test_platform_operator_can_view_pricing_console(): void
@@ -41,7 +44,7 @@ class PricingPlanAdminTest extends TestCase
 
     public function test_platform_operator_can_create_a_plan(): void
     {
-        $response = $this->actingAs($this->operator)->post(route('platform.pricing.store'), [
+        $response = $this->actingAs($this->operator)->withRecentPlatformAuth()->post(route('platform.pricing.store'), [
             'name' => 'Pilot',
             'tagline' => 'Free pilot term',
             'price' => 0,
@@ -67,13 +70,13 @@ class PricingPlanAdminTest extends TestCase
     {
         $plan = PricingPlan::where('name', 'Starter')->firstOrFail();
 
-        $response = $this->actingAs($this->operator)->put(route('platform.pricing.update', $plan), [
+        $response = $this->actingAs($this->operator)->withRecentPlatformAuth()->put(route('platform.pricing.update', $plan), [
             'name' => 'Starter',
             'tagline' => 'Updated tagline',
             'price' => 300000,
             'currency' => 'UGX',
             'billing_period' => 'per year',
-            'features_text' => "One feature",
+            'features_text' => 'One feature',
             'is_highlighted' => '1',
             'is_active' => '0',
             'sort_order' => 9,
@@ -95,7 +98,7 @@ class PricingPlanAdminTest extends TestCase
         $plan = PricingPlan::where('name', 'Starter')->firstOrFail();
         $plan->update(['price' => 100000]);
 
-        $this->actingAs($this->operator)->put(route('platform.pricing.update', $plan), [
+        $this->actingAs($this->operator)->withRecentPlatformAuth()->put(route('platform.pricing.update', $plan), [
             'name' => 'Starter',
             'tagline' => '',
             'price' => '',
@@ -114,7 +117,7 @@ class PricingPlanAdminTest extends TestCase
     {
         $plan = PricingPlan::where('name', 'Enterprise')->firstOrFail();
 
-        $response = $this->actingAs($this->operator)->delete(route('platform.pricing.destroy', $plan));
+        $response = $this->actingAs($this->operator)->withRecentPlatformAuth()->delete(route('platform.pricing.destroy', $plan));
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('pricing_plans', ['id' => $plan->id]);
@@ -142,13 +145,13 @@ class PricingPlanAdminTest extends TestCase
     {
         $plan = PricingPlan::where('name', 'Standard')->firstOrFail();
 
-        $this->actingAs($this->operator)->put(route('platform.pricing.update', $plan), [
+        $this->actingAs($this->operator)->withRecentPlatformAuth()->put(route('platform.pricing.update', $plan), [
             'name' => 'Growth',
             'tagline' => 'For ambitious schools',
             'price' => 450000,
             'currency' => 'UGX',
             'billing_period' => 'per term',
-            'features_text' => "Everything included",
+            'features_text' => 'Everything included',
             'is_highlighted' => '1',
             'is_active' => '1',
             'sort_order' => 2,

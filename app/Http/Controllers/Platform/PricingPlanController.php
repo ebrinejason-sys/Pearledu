@@ -2,10 +2,13 @@
 namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\PricingPlan;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Http\Request;
 
 /** Platform console CRUD for the PearlEdu landing-page pricing tiers. */
 class PricingPlanController extends Controller {
+    public function __construct(private AuditLogger $audit) {}
+
     public function index() {
         return view('platform.pricing.index', [
             'plans' => PricingPlan::orderBy('sort_order')->orderBy('id')->get(),
@@ -14,17 +17,28 @@ class PricingPlanController extends Controller {
 
     public function store(Request $request) {
         $data = $this->validated($request);
-        PricingPlan::create($data);
+        $plan = PricingPlan::create($data);
+        $this->audit->record('pricing.plan.created', $plan, [
+            'after' => $this->auditFields($plan),
+        ], actor: $request->user());
         return back()->with('status', "Added pricing plan \"{$data['name']}\".");
     }
 
     public function update(Request $request, PricingPlan $plan) {
+        $before = $this->auditFields($plan);
         $data = $this->validated($request);
         $plan->update($data);
+        $this->audit->record('pricing.plan.updated', $plan, [
+            'before' => $before,
+            'after' => $this->auditFields($plan->fresh()),
+        ], actor: $request->user());
         return back()->with('status', "Updated pricing plan \"{$plan->name}\".");
     }
 
-    public function destroy(PricingPlan $plan) {
+    public function destroy(Request $request, PricingPlan $plan) {
+        $this->audit->record('pricing.plan.deleted', $plan, [
+            'before' => $this->auditFields($plan),
+        ], actor: $request->user());
         $plan->delete();
         return back()->with('status', "Deleted pricing plan \"{$plan->name}\".");
     }
@@ -50,5 +64,12 @@ class PricingPlanController extends Controller {
         $data['is_active'] = $request->boolean('is_active');
 
         return $data;
+    }
+
+    private function auditFields(PricingPlan $plan): array {
+        return $plan->only([
+            'name', 'tagline', 'price', 'currency', 'billing_period',
+            'features', 'is_highlighted', 'is_active', 'sort_order',
+        ]);
     }
 }

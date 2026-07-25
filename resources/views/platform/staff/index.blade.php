@@ -10,6 +10,7 @@
   </div>
 
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
+  @error('school')<div class="err" style="margin-bottom:16px">{{ $message }}</div>@enderror
 
   <div class="grid g2">
     <div class="card">
@@ -90,9 +91,11 @@
           <td>{{ $user->status }}</td>
           <td>
             @if($user->status === 'active' && ! $user->is_platform)
-              <form method="post" action="{{ route('platform.schools.imitate', [$school, $user]) }}">
+              <form method="post" action="{{ route('platform.schools.imitate', [$school, $user]) }}" style="display:grid;gap:6px;min-width:220px">
                 @csrf
-                <button type="submit" class="btn ghost">Imitate</button>
+                <input type="text" name="reason" required minlength="8" maxlength="500" placeholder="Support reason (required)" style="font-size:12px;padding:6px 8px">
+                <input type="text" name="ticket_id" maxlength="64" placeholder="Ticket # (optional)" style="font-size:12px;padding:6px 8px">
+                <button type="submit" class="btn ghost">Imitate (read-only)</button>
               </form>
             @else
               —

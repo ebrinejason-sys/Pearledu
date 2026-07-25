@@ -10,7 +10,9 @@
       </p>
     </div>
     <div class="page-header__actions">
-      <a class="btn ghost" href="{{ route('platform.operators.create') }}">Add support agent</a>
+      @if(auth()->user()->hasPlatformPermission('platform.staff.manage'))
+        <a class="btn ghost" href="{{ route('platform.operators.create') }}">Add support agent</a>
+      @endif
     </div>
   </div>
 

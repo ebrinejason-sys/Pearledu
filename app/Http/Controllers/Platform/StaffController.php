@@ -5,19 +5,21 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\RoleAssignment;
-use App\Models\School;
 use App\Models\SchoolInvitation;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
+use App\Services\Tenancy\EnteredSchoolGuard;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 
 class StaffController extends Controller
 {
+    public function __construct(private EnteredSchoolGuard $entered) {}
+
     public function index(Request $request, InvitePolicy $policy)
     {
-        $school = $this->school($request);
+        $school = $this->entered->school($request);
 
         $members = RoleAssignment::query()
             ->where('school_id', $school->id)
@@ -48,7 +50,7 @@ class StaffController extends Controller
 
     public function store(Request $request, StaffInvitationService $inviter, InvitePolicy $policy)
     {
-        $school = $this->school($request);
+        $school = $this->entered->school($request);
         $allowed = $policy->rolesInvitableBy($request->user(), $school->id, true);
 
         $data = $request->validate([
@@ -71,10 +73,5 @@ class StaffController extends Controller
         ])->filter()->implode(' and ');
 
         return back()->with('status', 'Invitation sent via '.$via.' to '.$result['user']->full_name.'.');
-    }
-
-    private function school(Request $request): School
-    {
-        return School::findOrFail($request->session()->get('platform.entered_school_id'));
     }
 }

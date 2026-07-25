@@ -6,7 +6,7 @@
       <p class="page-header__eyebrow">People</p>
       <h2 class="page-header__title">PearlEdu staff</h2>
       <p style="margin:8px 0 0;color:var(--muted);font-size:14px;max-width:72ch">
-        You are <strong>{{ $roles[$actorRole] ?? $actorRole }}</strong>.
+        You are <strong>{{ $roles[$actorRole] ?? ($actorRole ?: 'unknown') }}</strong>.
         You can edit, reset, or remove anyone <em>below</em> your role.
         Staff accounts use <code>/admin</code> — not school tenant logins.
       </p>
@@ -17,6 +17,14 @@
       @endif
     </div>
   </div>
+
+  @if($misconfigured->isNotEmpty())
+    <div class="err" role="alert" style="margin-bottom:16px">
+      <strong>Misconfigured accounts:</strong>
+      {{ $misconfigured->pluck('email')->filter()->implode(', ') }}
+      — platform flag is set but no platform role is assigned. Assign a role before they can use /admin.
+    </div>
+  @endif
 
   @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
   @error('delete')<div class="err">{{ $message }}</div>@enderror
@@ -45,7 +53,7 @@
             @if($isYou)<span style="color:var(--muted);font-size:12px"> · you</span>@endif
           </td>
           <td>{{ $op->email }}</td>
-          <td><span class="pill">{{ $roles[$op->platform_role] ?? $op->platform_role }}</span></td>
+          <td><span class="pill">{{ $op->platform_role ? ($roles[$op->platform_role] ?? $op->platform_role) : 'Misconfigured' }}</span></td>
           <td><span class="pill">{{ $op->status }}</span></td>
           <td style="white-space:nowrap">
             @if($canManage)

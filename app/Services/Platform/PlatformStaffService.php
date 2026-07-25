@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\SessionInvalidator;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -36,6 +37,7 @@ class PlatformStaffService
     public function __construct(
         private TenantContext $context,
         private AuditLogger $audit,
+        private SessionInvalidator $sessions,
     ) {}
 
     /** @return array<string, string> */
@@ -107,22 +109,12 @@ class PlatformStaffService
     }
 
     /**
-     * Resolve platform role; heal legacy is_platform users with no assignment as platform_admin.
+     * Resolve platform role key. Never auto-assigns roles (GET-safe).
+     * Returns null when the account is misconfigured (is_platform without assignment).
      */
-    public function resolvedRoleKey(User $user): string
+    public function resolvedRoleKey(User $user): ?string
     {
-        $key = $this->platformRoleKey($user);
-        if ($key) {
-            return $key;
-        }
-
-        if ($user->is_platform) {
-            $this->assignRoleQuietly($user, 'platform_admin', null);
-
-            return 'platform_admin';
-        }
-
-        return 'support_agent';
+        return $this->platformRoleKey($user);
     }
 
     /**
@@ -201,6 +193,9 @@ class PlatformStaffService
             throw new RuntimeException('A user with that email already exists.');
         }
 
+        $previousRole = $this->resolvedRoleKey($target);
+        $previousStatus = $target->status;
+
         $target->update([
             'full_name' => $data['full_name'],
             'email' => $email,
@@ -214,6 +209,12 @@ class PlatformStaffService
             'status' => $data['status'],
             'by' => $actor->id,
         ]);
+
+        $roleChanged = $previousRole !== $data['role_key'];
+        $disabled = $previousStatus !== 'disabled' && $data['status'] === 'disabled';
+        if ($roleChanged || $disabled) {
+            $this->sessions->invalidate($target->fresh());
+        }
     }
 
     public function delete(User $target, User $actor): void
@@ -253,6 +254,8 @@ class PlatformStaffService
                 $target->delete();
             }
 
+            $this->sessions->invalidate($target);
+
             $this->audit->record('platform.staff.deleted', null, [
                 'user_id' => $target->id,
                 'email' => $target->email,
@@ -271,9 +274,11 @@ class PlatformStaffService
         $temp = Str::password(14);
         $target->forceFill(['password' => $temp])->save();
 
+        $this->sessions->invalidate($target);
+
         $this->audit->record('platform.staff.password_reset', $target, ['by' => $actor->id]);
 
-        $roleKey = $this->resolvedRoleKey($target);
+        $roleKey = $this->resolvedRoleKey($target) ?? 'support_agent';
         $mail = $this->sendWelcomeEmail($target, $roleKey, $temp, isPasswordReset: true);
 
         return [
@@ -285,13 +290,7 @@ class PlatformStaffService
 
     public function platformRoleKey(User $user): ?string
     {
-        return $user->activeAssignments()
-            ->whereNull('school_id')
-            ->whereHas('role', fn ($q) => $q->where('scope', 'platform'))
-            ->with('role')
-            ->first()
-            ?->role
-            ?->key;
+        return $user->platformRoleKey();
     }
 
     private function assignRoleQuietly(User $user, string $roleKey, ?int $assignedBy): void

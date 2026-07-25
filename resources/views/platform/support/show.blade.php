@@ -26,6 +26,7 @@
 
     <div class="card">
       <h3 style="margin-top:0">Handle ticket</h3>
+      @if(auth()->user()->hasPlatformPermission('platform.support.manage'))
       <form method="post" action="{{ route('platform.support.update', $ticket) }}">
         @csrf
         @method('PUT')
@@ -57,6 +58,15 @@
         @error('assigned_to')<div class="err">{{ $message }}</div>@enderror
         <p style="margin-top:14px"><button class="btn" type="submit">Save</button></p>
       </form>
+      @else
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:10px 16px;margin:0">
+          <dt style="color:var(--muted)">Status</dt><dd style="margin:0"><span class="pill">{{ $ticket->status }}</span></dd>
+          <dt style="color:var(--muted)">Priority</dt><dd style="margin:0"><span class="pill">{{ $ticket->priority }}</span></dd>
+          <dt style="color:var(--muted)">Category</dt><dd style="margin:0">{{ $ticket->category ?: '—' }}</dd>
+          <dt style="color:var(--muted)">Assignee</dt><dd style="margin:0">{{ $ticket->assignee?->full_name ?: 'Unassigned' }}</dd>
+        </dl>
+        <p style="margin:16px 0 0;color:var(--muted);font-size:13px">You have read-only access to support tickets.</p>
+      @endif
     </div>
   </div>
 @endsection

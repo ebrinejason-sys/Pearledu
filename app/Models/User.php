@@ -44,6 +44,34 @@ class User extends Authenticatable
         return app(PermissionResolver::class)->resolve($this, $schoolId);
     }
 
+    /** Active platform role key (null when misconfigured — never auto-healed). */
+    public function platformRoleKey(): ?string
+    {
+        return $this->activeAssignments()
+            ->whereNull('school_id')
+            ->whereHas('role', fn ($q) => $q->where('scope', 'platform'))
+            ->with('role')
+            ->first()
+            ?->role
+            ?->key;
+    }
+
+    /** @return list<string> */
+    public function platformPermissions(): array
+    {
+        return app(PermissionResolver::class)->resolvePlatform($this);
+    }
+
+    public function hasPlatformPermission(string $permission): bool
+    {
+        $perms = $this->platformPermissions();
+        if (in_array('*', $perms, true)) {
+            return true;
+        }
+
+        return in_array($permission, $perms, true);
+    }
+
     public function schoolsForUser() {
         return School::whereIn('id', $this->activeAssignments()->whereNotNull('school_id')->pluck('school_id'))->get();
     }

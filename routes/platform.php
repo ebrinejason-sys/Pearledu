@@ -1,4 +1,6 @@
 <?php
+
+use App\Http\Controllers\Platform\ConfirmPlatformAuthController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\InvitationController;
 use App\Http\Controllers\Platform\OperatorController;
@@ -15,47 +17,116 @@ use Illuminate\Support\Facades\Route;
 /**
  * PearlEdu operator console — admin/staff only.
  * School users never use this path; they log in at /login and land on /home.
+ *
+ * Authorization: `platform` (is_platform + role) then `platform.permission:…`.
+ * Destructive mutations also use `platform.recent_auth`.
  */
 Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.')->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('auth/confirm', [ConfirmPlatformAuthController::class, 'show'])->name('auth.confirm');
+    Route::post('auth/confirm', [ConfirmPlatformAuthController::class, 'store'])->name('auth.confirm.store');
 
-    Route::get('schools', [SchoolController::class, 'index'])->name('schools.index');
-    Route::get('schools/create', [SchoolController::class, 'create'])->name('schools.create');
-    Route::post('schools', [SchoolController::class, 'store'])->name('schools.store');
-    Route::get('schools/{school}', [SchoolController::class, 'show'])->name('schools.show');
-    Route::put('schools/{school}', [SchoolController::class, 'update'])->name('schools.update');
-    Route::delete('schools/{school}', [SchoolController::class, 'destroy'])->name('schools.destroy');
-    Route::post('schools/{school}/enter', [SchoolController::class, 'enter'])->name('schools.enter');
-    Route::post('schools/leave', [SchoolController::class, 'leave'])->name('schools.leave');
-    Route::post('schools/{school}/imitate/{user}', [\App\Http\Controllers\Platform\ImpersonationController::class, 'store'])->name('schools.imitate');
+    Route::get('/', [DashboardController::class, 'index'])
+        ->middleware('platform.permission:platform.dashboard.view')
+        ->name('dashboard');
 
-    Route::get('operators', [OperatorController::class, 'index'])->name('operators.index');
-    Route::get('operators/create', [OperatorController::class, 'create'])->name('operators.create');
-    Route::post('operators', [OperatorController::class, 'store'])->name('operators.store');
-    Route::get('operators/{operator}/edit', [OperatorController::class, 'edit'])->name('operators.edit');
-    Route::put('operators/{operator}', [OperatorController::class, 'update'])->name('operators.update');
-    Route::delete('operators/{operator}', [OperatorController::class, 'destroy'])->name('operators.destroy');
-    Route::post('operators/{operator}/reset-password', [OperatorController::class, 'resetPassword'])->name('operators.reset-password');
+    Route::get('schools', [SchoolController::class, 'index'])
+        ->middleware('platform.permission:platform.schools.view')
+        ->name('schools.index');
+    Route::get('schools/create', [SchoolController::class, 'create'])
+        ->middleware('platform.permission:platform.schools.create')
+        ->name('schools.create');
+    Route::post('schools', [SchoolController::class, 'store'])
+        ->middleware('platform.permission:platform.schools.create')
+        ->name('schools.store');
+    Route::get('schools/{school}', [SchoolController::class, 'show'])
+        ->middleware('platform.permission:platform.schools.view')
+        ->name('schools.show');
+    Route::put('schools/{school}', [SchoolController::class, 'update'])
+        ->middleware('platform.permission:platform.schools.update')
+        ->name('schools.update');
+    Route::delete('schools/{school}', [SchoolController::class, 'destroy'])
+        ->middleware(['platform.permission:platform.schools.delete', 'platform.recent_auth'])
+        ->name('schools.destroy');
+    Route::post('schools/{school}/restore', [SchoolController::class, 'restore'])
+        ->middleware(['platform.permission:platform.schools.delete', 'platform.recent_auth'])
+        ->name('schools.restore');
+    Route::post('schools/{school}/enter', [SchoolController::class, 'enter'])
+        ->middleware('platform.permission:platform.schools.enter')
+        ->name('schools.enter');
+    Route::post('schools/leave', [SchoolController::class, 'leave'])
+        ->middleware('platform.permission:platform.schools.enter')
+        ->name('schools.leave');
+    Route::post('schools/{school}/imitate/{user}', [\App\Http\Controllers\Platform\ImpersonationController::class, 'store'])
+        ->middleware(['platform.permission:platform.users.impersonate', 'platform.recent_auth'])
+        ->name('schools.imitate');
 
-    Route::get('support', [SupportTicketController::class, 'index'])->name('support.index');
-    Route::get('support/{ticket}', [SupportTicketController::class, 'show'])->name('support.show');
-    Route::put('support/{ticket}', [SupportTicketController::class, 'update'])->name('support.update');
-    Route::post('support/{ticket}/assign', [SupportTicketController::class, 'assign'])->name('support.assign');
+    Route::get('operators', [OperatorController::class, 'index'])
+        ->middleware('platform.permission:platform.staff.view')
+        ->name('operators.index');
+    Route::get('operators/create', [OperatorController::class, 'create'])
+        ->middleware('platform.permission:platform.staff.manage')
+        ->name('operators.create');
+    Route::post('operators', [OperatorController::class, 'store'])
+        ->middleware(['platform.permission:platform.staff.manage', 'platform.recent_auth'])
+        ->name('operators.store');
+    Route::get('operators/{operator}/edit', [OperatorController::class, 'edit'])
+        ->middleware('platform.permission:platform.staff.manage')
+        ->name('operators.edit');
+    Route::put('operators/{operator}', [OperatorController::class, 'update'])
+        ->middleware('platform.permission:platform.staff.manage')
+        ->name('operators.update');
+    Route::delete('operators/{operator}', [OperatorController::class, 'destroy'])
+        ->middleware(['platform.permission:platform.staff.manage', 'platform.recent_auth'])
+        ->name('operators.destroy');
+    Route::post('operators/{operator}/reset-password', [OperatorController::class, 'resetPassword'])
+        ->middleware(['platform.permission:platform.staff.manage', 'platform.recent_auth'])
+        ->name('operators.reset-password');
 
-    Route::get('invitations', [InvitationController::class, 'index'])->name('invitations.index');
-    Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');
+    Route::get('support', [SupportTicketController::class, 'index'])
+        ->middleware('platform.permission:platform.support.view')
+        ->name('support.index');
+    Route::get('support/{ticket}', [SupportTicketController::class, 'show'])
+        ->middleware('platform.permission:platform.support.view')
+        ->name('support.show');
+    Route::put('support/{ticket}', [SupportTicketController::class, 'update'])
+        ->middleware('platform.permission:platform.support.manage')
+        ->name('support.update');
+    Route::post('support/{ticket}/assign', [SupportTicketController::class, 'assign'])
+        ->middleware('platform.permission:platform.support.manage')
+        ->name('support.assign');
 
-    Route::get('pricing', [PricingPlanController::class, 'index'])->name('pricing.index');
-    Route::post('pricing', [PricingPlanController::class, 'store'])->name('pricing.store');
-    Route::put('pricing/{plan}', [PricingPlanController::class, 'update'])->name('pricing.update');
-    Route::delete('pricing/{plan}', [PricingPlanController::class, 'destroy'])->name('pricing.destroy');
+    Route::get('invitations', [InvitationController::class, 'index'])
+        ->middleware('platform.permission:platform.invitations.manage')
+        ->name('invitations.index');
+    Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])
+        ->middleware('platform.permission:platform.invitations.manage')
+        ->name('invitations.resend');
 
-    Route::get('sms', [SmsCreditController::class, 'index'])->name('sms.index');
-    Route::post('sms/settings', [SmsCreditController::class, 'updateSettings'])->name('sms.settings');
-    Route::post('sms/{school}/top-up', [SmsCreditController::class, 'topUp'])->name('sms.topup');
+    Route::get('pricing', [PricingPlanController::class, 'index'])
+        ->middleware('platform.permission:platform.pricing.view')
+        ->name('pricing.index');
+    Route::post('pricing', [PricingPlanController::class, 'store'])
+        ->middleware(['platform.permission:platform.pricing.manage', 'platform.recent_auth'])
+        ->name('pricing.store');
+    Route::put('pricing/{plan}', [PricingPlanController::class, 'update'])
+        ->middleware(['platform.permission:platform.pricing.manage', 'platform.recent_auth'])
+        ->name('pricing.update');
+    Route::delete('pricing/{plan}', [PricingPlanController::class, 'destroy'])
+        ->middleware(['platform.permission:platform.pricing.manage', 'platform.recent_auth'])
+        ->name('pricing.destroy');
+
+    Route::get('sms', [SmsCreditController::class, 'index'])
+        ->middleware('platform.permission:platform.sms.view')
+        ->name('sms.index');
+    Route::post('sms/settings', [SmsCreditController::class, 'updateSettings'])
+        ->middleware(['platform.permission:platform.sms.configure', 'platform.recent_auth'])
+        ->name('sms.settings');
+    Route::post('sms/{school}/top-up', [SmsCreditController::class, 'topUp'])
+        ->middleware(['platform.permission:platform.sms.topup', 'platform.recent_auth'])
+        ->name('sms.topup');
 
     // School data entry — requires Enter school scope (RLS pinned to that school).
-    Route::middleware('platform.school')->group(function () {
+    Route::middleware(['platform.school', 'platform.permission:platform.schools.enter'])->group(function () {
         Route::get('workspace', [WorkspaceController::class, 'show'])->name('workspace');
 
         Route::get('students', [StudentController::class, 'index'])->name('students.index');

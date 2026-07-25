@@ -14,13 +14,18 @@ class PlatformStaffWelcomeMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public string $setPasswordUrl;
+
     public function __construct(
         public User $user,
         public string $roleLabel,
         public string $temporaryPassword,
         public string $loginUrl,
         public bool $isPasswordReset = false,
-    ) {}
+    ) {
+        $this->setPasswordUrl = preg_replace('#/login/?$#', '/forgot-password', $loginUrl)
+            ?: rtrim($loginUrl, '/').'/forgot-password';
+    }
 
     public function envelope(): Envelope
     {

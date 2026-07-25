@@ -19,9 +19,25 @@ class SchoolController extends Controller
 {
     public function __construct(private AuditLogger $audit) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $schools = School::withCount('students')->orderBy('name')->get();
+        $query = School::query()->withCount('students');
+        $search = trim($request->string('q')->toString());
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('slug', 'like', '%'.$search.'%')
+                    ->orWhere('emis_number', 'like', '%'.$search.'%');
+            });
+        }
+
+        $status = $request->string('status')->toString();
+        if (in_array($status, ['pending', 'active', 'suspended', 'archived', 'deletion_scheduled'], true)) {
+            $query->where('status', $status);
+        }
+
+        $schools = $query->orderBy('name')->paginate(25)->withQueryString();
 
         return view('platform.schools.index', compact('schools'));
     }
@@ -54,7 +70,8 @@ class SchoolController extends Controller
                 $mailer->send($invitation, $result['invite_token'], $school);
                 $status .= ' Invitation emailed to '.$result['admin']->email.'.';
             } catch (RuntimeException $e) {
-                $status .= ' Invitation created, but email could not be sent: '.$e->getMessage();
+                report($e);
+                $status .= ' Invitation created, but the email could not be sent. Ask the user to use password reset.';
             }
         } elseif ($invitation) {
             $status .= ' Invitation created — deliver the activation link out-of-band (no email on file).';
@@ -111,8 +128,30 @@ class SchoolController extends Controller
             'district.in' => 'Choose a district from the Uganda list.',
         ]);
 
+        if ($school->status === 'deletion_scheduled') {
+            return back()->withErrors([
+                'status' => 'This school is scheduled for deletion. Restore it before editing status.',
+            ]);
+        }
+
+        $beforeStatus = $school->status;
         $school->update($data);
-        $this->audit->record('school.updated', $school, $data);
+
+        if ($beforeStatus !== $data['status']) {
+            $this->audit->record('school.status_changed', $school, [
+                'from' => $beforeStatus,
+                'to' => $data['status'],
+                'tenant_id' => $school->tenantId(),
+            ], actor: $request->user());
+
+            // Drop workspace scope when school leaves a usable state.
+            if (! in_array($data['status'], ['active', 'suspended'], true)
+                && (int) $request->session()->get('platform.entered_school_id') === (int) $school->id) {
+                $request->session()->forget('platform.entered_school_id');
+            }
+        }
+
+        $this->audit->record('school.updated', $school, $data, actor: $request->user());
 
         return back()->with('status', 'School details saved.');
     }
@@ -121,6 +160,7 @@ class SchoolController extends Controller
     {
         $request->validate([
             'confirm_name' => ['required', 'string', Rule::in([$school->name])],
+            'deletion_reason' => ['nullable', 'string', 'max:500'],
         ], [
             'confirm_name.in' => 'Type the school name exactly to confirm deletion.',
         ]);
@@ -129,16 +169,42 @@ class SchoolController extends Controller
             $request->session()->forget('platform.entered_school_id');
         }
 
-        $result = $deleter->delete($school);
+        $result = $deleter->schedule(
+            $school,
+            $request->user(),
+            $request->input('deletion_reason')
+        );
 
         return redirect()->route('platform.schools.index')
-            ->with('status', 'Deleted '.$result['name'].' (tenant #'.$result['tenant_id'].').'
-                .' Cascaded school database rows removed'
-                .($result['users_removed'] ? '; '.$result['users_removed'].' orphaned user(s) soft-deleted.' : '.'));
+            ->with('status', 'Scheduled deletion of '.$result['name'].' (tenant #'.$result['tenant_id'].').'
+                .' Data will be retained until '.$result['purge_after'].'. Restore from the school page before then if needed.');
+    }
+
+    public function restore(Request $request, School $school, SchoolDeletionService $deleter)
+    {
+        try {
+            $deleter->restore($school, $request->user());
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['school' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'School restored from scheduled deletion (status set to suspended).');
     }
 
     public function enter(Request $request, School $school)
     {
+        $canEnter = $school->status === 'active'
+            || ($school->status === 'suspended'
+                && $request->user()->hasPlatformPermission('platform.schools.enter_suspended'));
+
+        if ($school->status === 'deletion_scheduled' || ! $canEnter) {
+            return redirect()->route('platform.schools.index')
+                ->withErrors(['school' => $school->status === 'deletion_scheduled'
+                    ? 'This school is scheduled for deletion and cannot be entered.'
+                    : 'Only active schools can be entered.']);
+        }
+
+        $request->session()->regenerate();
         $request->session()->put('platform.entered_school_id', $school->id);
         $this->audit->record('school.entered', $school, ['slug' => $school->slug, 'tenant_id' => $school->tenantId()]);
 
@@ -149,6 +215,7 @@ class SchoolController extends Controller
     public function leave(Request $request)
     {
         $request->session()->forget('platform.entered_school_id');
+        $request->session()->regenerate();
 
         return redirect()->route('platform.schools.index')
             ->with('status', 'Left school workspace.');

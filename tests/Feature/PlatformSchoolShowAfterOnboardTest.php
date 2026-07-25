@@ -82,11 +82,14 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
         $id = $school->id;
 
         $this->actingAs($operator)
+            ->withSession([\App\Http\Middleware\RequireRecentPlatformAuth::SESSION_KEY => time()])
             ->delete($host.'/admin/schools/'.$id, ['confirm_name' => 'Delete Me Academy'])
             ->assertRedirect(route('platform.schools.index'));
 
-        $this->assertNull(School::find($id));
-        $this->assertDatabaseMissing('schools', ['id' => $id]);
+        $school->refresh();
+        $this->assertSame('deletion_scheduled', $school->status);
+        $this->assertNotNull($school->deletion_scheduled_at);
+        $this->assertNotNull(School::find($id));
     }
 
     public function test_school_show_is_reachable_when_another_school_is_entered(): void

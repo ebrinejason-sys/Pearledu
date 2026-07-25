@@ -92,6 +92,10 @@ class LoginController extends Controller
         $user->forceFill(['last_login_at' => now()])->save();
         $audit->record('auth.login', $user);
 
+        if ($user && $user->isPlatformOperator()) {
+            \App\Http\Middleware\RequireRecentPlatformAuth::markConfirmed($request);
+        }
+
         if ($user && ! $user->isPlatformOperator() && ($school = $user->primarySchool())) {
             session([TenantContext::SESSION_SCHOOL_ID => $school->tenantId()]);
             $context->forSchool($school->tenantId());

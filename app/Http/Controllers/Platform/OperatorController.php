@@ -28,6 +28,8 @@ class OperatorController extends Controller
                 return $user;
             });
 
+        $misconfigured = $operators->filter(fn (User $u) => $u->platform_role === null)->values();
+
         return view('platform.operators.index', [
             'operators' => $operators,
             'roles' => PlatformStaffService::roleLabels(),
@@ -35,6 +37,7 @@ class OperatorController extends Controller
             'actor' => $actor,
             'actorRole' => $actorRole,
             'staff' => $this->staff,
+            'misconfigured' => $misconfigured,
         ]);
     }
 
@@ -69,9 +72,7 @@ class OperatorController extends Controller
         if ($result['emailed']) {
             $status .= ' Login details were emailed to '.$result['user']->email.'.';
         } else {
-            $status .= ' Account created, but the email could not be sent'
-                .($result['mail_error'] ? ': '.$result['mail_error'] : '.')
-                .' Temporary password: '.$result['temporary_password'];
+            $status .= ' Account created, but the welcome email could not be sent. Ask the user to use password reset.';
         }
 
         return redirect()->route('platform.operators.index')->with('status', $status);
@@ -143,10 +144,9 @@ class OperatorController extends Controller
             return back()->with('status', 'New temporary password emailed to '.$operator->email.'.');
         }
 
-        return back()->with('status',
-            'Password reset, but email failed'
-            .($result['mail_error'] ? ': '.$result['mail_error'] : '.')
-            .' Temporary password: '.$result['temporary_password']
+        return back()->with(
+            'status',
+            'Password reset, but the email could not be sent. Ask the user to use password reset.'
         );
     }
 }

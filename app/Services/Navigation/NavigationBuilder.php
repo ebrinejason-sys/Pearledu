@@ -37,8 +37,10 @@ class NavigationBuilder
             : [];
 
         if ($isPlatformOperator && $roleLabels === []) {
-            $platformRole = app(\App\Services\Platform\PlatformStaffService::class)->resolvedRoleKey($user);
-            $roleLabels = [\App\Services\Platform\PlatformStaffService::roleLabels()[$platformRole] ?? 'Platform admin'];
+            $platformRole = $user->platformRoleKey();
+            $roleLabels = $platformRole
+                ? [\App\Services\Platform\PlatformStaffService::roleLabels()[$platformRole] ?? $platformRole]
+                : ['Misconfigured account'];
         }
 
         $impersonation = null;
@@ -48,11 +50,13 @@ class NavigationBuilder
                 'operator_name' => $operator?->full_name ?? 'Platform admin',
                 'target_name' => $user->full_name,
                 'school_name' => $school?->name,
+                'reason' => $this->impersonation->reason(),
+                'read_only' => ! $this->impersonation->allowsWrites(),
             ];
         }
 
         if ($isPlatformOperator && $onPlatform) {
-            $sections = $this->platformSections();
+            $sections = $this->platformSections($user);
             $zone = 'platform';
         } else {
             $sections = $this->schoolSections($permissions, $isPlatformOperator);
@@ -237,7 +241,7 @@ class NavigationBuilder
     }
 
     /** @return list<array{key: string, label: string, items: list<array>}> */
-    private function platformSections(): array
+    private function platformSections(User $user): array
     {
         $entered = (bool) session('platform.entered_school_id');
 
@@ -246,50 +250,63 @@ class NavigationBuilder
                 'key' => 'general',
                 'label' => 'General',
                 'items' => array_values(array_filter([
-                    $this->item('Dashboard', 'platform.dashboard', icon: 'dashboard'),
-                    $entered ? $this->item('School workspace', 'platform.workspace', icon: 'workspace') : null,
+                    $user->hasPlatformPermission('platform.dashboard.view')
+                        ? $this->item('Dashboard', 'platform.dashboard', icon: 'dashboard') : null,
+                    $entered && $user->hasPlatformPermission('platform.schools.enter')
+                        ? $this->item('School workspace', 'platform.workspace', icon: 'workspace') : null,
                 ])),
             ],
             [
                 'key' => 'schools',
                 'label' => 'Schools',
-                'items' => [
-                    $this->item('Schools', 'platform.schools.index', icon: 'schools', active: request()->routeIs('platform.schools.*') && ! request()->routeIs('platform.schools.create')),
-                    $this->item('Onboard school', 'platform.schools.create', icon: 'add', highlight: true),
-                ],
+                'items' => array_values(array_filter([
+                    $user->hasPlatformPermission('platform.schools.view')
+                        ? $this->item('Schools', 'platform.schools.index', icon: 'schools', active: request()->routeIs('platform.schools.*') && ! request()->routeIs('platform.schools.create')) : null,
+                    $user->hasPlatformPermission('platform.schools.create')
+                        ? $this->item('Onboard school', 'platform.schools.create', icon: 'add', highlight: true) : null,
+                ])),
             ],
             [
                 'key' => 'school_data',
                 'label' => $entered ? 'School data entry' : 'School data entry',
                 'items' => array_values(array_filter([
-                    $entered ? $this->item('Students', 'platform.students.index', icon: 'students', active: request()->routeIs('platform.students.*')) : null,
-                    $entered ? $this->item('Classes', 'platform.classes.index', icon: 'classes', active: request()->routeIs('platform.classes.*')) : null,
-                    $entered ? $this->item('Staff', 'platform.staff.index', icon: 'staff', active: request()->routeIs('platform.staff.*')) : null,
-                    ! $entered ? $this->item('Enter a school…', 'platform.schools.index', icon: 'workspace') : null,
+                    $entered && $user->hasPlatformPermission('platform.schools.enter')
+                        ? $this->item('Students', 'platform.students.index', icon: 'students', active: request()->routeIs('platform.students.*')) : null,
+                    $entered && $user->hasPlatformPermission('platform.schools.enter')
+                        ? $this->item('Classes', 'platform.classes.index', icon: 'classes', active: request()->routeIs('platform.classes.*')) : null,
+                    $entered && $user->hasPlatformPermission('platform.schools.enter')
+                        ? $this->item('Staff', 'platform.staff.index', icon: 'staff', active: request()->routeIs('platform.staff.*')) : null,
+                    ! $entered && $user->hasPlatformPermission('platform.schools.enter')
+                        ? $this->item('Enter a school…', 'platform.schools.index', icon: 'workspace') : null,
                 ])),
             ],
             [
                 'key' => 'operations',
                 'label' => 'Operations',
-                'items' => [
-                    $this->item('Support inbox', 'platform.support.index', icon: 'helpdesk', active: request()->routeIs('platform.support.*')),
-                    $this->item('PearlEdu staff', 'platform.operators.index', icon: 'staff', active: request()->routeIs('platform.operators.*')),
-                    $this->item('Invitations', 'platform.invitations.index', icon: 'invites', active: request()->routeIs('platform.invitations.*')),
-                ],
+                'items' => array_values(array_filter([
+                    $user->hasPlatformPermission('platform.support.view')
+                        ? $this->item('Support inbox', 'platform.support.index', icon: 'helpdesk', active: request()->routeIs('platform.support.*')) : null,
+                    $user->hasPlatformPermission('platform.staff.view')
+                        ? $this->item('PearlEdu staff', 'platform.operators.index', icon: 'staff', active: request()->routeIs('platform.operators.*')) : null,
+                    $user->hasPlatformPermission('platform.invitations.manage')
+                        ? $this->item('Invitations', 'platform.invitations.index', icon: 'invites', active: request()->routeIs('platform.invitations.*')) : null,
+                ])),
             ],
             [
                 'key' => 'communications',
                 'label' => 'Communications',
-                'items' => [
-                    $this->item('SMS & credits', 'platform.sms.index', icon: 'sms', active: request()->routeIs('platform.sms.*')),
-                ],
+                'items' => array_values(array_filter([
+                    $user->hasPlatformPermission('platform.sms.view')
+                        ? $this->item('SMS & credits', 'platform.sms.index', icon: 'sms', active: request()->routeIs('platform.sms.*')) : null,
+                ])),
             ],
             [
                 'key' => 'marketing',
                 'label' => 'Marketing',
-                'items' => [
-                    $this->item('Pricing', 'platform.pricing.index', icon: 'pricing', active: request()->routeIs('platform.pricing.*')),
-                ],
+                'items' => array_values(array_filter([
+                    $user->hasPlatformPermission('platform.pricing.view')
+                        ? $this->item('Pricing', 'platform.pricing.index', icon: 'pricing', active: request()->routeIs('platform.pricing.*')) : null,
+                ])),
             ],
         ];
     }

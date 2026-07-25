@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services\Platform;
+
 use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\User;
@@ -12,7 +14,21 @@ use Illuminate\Validation\ValidationException;
 class ImpersonationService
 {
     public const SESSION_OPERATOR = 'impersonation.operator_id';
+
     public const SESSION_SCHOOL = 'impersonation.school_id';
+
+    public const SESSION_REASON = 'impersonation.reason';
+
+    public const SESSION_TICKET = 'impersonation.ticket_id';
+
+    public const SESSION_STARTED = 'impersonation.started_at';
+
+    public const SESSION_EXPIRES = 'impersonation.expires_at';
+
+    public const SESSION_WRITE = 'impersonation.elevated_write';
+
+    /** Absolute max imitation session length (minutes). */
+    public const MAX_MINUTES = 60;
 
     public function __construct(
         private AuditLogger $audit,
@@ -21,31 +37,63 @@ class ImpersonationService
 
     public function isActive(): bool
     {
-        return session()->has(self::SESSION_OPERATOR);
+        if (! session()->has(self::SESSION_OPERATOR)) {
+            return false;
+        }
+
+        $expires = (int) session(self::SESSION_EXPIRES, 0);
+        if ($expires > 0 && time() > $expires) {
+            $this->forceExpire();
+
+            return false;
+        }
+
+        return true;
     }
 
     public function operatorId(): ?int
     {
         $id = session(self::SESSION_OPERATOR);
+
         return $id ? (int) $id : null;
     }
 
     public function schoolId(): ?int
     {
         $id = session(self::SESSION_SCHOOL);
+
         return $id ? (int) $id : null;
+    }
+
+    public function reason(): ?string
+    {
+        $r = session(self::SESSION_REASON);
+
+        return is_string($r) && $r !== '' ? $r : null;
+    }
+
+    public function allowsWrites(): bool
+    {
+        return (bool) session(self::SESSION_WRITE, false);
     }
 
     public function operator(): ?User
     {
         $id = $this->operatorId();
+
         return $id ? User::find($id) : null;
     }
 
-    public function start(User $operator, User $target, School $school): void
+    /**
+     * @param  array{reason: string, ticket_id?: string|null, elevated_write?: bool}  $options
+     */
+    public function start(User $operator, User $target, School $school, array $options): void
     {
         if (! $operator->isPlatformOperator()) {
             throw ValidationException::withMessages(['user' => 'Only platform operators can imitate accounts.']);
+        }
+        if (! $operator->hasPlatformPermission('platform.users.impersonate')) {
+            throw ValidationException::withMessages(['user' => 'You do not have permission to imitate accounts.']);
         }
         if ($this->isActive()) {
             throw ValidationException::withMessages(['user' => 'Stop the current imitation session first.']);
@@ -57,6 +105,11 @@ class ImpersonationService
             throw ValidationException::withMessages(['user' => 'Only active accounts can be imitated.']);
         }
 
+        $reason = trim((string) ($options['reason'] ?? ''));
+        if (strlen($reason) < 8) {
+            throw ValidationException::withMessages(['reason' => 'Provide a support reason (at least 8 characters).']);
+        }
+
         $belongs = RoleAssignment::query()
             ->where('user_id', $target->id)
             ->where('school_id', $school->id)
@@ -66,41 +119,109 @@ class ImpersonationService
             throw ValidationException::withMessages(['user' => 'This user has no active role at the selected school.']);
         }
 
+        $elevated = ! empty($options['elevated_write']);
+        if ($elevated && ! $operator->hasPlatformPermission('platform.users.impersonate_write')) {
+            throw ValidationException::withMessages(['elevated_write' => 'You cannot start an elevated write imitation session.']);
+        }
+
+        $started = time();
+        $expires = $started + (self::MAX_MINUTES * 60);
+        $ticket = isset($options['ticket_id']) ? trim((string) $options['ticket_id']) : null;
+        if ($ticket === '') {
+            $ticket = null;
+        }
+
+        // Audit BEFORE Auth::login so actor_id stays the operator.
+        $this->context->forPlatform();
+        $this->audit->record('user.impersonation.started', $target, [
+            'operator_id' => $operator->id,
+            'target_id' => $target->id,
+            'school_id' => $school->id,
+            'school_slug' => $school->slug,
+            'reason' => $reason,
+            'ticket_id' => $ticket,
+            'elevated_write' => $elevated,
+            'expires_at' => $expires,
+        ], actor: $operator);
+
         session()->put(self::SESSION_OPERATOR, $operator->id);
         session()->put(self::SESSION_SCHOOL, $school->id);
+        session()->put(self::SESSION_REASON, $reason);
+        session()->put(self::SESSION_TICKET, $ticket);
+        session()->put(self::SESSION_STARTED, $started);
+        session()->put(self::SESSION_EXPIRES, $expires);
+        session()->put(self::SESSION_WRITE, $elevated);
         session()->forget('platform.entered_school_id');
 
         Auth::login($target);
         session()->regenerate();
         $this->context->forSchool($school->id);
-
-        $this->audit->record('user.impersonation.started', $target, [
-            'operator_id' => $operator->id,
-            'school_id' => $school->id,
-            'school_slug' => $school->slug,
-        ]);
     }
 
     public function stop(): void
     {
-        if (! $this->isActive()) {
+        if (! session()->has(self::SESSION_OPERATOR)) {
             throw ValidationException::withMessages(['session' => 'No active imitation session.']);
         }
 
         $operatorId = $this->operatorId();
         $target = Auth::user();
         $schoolId = $this->schoolId();
-
-        session()->forget([self::SESSION_OPERATOR, self::SESSION_SCHOOL]);
-
+        $reason = $this->reason();
         $operator = User::findOrFail($operatorId);
+
+        session()->forget([
+            self::SESSION_OPERATOR,
+            self::SESSION_SCHOOL,
+            self::SESSION_REASON,
+            self::SESSION_TICKET,
+            self::SESSION_STARTED,
+            self::SESSION_EXPIRES,
+            self::SESSION_WRITE,
+        ]);
+
         Auth::login($operator);
         session()->regenerate();
         $this->context->forPlatform();
 
         $this->audit->record('user.impersonation.stopped', $target, [
             'operator_id' => $operatorId,
+            'target_id' => $target?->id,
             'school_id' => $schoolId,
+            'reason' => $reason,
+        ], actor: $operator);
+    }
+
+    private function forceExpire(): void
+    {
+        $operatorId = $this->operatorId();
+        $target = Auth::user();
+        $schoolId = $this->schoolId();
+        $reason = $this->reason();
+
+        session()->forget([
+            self::SESSION_OPERATOR,
+            self::SESSION_SCHOOL,
+            self::SESSION_REASON,
+            self::SESSION_TICKET,
+            self::SESSION_STARTED,
+            self::SESSION_EXPIRES,
+            self::SESSION_WRITE,
         ]);
+
+        if ($operatorId) {
+            $operator = User::find($operatorId);
+            if ($operator) {
+                Auth::login($operator);
+                session()->regenerate();
+                $this->context->forPlatform();
+                $this->audit->record('user.impersonation.expired', $target, [
+                    'operator_id' => $operatorId,
+                    'target_id' => $target?->id,
+                    'school_id' => $schoolId,
+                    'reason' => $reason,
+                ], actor: $operator);
+            }
+        }
     }
 }

@@ -4,14 +4,38 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class School extends Model
 {
-    protected $fillable = ['name','slug','emis_number','district','theme','motto','badge_text','logo_path','address','status','created_by'];
-    protected $casts = ['activated_at' => 'datetime'];
+    protected $fillable = [
+        'name', 'slug', 'emis_number', 'district', 'theme', 'motto', 'badge_text',
+        'logo_path', 'address', 'status', 'created_by',
+        'deletion_scheduled_at', 'deletion_requested_by', 'deletion_reason',
+    ];
+
+    protected $casts = [
+        'activated_at' => 'datetime',
+        'deletion_scheduled_at' => 'datetime',
+    ];
 
     public function offerings(): HasMany { return $this->hasMany(SchoolOffering::class); }
     public function classes(): HasMany { return $this->hasMany(SchoolClass::class); }
     public function students(): HasMany { return $this->hasMany(Student::class); }
     public function smsLedger(): HasMany { return $this->hasMany(SmsCreditEntry::class); }
     public function invitations(): HasMany { return $this->hasMany(SchoolInvitation::class); }
+
+    public function isDeletionScheduled(): bool
+    {
+        return $this->status === 'deletion_scheduled';
+    }
+
+    public function purgeEligibleAt(): ?\Illuminate\Support\Carbon
+    {
+        if (! $this->deletion_scheduled_at) {
+            return null;
+        }
+
+        return $this->deletion_scheduled_at->copy()->addDays(
+            \App\Services\Provisioning\SchoolDeletionService::RETENTION_DAYS
+        );
+    }
 
     public function logoUrl(): ?string
     {
