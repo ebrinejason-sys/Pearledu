@@ -11,8 +11,7 @@ class InvitationController extends Controller
 {
     public function index(Request $request, TenantContext $context)
     {
-        $enteredId = $request->session()->get('platform.entered_school_id');
-        // Cross-tenant invite desk always needs platform RLS.
+        // Cross-tenant invite desk always needs platform RLS (also for nav).
         $context->forPlatform();
 
         $filter = $request->query('filter', 'open');
@@ -26,10 +25,6 @@ class InvitationController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        if ($enteredId) {
-            $context->forPlatformInSchool((int) $enteredId);
-        }
-
         return view('platform.invitations.index', compact('invitations', 'filter'));
     }
 
@@ -40,8 +35,13 @@ class InvitationController extends Controller
 
         try {
             $mailer->resend($invitation, $invitation->school, $request->user()->id);
-        } catch (RuntimeException $e) {
-            return back()->withErrors(['invitation' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            report($e);
+            $message = $e instanceof RuntimeException
+                ? $e->getMessage()
+                : 'Invitation could not be delivered. Check mail/SMS configuration and try again.';
+
+            return back()->withErrors(['invitation' => $message]);
         }
 
         return back()->with('status', 'Invitation resent to '.($invitation->email ?: 'the invitee').'.');

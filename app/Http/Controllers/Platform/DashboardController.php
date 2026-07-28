@@ -64,10 +64,9 @@ class DashboardController extends Controller
 
         $workspaceStats = null;
         if ($enteredSchool) {
-            $context->forPlatformInSchool((int) $enteredSchool->id);
             $workspaceStats = [
-                'students' => Student::query()->count(),
-                'classes' => SchoolClass::query()->count(),
+                'students' => Student::query()->where('school_id', $enteredSchool->id)->count(),
+                'classes' => SchoolClass::query()->where('school_id', $enteredSchool->id)->count(),
                 'open_invites' => SchoolInvitation::query()
                     ->where('school_id', $enteredSchool->id)
                     ->whereNull('accepted_at')
@@ -75,6 +74,9 @@ class DashboardController extends Controller
                     ->count(),
             ];
         }
+
+        // Stay on platform RLS so dashboard nav/permission composers keep working.
+        $context->forPlatform();
 
         return view('platform.dashboard', compact(
             'stats',

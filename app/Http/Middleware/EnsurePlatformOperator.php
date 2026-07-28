@@ -38,11 +38,9 @@ class EnsurePlatformOperator
             abort(403, 'This PearlEdu account is disabled.');
         }
 
-        if ($id = $request->session()->get('platform.entered_school_id')) {
-            $this->context->forPlatformInSchool((int) $id);
-        } else {
-            $this->context->forPlatform();
-        }
+        // Operator console always uses platform RLS so permission checks and
+        // cross-school bindings work. Workspace routes re-pin via platform.school.
+        $this->context->forPlatform();
 
         return $next($request);
     }

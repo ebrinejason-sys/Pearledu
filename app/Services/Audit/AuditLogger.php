@@ -20,6 +20,8 @@ class AuditLogger
         $ctx = app(TenantContext::class);
         // Platform-global events (e.g. login on /login) have no school scope; RLS still
         // requires app.is_platform for writes with a null school_id.
+        $previousSchoolId = $ctx->schoolId();
+        $previousPlatform = $ctx->isPlatform();
         $elevated = false;
         if (! $ctx->isPlatform() && $ctx->schoolId() === null) {
             $ctx->forPlatform();
@@ -38,7 +40,13 @@ class AuditLogger
             ]);
         } finally {
             if ($elevated) {
-                $ctx->clear();
+                if ($previousPlatform) {
+                    $ctx->forPlatform();
+                } elseif ($previousSchoolId !== null) {
+                    $ctx->forSchool($previousSchoolId);
+                } else {
+                    $ctx->clear();
+                }
             }
         }
     }

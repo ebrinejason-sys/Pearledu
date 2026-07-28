@@ -22,7 +22,7 @@ class SchoolProvisioner {
     /**
      * Onboard a school atomically.
      * Creates the tenant (schools.id) and links the admin user’s role_assignment to that school_id.
-     * Shared login is pearledu.*/login — isolation is by school_id / RLS, not by subdomain.
+     * Shared login is pearledu host /login — isolation is by school_id / RLS, not by subdomain.
      * Returns the raw invite token (deliver out-of-band via mail/SMS).
      */
     public function onboard(array $school, array $levels, array $admin, ?int $operatorId): array {
@@ -48,6 +48,11 @@ class SchoolProvisioner {
 
             $adminUser = $this->resolveUser($admin);
             $roleId = Role::where('key', 'school_admin')->value('id');
+            if (! $roleId) {
+                throw new \RuntimeException(
+                    'Missing school_admin role. Run database seeders (RoleSeeder) before onboarding schools.'
+                );
+            }
             RoleAssignment::firstOrCreate([
                 'user_id' => $adminUser->id, 'role_id' => $roleId,
                 'school_id' => $created->id, 'is_active' => true,

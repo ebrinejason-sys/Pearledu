@@ -65,13 +65,18 @@ class SchoolController extends Controller
         $school = $result['school'];
         $status = 'Onboarded tenant #'.$school->tenantId()
             .'. Users sign in at '.$school->portalUrl().'/login — data is isolated to this school.';
-        if ($invitation && ! empty($result['admin']->email)) {
+        if ($invitation && (! empty($result['admin']->email) || ! empty($invitation->phone) || ! empty($result['admin']->phone))) {
             try {
                 $mailer->send($invitation, $result['invite_token'], $school);
-                $status .= ' Invitation emailed to '.$result['admin']->email.'.';
-            } catch (RuntimeException $e) {
+                if (! empty($result['admin']->email) || ! empty($invitation->email)) {
+                    $status .= ' Invitation emailed to '.($result['admin']->email ?: $invitation->email).'.';
+                } else {
+                    $status .= ' Invitation delivered by SMS.';
+                }
+            } catch (\Throwable $e) {
+                // Transport/config errors must not roll back a completed onboard into a 500.
                 report($e);
-                $status .= ' Invitation created, but the email could not be sent. Ask the user to use password reset.';
+                $status .= ' Invitation created, but delivery failed. Resend from Invitations or share the activation link out-of-band.';
             }
         } elseif ($invitation) {
             $status .= ' Invitation created — deliver the activation link out-of-band (no email on file).';
@@ -92,8 +97,9 @@ class SchoolController extends Controller
             ->groupBy('user_id')
             ->map(fn ($assignments) => [
                 'user' => $assignments->first()->user,
-                'roles' => $assignments->pluck('role.label')->unique()->values()->all(),
+                'roles' => $assignments->pluck('role.label')->filter()->unique()->values()->all(),
             ])
+            ->filter(fn ($m) => $m['user'] !== null)
             ->sortBy(fn ($m) => $m['user']->full_name)
             ->values();
         $openInvites = SchoolInvitation::query()

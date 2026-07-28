@@ -32,6 +32,10 @@ class InvitationDispatcher
         $sent = false;
 
         if ($user->email || $invitation->email) {
+            $from = (string) config('mail.from.address');
+            if ($from === '') {
+                throw new RuntimeException('MAIL_FROM_ADDRESS is not configured; cannot send invitation email.');
+            }
             $to = $user->email ?: $invitation->email;
             Mail::to($to)->send(new SchoolInvitationMail(
                 $user,

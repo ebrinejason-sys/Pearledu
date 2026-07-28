@@ -49,6 +49,47 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
         $show->assertSee('Tenant ID', false);
     }
 
+    public function test_onboard_succeeds_when_invitation_delivery_throws(): void
+    {
+        $this->mock(\App\Services\Auth\InvitationMailer::class, function ($mock) {
+            $mock->shouldReceive('send')->once()->andThrow(new \ErrorException('mailer transport failed'));
+        });
+
+        $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
+        $host = 'http://pearledu.voxsign.test';
+
+        $response = $this->actingAs($operator)->post($host.'/admin/schools', [
+            'name' => 'Mail Fail Academy',
+            'district' => 'Mbale',
+            'emis_number' => 'EMIS-MAIL-FAIL',
+            'theme' => 'pearledu',
+            'levels' => ['primary'],
+            'admin' => [
+                'full_name' => 'Mail Fail Admin',
+                'email' => 'mailfail@academy.test',
+            ],
+        ]);
+
+        $school = School::where('emis_number', 'EMIS-MAIL-FAIL')->first();
+        $this->assertNotNull($school, 'School must be committed even when invite delivery fails');
+        $response->assertRedirect(route('platform.schools.show', $school));
+        $response->assertSessionHas('status');
+        $this->assertStringContainsString('delivery failed', session('status'));
+    }
+
+    public function test_schools_index_ok_while_another_school_is_entered(): void
+    {
+        $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
+        $existing = School::where('slug', 'like', 'pearledu%')->firstOrFail();
+        $host = 'http://pearledu.voxsign.test';
+
+        $this->actingAs($operator)
+            ->withSession(['platform.entered_school_id' => $existing->id])
+            ->get($host.'/admin/schools')
+            ->assertOk()
+            ->assertSee('Onboard school', false);
+    }
+
     public function test_onboard_requires_uganda_district(): void
     {
         Mail::fake();
