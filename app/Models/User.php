@@ -12,7 +12,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = ['full_name','email','phone','password','status','preferred_theme','last_login_at'];
+    protected $fillable = ['full_name','email','phone','password','status','preferred_theme','avatar_path','last_login_at'];
     protected $hidden = ['password','remember_token','two_factor_secret','two_factor_recovery_codes'];
 
     protected function casts(): array {
@@ -74,6 +74,16 @@ class User extends Authenticatable
 
     public function schoolsForUser() {
         return School::whereIn('id', $this->activeAssignments()->whereNotNull('school_id')->pluck('school_id'))->get();
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? asset('storage/'.$this->avatar_path) : null;
+    }
+
+    public function avatarInitial(): string
+    {
+        return strtoupper(substr($this->full_name ?: '?', 0, 1));
     }
 
     /**

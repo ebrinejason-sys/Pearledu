@@ -43,6 +43,7 @@
   .user-menu__trigger{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 10px 6px 6px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
   .user-menu__trigger::-webkit-details-marker{display:none}
   .user-menu__avatar{width:34px;height:34px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+  .user-menu__avatar-img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--line)}
   .user-menu__meta{display:flex;flex-direction:column;line-height:1.25;text-align:left;min-width:0}
   .user-menu__name{font-size:13px;font-weight:700;color:var(--ink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .user-menu__role{font-size:11px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

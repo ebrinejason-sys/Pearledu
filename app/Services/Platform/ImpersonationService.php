@@ -101,8 +101,8 @@ class ImpersonationService
         if ($target->isPlatformOperator()) {
             throw ValidationException::withMessages(['user' => 'Platform accounts cannot be imitated.']);
         }
-        if ($target->status !== 'active') {
-            throw ValidationException::withMessages(['user' => 'Only active accounts can be imitated.']);
+        if (! in_array($target->status, ['active', 'invited'], true)) {
+            throw ValidationException::withMessages(['user' => 'Only active or invited accounts can be imitated.']);
         }
 
         $reason = trim((string) ($options['reason'] ?? ''));

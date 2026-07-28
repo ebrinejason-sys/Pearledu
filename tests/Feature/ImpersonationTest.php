@@ -118,4 +118,21 @@ class ImpersonationTest extends TestCase
             ['reason' => 'short']
         )->assertSessionHasErrors('reason');
     }
+
+    public function test_imitate_without_recent_auth_resumes_after_password_confirm(): void
+    {
+        $this->actingAs($this->operator)
+            ->post(route('platform.schools.imitate', [$this->school, $this->schoolAdmin]), $this->imitatePayload())
+            ->assertRedirect(route('platform.auth.confirm'));
+
+        $this->assertNotNull(session(\App\Http\Middleware\RequireRecentPlatformAuth::PENDING_KEY));
+
+        $this->post(route('platform.auth.confirm.store'), [
+            'password' => config('platform.admin_password', 'test-platform-password-CHANGE'),
+        ])->assertRedirect(route('platform.auth.confirm.resume'));
+
+        $this->get(route('platform.auth.confirm.resume'))
+            ->assertOk()
+            ->assertSee('name="reason"', false);
+    }
 }

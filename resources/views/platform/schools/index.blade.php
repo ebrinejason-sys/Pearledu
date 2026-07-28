@@ -63,11 +63,13 @@
           <td><span class="pill">{{ $s->status }}</span></td>
           <td style="white-space:nowrap">
             <a href="{{ route('platform.schools.show', $s) }}">Edit</a>
+            @if(auth()->user()->hasPlatformPermission('platform.schools.enter'))
             ·
             <form method="post" action="{{ route('platform.schools.enter', $s) }}" style="display:inline">
               @csrf
               <button type="submit" class="btn-link-action">Enter workspace</button>
             </form>
+            @endif
             ·
             <form method="post" action="{{ route('platform.schools.destroy', $s) }}" style="display:inline" class="js-school-delete" data-school-name="{{ e($s->name) }}">
               @csrf

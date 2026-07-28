@@ -25,6 +25,23 @@
         <input name="district" value="{{ old('district', $school->district) }}">
         <label>EMIS number</label>
         <input name="emis_number" value="{{ old('emis_number', $school->emis_number) }}">
+        <label>School theme</label>
+        <select name="theme" required>
+          @foreach($themes as $key => $theme)
+            <option value="{{ $key }}" @selected(old('theme', $school->theme) === $key)>{{ $theme['label'] ?? $key }}</option>
+          @endforeach
+        </select>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 4px">
+          @foreach($themes as $key => $theme)
+            @php($tok = $theme['tokens'] ?? [])
+            <span title="{{ $theme['description'] ?? $key }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+              <i style="width:14px;height:14px;border-radius:3px;background:{{ $tok['brand'] ?? '#ccc' }};display:inline-block"></i>
+              <i style="width:14px;height:14px;border-radius:3px;background:{{ $tok['accent'] ?? '#ccc' }};display:inline-block"></i>
+              {{ $theme['label'] ?? $key }}
+            </span>
+          @endforeach
+        </div>
+        <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">Applies to everyone at this school (unless a user set a personal override).</p>
         <label>School logo / crest</label>
         <input type="file" name="logo" accept="image/*">
         @if($school->logo_path)

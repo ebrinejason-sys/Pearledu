@@ -11,10 +11,13 @@
     <form method="post" action="/invitations/{{ $invitation }}/accept">
       @csrf
       <input type="hidden" name="token" value="{{ $token }}">
-      <label>New password</label><input name="password" type="password" required minlength="10">
-      <label>Confirm password</label><input name="password_confirmation" type="password" required>
+      @include('partials.password-input', ['name' => 'password', 'label' => 'New password', 'autocomplete' => 'new-password'])
+      @include('partials.password-input', ['name' => 'password_confirmation', 'label' => 'Confirm password', 'autocomplete' => 'new-password'])
       @error('password')<div class="err">{{ $message }}</div>@enderror
       <p><button class="btn" type="submit" style="width:100%">Activate account</button></p>
     </form>
   </div>
+@endsection
+@section('head')
+@include('partials.password-field-assets')
 @endsection

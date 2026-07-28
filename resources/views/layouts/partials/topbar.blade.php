@@ -41,7 +41,11 @@
     <div class="user-menu">
       <details class="user-menu__details">
         <summary class="user-menu__trigger">
-          <span class="user-menu__avatar" aria-hidden="true">{{ $nav['user']['initial'] ?? '?' }}</span>
+          @if(!empty($nav['user']['avatar_url']))
+            <img src="{{ $nav['user']['avatar_url'] }}" alt="" class="user-menu__avatar-img" width="36" height="36">
+          @else
+            <span class="user-menu__avatar" aria-hidden="true">{{ $nav['user']['initial'] ?? '?' }}</span>
+          @endif
           <span class="user-menu__meta">
             <span class="user-menu__name">{{ $nav['user']['name'] ?? '' }}</span>
             <span class="user-menu__role">

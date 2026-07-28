@@ -6,8 +6,10 @@ use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\SchoolClass;
 use App\Models\SchoolInvitation;
+use App\Models\User;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
+use App\Services\Provisioning\StaffRoleService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -36,7 +38,9 @@ class StaffController extends Controller
                     'label' => $a->role?->label,
                     'class' => $a->schoolClass?->name,
                 ])->unique(fn ($r) => $r['label'].'|'.$r['class'])->values()->all(),
+                'role_keys' => $assignments->pluck('role.key')->filter()->unique()->values()->all(),
             ])
+            ->filter(fn ($m) => $m['user'] !== null)
             ->sortBy(fn ($m) => $m['user']->full_name ?? '')
             ->values();
 
@@ -80,5 +84,33 @@ class StaffController extends Controller
         ])->filter()->implode(' and ');
 
         return back()->with('status', 'Invitation sent via '.$via.' to '.$result['user']->full_name.'.');
+    }
+
+    public function updateRoles(Request $request, User $user, TenantContext $context, StaffRoleService $roles, InvitePolicy $policy)
+    {
+        $school = $context->school();
+        abort_unless($school, 404);
+        $allowed = $policy->rolesInvitableBy($request->user(), $school->id, false);
+
+        $data = $request->validate([
+            'role_keys' => 'required|array|min:1',
+            'role_keys.*' => ['string', Rule::in(array_values(array_unique(array_merge(
+                $allowed,
+                $user->activeAssignments()->where('school_id', $school->id)->with('role')->get()->pluck('role.key')->filter()->all()
+            ))))],
+        ]);
+
+        $roles->sync($school, $user, $data['role_keys'], $request->user(), false);
+
+        return back()->with('status', 'Roles updated for '.$user->full_name.'.');
+    }
+
+    public function revoke(Request $request, User $user, TenantContext $context, StaffRoleService $roles)
+    {
+        $school = $context->school();
+        abort_unless($school, 404);
+        $roles->revoke($school, $user, $request->user());
+
+        return back()->with('status', 'School access revoked for '.$user->full_name.'.');
     }
 }

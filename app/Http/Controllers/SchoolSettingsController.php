@@ -14,7 +14,10 @@ class SchoolSettingsController extends Controller
         $school = $ctx->school();
         abort_unless($school, 404);
 
-        return view('app.settings.school', compact('school'));
+        return view('app.settings.school', [
+            'school' => $school,
+            'themes' => config('themes.themes', []),
+        ]);
     }
 
     public function update(Request $request, TenantContext $ctx)
@@ -29,6 +32,7 @@ class SchoolSettingsController extends Controller
             'address' => 'nullable|string|max:255',
             'district' => 'nullable|string|max:120',
             'emis_number' => 'nullable|string|max:60',
+            'theme' => 'required|string|in:'.implode(',', array_keys(config('themes.themes', []))),
             'logo' => 'nullable|image|max:2048',
             'remove_logo' => 'nullable|boolean',
         ]);
@@ -52,8 +56,9 @@ class SchoolSettingsController extends Controller
             'address' => $data['address'] ?? null,
             'district' => $data['district'] ?? null,
             'emis_number' => $data['emis_number'] ?? null,
+            'theme' => $data['theme'],
         ])->save();
 
-        return back()->with('status', 'School identity saved. Badge and logo will appear on report cards.');
+        return back()->with('status', 'School identity saved. Theme, badge and logo apply across the school app.');
     }
 }

@@ -14,8 +14,8 @@
           @csrf
           <input type="hidden" name="token" value="{{ $token }}">
           <input type="hidden" name="email" value="{{ old('email', $email) }}">
-          <label>New password</label><input name="password" type="password" required minlength="10" autofocus>
-          <label>Confirm password</label><input name="password_confirmation" type="password" required minlength="10">
+          @include('partials.password-input', ['name' => 'password', 'label' => 'New password', 'autocomplete' => 'new-password'])
+          @include('partials.password-input', ['name' => 'password_confirmation', 'label' => 'Confirm password', 'autocomplete' => 'new-password'])
           @error('email')<div class="err">{{ $message }}</div>@enderror
           @error('password')<div class="err">{{ $message }}</div>@enderror
           <button class="btn" type="submit">Update password</button>
@@ -35,4 +35,5 @@
 @endsection
 @section('head')
 @include('auth.partials.auth-styles')
+@include('partials.password-field-assets')
 @endsection

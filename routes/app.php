@@ -54,6 +54,8 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     Route::middleware('permission:staff.manage')->group(function () {
         Route::get('/staff', [StaffController::class, 'index'])->name('app.staff.index');
         Route::post('/staff', [StaffController::class, 'store'])->name('app.staff.store');
+        Route::put('/staff/{user}/roles', [StaffController::class, 'updateRoles'])->name('app.staff.roles');
+        Route::delete('/staff/{user}', [StaffController::class, 'revoke'])->name('app.staff.revoke');
     });
 
     Route::middleware('permission:sms.send')->group(function () {

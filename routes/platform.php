@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.')->group(function () {
     Route::get('auth/confirm', [ConfirmPlatformAuthController::class, 'show'])->name('auth.confirm');
     Route::post('auth/confirm', [ConfirmPlatformAuthController::class, 'store'])->name('auth.confirm.store');
+    Route::get('auth/confirm/resume', [ConfirmPlatformAuthController::class, 'resume'])->name('auth.confirm.resume');
 
     Route::get('/', [DashboardController::class, 'index'])
         ->middleware('platform.permission:platform.dashboard.view')
@@ -125,8 +126,8 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.
         ->middleware(['platform.permission:platform.sms.topup', 'platform.recent_auth'])
         ->name('sms.topup');
 
-    // School data entry — requires Enter school scope (RLS pinned to that school).
-    Route::middleware(['platform.school', 'platform.permission:platform.schools.enter'])->group(function () {
+    // Permission first (platform RLS), then pin entered-school RLS for data routes.
+    Route::middleware(['platform.permission:platform.schools.enter', 'platform.school'])->group(function () {
         Route::get('workspace', [WorkspaceController::class, 'show'])->name('workspace');
 
         Route::get('students', [StudentController::class, 'index'])->name('students.index');
@@ -146,6 +147,8 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.
 
         Route::get('staff', [StaffController::class, 'index'])->name('staff.index');
         Route::post('staff', [StaffController::class, 'store'])->name('staff.store');
+        Route::put('staff/{user}/roles', [StaffController::class, 'updateRoles'])->name('staff.roles');
+        Route::delete('staff/{user}', [StaffController::class, 'revoke'])->name('staff.revoke');
     });
 });
 

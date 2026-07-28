@@ -7,10 +7,12 @@
       <h2 class="page-header__title">{{ $school->name }}</h2>
     </div>
     <div class="page-header__actions">
-      <form method="post" action="{{ route('platform.schools.enter', $school) }}">
-        @csrf
-        <button type="submit" class="btn accent">Enter workspace</button>
-      </form>
+      @if(auth()->user()->hasPlatformPermission('platform.schools.enter') && in_array($school->status, ['active', 'suspended'], true))
+        <form method="post" action="{{ route('platform.schools.enter', $school) }}">
+          @csrf
+          <button type="submit" class="btn accent">Enter workspace</button>
+        </form>
+      @endif
       @if(session('platform.entered_school_id') == $school->id)
         <a class="btn" href="{{ route('platform.workspace') }}">Open workspace</a>
       @endif
@@ -132,10 +134,12 @@
   <div class="card">
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap">
       <h3 style="margin:0">Staff &amp; accounts</h3>
-      <form method="post" action="{{ route('platform.schools.enter', $school) }}">
-        @csrf
-        <button type="submit" class="btn ghost">Manage in workspace</button>
-      </form>
+      @if(auth()->user()->hasPlatformPermission('platform.schools.enter'))
+        <form method="post" action="{{ route('platform.schools.enter', $school) }}">
+          @csrf
+          <button type="submit" class="btn ghost">Manage in workspace</button>
+        </form>
+      @endif
     </div>
     <p style="color:var(--muted);font-size:14px">
       Imitate to see the school app as that user. For data entry, use <strong>Enter workspace</strong> instead.
@@ -163,7 +167,7 @@
           </td>
           <td>{{ $user->status }}</td>
           <td>
-            @if($user->status === 'active' && ! $user->is_platform)
+            @if(auth()->user()->hasPlatformPermission('platform.users.impersonate') && in_array($user->status, ['active', 'invited'], true) && ! $user->is_platform)
               <form method="post" action="{{ route('platform.schools.imitate', [$school, $user]) }}" style="display:grid;gap:6px;min-width:220px">
                 @csrf
                 <input type="text" name="reason" required minlength="8" maxlength="500" placeholder="Support reason (required)" style="font-size:12px;padding:6px 8px">

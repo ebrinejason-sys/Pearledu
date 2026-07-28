@@ -51,9 +51,10 @@
         <form method="post" action="/login">
           @csrf
           <label>Email or phone</label><input name="identifier" type="text" value="{{ old('identifier') }}" required autofocus autocomplete="username" placeholder="you@school.com or 07…">
-          <label>Password</label><input name="password" type="password" required>
+          @include('partials.password-input', ['name' => 'password', 'label' => 'Password', 'autocomplete' => 'current-password'])
           <label class="vx-auth-remember"><input type="checkbox" name="remember"> Remember me</label>
           @error('identifier')<div class="err">{{ $message }}</div>@enderror
+          <p style="margin:10px 0 0;font-size:13px"><a href="{{ route('password.request') }}" style="color:var(--sidebar-ink,#9FE7F5)">Forgot password?</a></p>
           <button class="btn" type="submit">Sign in</button>
         </form>
       </div>
@@ -68,6 +69,7 @@
 @endsection
 @section('head')
 @include('auth.partials.auth-styles')
+@include('partials.password-field-assets')
 <style>
   .vx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .vx-preloader{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:var(--bg,#F4F4EF);color:#B5652F}

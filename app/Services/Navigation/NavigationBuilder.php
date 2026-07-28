@@ -28,9 +28,19 @@ class NavigationBuilder
 
         $school = $this->context->school();
         $schoolId = $this->context->schoolId() ?? $this->impersonation->schoolId();
-        $permissions = $schoolId ? $user->permissionsForSchool($schoolId) : [];
         $onPlatform = request()->routeIs('platform.*');
         $isPlatformOperator = $user->isPlatformOperator() && ! $this->impersonation->isActive();
+
+        // Console keeps platform RLS; still surface the entered school in chrome/nav.
+        if (! $school && $isPlatformOperator && $onPlatform) {
+            $enteredId = session('platform.entered_school_id');
+            if ($enteredId) {
+                $school = \App\Models\School::query()->find($enteredId);
+                $schoolId = $school?->id;
+            }
+        }
+
+        $permissions = $schoolId ? $user->permissionsForSchool($schoolId) : [];
 
         $roleLabels = $schoolId
             ? $user->activeAssignments()->where('school_id', $schoolId)->with('role')->get()->pluck('role.label')->unique()->values()->all()
@@ -71,6 +81,7 @@ class NavigationBuilder
                 'name' => $user->full_name,
                 'email' => $user->email ?? $user->phone,
                 'initial' => strtoupper(substr($user->full_name, 0, 1)),
+                'avatar_url' => $user->avatarUrl(),
                 'roles' => $roleLabels,
                 'is_platform' => $isPlatformOperator,
             ],

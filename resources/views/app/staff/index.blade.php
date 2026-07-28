@@ -79,7 +79,7 @@
   <div class="card">
     <h3 style="margin-top:0">Active members</h3>
     <table>
-      <thead><tr><th>Name</th><th>Contact</th><th>Roles</th><th>Status</th></tr></thead>
+      <thead><tr><th>Name</th><th>Contact</th><th>Roles / permissions</th><th>Status</th><th></th></tr></thead>
       <tbody>
       @forelse($members as $member)
         @php($user = $member['user'])
@@ -87,14 +87,39 @@
           <td><strong>{{ $user->full_name }}</strong></td>
           <td>{{ $user->email ?? $user->phone ?? '—' }}</td>
           <td>
-            @foreach($member['roles'] as $role)
-              <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
-            @endforeach
+            @if($roles->isEmpty())
+              @foreach($member['roles'] as $role)
+                <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
+              @endforeach
+            @else
+              <form method="post" action="{{ route('app.staff.roles', $user) }}" style="display:grid;gap:8px">
+                @csrf @method('PUT')
+                <div style="display:flex;flex-wrap:wrap;gap:8px">
+                  @foreach($roles as $role)
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:500;font-size:13px">
+                      <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" @checked(collect($member['role_keys'])->contains($role->key))>
+                      {{ $role->label }}
+                    </label>
+                  @endforeach
+                </div>
+                <button type="submit" class="btn ghost">Save roles</button>
+              </form>
+            @endif
           </td>
           <td>{{ $user->status }}</td>
+          <td>
+            @if((int) $user->id !== (int) auth()->id())
+              <form method="post" action="{{ route('app.staff.revoke', $user) }}" onsubmit="return confirm('Revoke school access for {{ $user->full_name }}?')">
+                @csrf @method('DELETE')
+                <button type="submit" class="btn ghost" style="color:var(--danger,#b42318)">Revoke</button>
+              </form>
+            @else
+              —
+            @endif
+          </td>
         </tr>
       @empty
-        <tr><td colspan="4" style="color:var(--muted)">No members yet.</td></tr>
+        <tr><td colspan="5" style="color:var(--muted)">No members yet.</td></tr>
       @endforelse
       </tbody>
     </table>

@@ -34,6 +34,8 @@ Route::middleware('web')->group(function () {
 
     Route::middleware('auth')->group(function () {
         Route::get('/account', [AccountController::class, 'show'])->name('account.settings');
+        Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+        Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
         Route::delete('/account', [AccountController::class, 'destroy'])->name('account.destroy');
         Route::post('/impersonation/stop', [\App\Http\Controllers\ImpersonationController::class, 'destroy'])->name('impersonation.stop');
     });

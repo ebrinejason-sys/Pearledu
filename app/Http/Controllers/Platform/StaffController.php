@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\SchoolInvitation;
+use App\Models\User;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
+use App\Services\Provisioning\StaffRoleService;
 use App\Services\Tenancy\EnteredSchoolGuard;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -29,8 +31,10 @@ class StaffController extends Controller
             ->groupBy('user_id')
             ->map(fn ($assignments) => [
                 'user' => $assignments->first()->user,
-                'roles' => $assignments->pluck('role.label')->unique()->values()->all(),
+                'roles' => $assignments->pluck('role.label')->filter()->unique()->values()->all(),
+                'role_keys' => $assignments->pluck('role.key')->filter()->unique()->values()->all(),
             ])
+            ->filter(fn ($m) => $m['user'] !== null)
             ->sortBy(fn ($m) => $m['user']->full_name ?? '')
             ->values();
 
@@ -44,8 +48,9 @@ class StaffController extends Controller
 
         $roleKeys = $policy->rolesInvitableBy($request->user(), $school->id, true);
         $roles = Role::query()->whereIn('key', $roleKeys)->orderBy('label')->get();
+        $canImitate = $request->user()->hasPlatformPermission('platform.users.impersonate');
 
-        return view('platform.staff.index', compact('school', 'members', 'openInvites', 'roles'));
+        return view('platform.staff.index', compact('school', 'members', 'openInvites', 'roles', 'canImitate'));
     }
 
     public function store(Request $request, StaffInvitationService $inviter, InvitePolicy $policy)
@@ -73,5 +78,28 @@ class StaffController extends Controller
         ])->filter()->implode(' and ');
 
         return back()->with('status', 'Invitation sent via '.$via.' to '.$result['user']->full_name.'.');
+    }
+
+    public function updateRoles(Request $request, User $user, StaffRoleService $roles, InvitePolicy $policy)
+    {
+        $school = $this->entered->school($request);
+        $allowed = $policy->rolesInvitableBy($request->user(), $school->id, true);
+
+        $data = $request->validate([
+            'role_keys' => 'required|array|min:1',
+            'role_keys.*' => ['string', Rule::in($allowed)],
+        ]);
+
+        $roles->sync($school, $user, $data['role_keys'], $request->user(), true);
+
+        return back()->with('status', 'Roles updated for '.$user->full_name.'.');
+    }
+
+    public function revoke(Request $request, User $user, StaffRoleService $roles)
+    {
+        $school = $this->entered->school($request);
+        $roles->revoke($school, $user, $request->user());
+
+        return back()->with('status', 'School access revoked for '.$user->full_name.'.');
     }
 }

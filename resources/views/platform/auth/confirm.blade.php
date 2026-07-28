@@ -17,13 +17,13 @@
 
   <form method="post" action="{{ route('platform.auth.confirm.store') }}" class="card" style="max-width:420px;padding:24px;display:grid;gap:14px">
     @csrf
-    <label>
-      <span>Password</span>
-      <input type="password" name="password" required autofocus autocomplete="current-password">
-    </label>
+    @include('partials.password-input', ['name' => 'password', 'label' => 'Password', 'autocomplete' => 'current-password'])
     @error('password')
       <p class="field-error">{{ $message }}</p>
     @enderror
     <button type="submit" class="btn">Confirm</button>
   </form>
+@endsection
+@section('head')
+@include('partials.password-field-assets')
 @endsection
