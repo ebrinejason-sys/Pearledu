@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\PasswordResetService;
 use App\Services\Auth\SessionInvalidator;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class PlatformStaffService
         private TenantContext $context,
         private AuditLogger $audit,
         private SessionInvalidator $sessions,
+        private PasswordResetService $passwordResets,
     ) {}
 
     /** @return array<string, string> */
@@ -213,7 +215,11 @@ class PlatformStaffService
         $roleChanged = $previousRole !== $data['role_key'];
         $disabled = $previousStatus !== 'disabled' && $data['status'] === 'disabled';
         if ($roleChanged || $disabled) {
-            $this->sessions->invalidate($target->fresh());
+            $fresh = $target->fresh();
+            $this->sessions->invalidate($fresh);
+            if ($disabled) {
+                $this->passwordResets->revokeTokens($fresh);
+            }
         }
     }
 

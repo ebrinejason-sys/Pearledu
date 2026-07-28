@@ -111,7 +111,9 @@ class NavigationBuilder
                     $this->has($permissions, 'staff.manage')
                         ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.*'))
                         : null,
-                    $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*')),
+                    $this->hasAny($permissions, ['helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage'])
+                        ? $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*'))
+                        : null,
                 ])),
             ],
             [
@@ -173,9 +175,12 @@ class NavigationBuilder
                         ? $this->item('Attendance', 'app.attendance.index', icon: 'attendance', active: request()->routeIs('app.attendance.*'))
                         : null,
                     $canAssess
-                        ? $this->item('Assessment', 'app.assessment.index', icon: 'assessment', active: request()->routeIs('app.assessment.index') || request()->routeIs('app.assessment.periods.*') || request()->routeIs('app.assessment.marks*'))
+                        ? $this->item('Assessment', 'app.assessment.index', icon: 'assessment', active: request()->routeIs('app.assessment.index') || request()->routeIs('app.assessment.periods.*'))
                         : null,
-                    $canAssess
+                    $this->hasAny($permissions, ['assessment.enter', 'assessment.manage'])
+                        ? $this->item('Enter marks', 'app.assessment.marks', icon: 'assessment', active: request()->routeIs('app.assessment.marks*'))
+                        : null,
+                    $this->hasAny($permissions, ['assessment.view', 'assessment.manage', 'assessment.enter'])
                         ? $this->item('Broadsheet', 'app.assessment.broadsheet', icon: 'broadsheet', active: request()->routeIs('app.assessment.broadsheet') || request()->routeIs('app.assessment.reports'))
                         : null,
                     $this->has($permissions, 'promotions.approve')

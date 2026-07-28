@@ -128,7 +128,7 @@ A living list of ways tenant isolation or privacy could fail, with status.
 ## 9. Verifying the guarantees
 
 ```bash
-php artisan db:verify-security      # asserts non-superuser role + FORCE RLS (fails deploy otherwise)
+php artisan db:verify-security      # catalog-driven: every school_id table + schools must FORCE RLS
 php artisan test --filter=TenantIsolationTest   # proves cross-tenant reads/writes are blocked (Eloquent + raw)
 ```
-Run both in CI and on every deploy. If either fails, the isolation guarantee is not in force and the release must not ship.
+Run both in CI and on every deploy. If either fails, the isolation guarantee is not in force and the release must not ship. `db:verify-security` discovers tenant tables from PostgreSQL’s catalog (not a hard-coded list). Critical child tables also use composite FKs `(school_id, parent_id)` so mixed-tenant references cannot be inserted even under platform scope.

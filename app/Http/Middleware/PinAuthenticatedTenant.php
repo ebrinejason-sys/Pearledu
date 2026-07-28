@@ -12,6 +12,9 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * After session/auth are available, pin school RLS from the logged-in user
  * so pearledu.* can serve every school without a subdomain.
+ *
+ * Must run before SubstituteBindings (see bootstrap/app.php priority) so
+ * implicit model binding is school-scoped for shared-host school users.
  */
 class PinAuthenticatedTenant
 {

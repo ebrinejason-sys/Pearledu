@@ -26,11 +26,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [ResolveTenant::class]);
-        // After StartSession: pin school from auth/session on the shared pearledu host.
+        // After StartSession + auth: pin school from auth/session on the shared pearledu host.
         $middleware->web(append: [
             PinAuthenticatedTenant::class,
             BlockImpersonationWrites::class,
         ]);
+        // Critical: pin school RLS before implicit model binding. Otherwise pearledu.* stays
+        // platform-scoped during SubstituteBindings and school users can IDOR other tenants.
+        $middleware->prependToPriorityList(
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            PinAuthenticatedTenant::class,
+        );
         $middleware->alias([
             'platform' => EnsurePlatformOperator::class,
             'platform.school' => EnsurePlatformSchoolEntered::class,

@@ -13,37 +13,48 @@ return [
             'emis.manage', 'sms.send', 'sms.manage', 'announcements.manage',
             'admissions.manage', 'library.manage', 'inventory.manage', 'transport.manage',
             'hostel.manage', 'hr.manage', 'clinic.manage', 'cbt.manage', 'lms.manage',
+            'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'director' => [
             'school.view', 'finance.view', 'assessment.view', 'reports.view', 'sms.send',
             'staff.manage', 'learners.manage', 'attendance.view', 'promotions.approve',
             'announcements.manage',
+            'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'head_teacher' => [
             'school.view', 'staff.manage', 'assessment.manage', 'assessment.enter', 'promotions.approve',
             'attendance.view', 'attendance.mark', 'timetable.manage', 'sms.send',
             'learners.manage', 'announcements.manage',
+            'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'deputy_head_teacher' => [
             'school.view', 'staff.manage', 'assessment.manage', 'assessment.enter', 'attendance.view',
             'attendance.mark', 'timetable.manage', 'sms.send', 'learners.manage',
+            'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'bursar' => [
             'finance.manage', 'fees.record', 'fees.report', 'sms.send',
+            'helpdesk.create', 'helpdesk.view_own',
         ],
         'class_teacher' => [
-            'attendance.mark', 'assessment.enter', 'class.view', 'sms.send', 'learners.manage',
+            // View class broadsheet / reports for assigned class — not unrestricted mark entry.
+            'attendance.mark', 'assessment.view', 'class.view', 'sms.send', 'learners.manage',
+            'helpdesk.create', 'helpdesk.view_own',
         ],
         'subject_teacher' => [
-            'assessment.enter', 'marksheet.submit', 'lms.manage',
+            // Enter is further scoped to teaching_assignments (class + subject).
+            'assessment.enter', 'assessment.view', 'marksheet.submit', 'lms.manage',
+            'helpdesk.create', 'helpdesk.view_own',
         ],
         'parent' => [
             'child.results.view', 'child.fees.view', 'fees.pay', 'self.timetable.view',
             'announcements.view',
+            'helpdesk.create', 'helpdesk.view_own',
         ],
         'student' => [
             'self.results.view', 'self.timetable.view', 'lms.view', 'cbt.take',
             'announcements.view',
+            'helpdesk.create', 'helpdesk.view_own',
         ],
     ],
 

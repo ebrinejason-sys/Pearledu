@@ -55,15 +55,17 @@ class SchoolProvisioner {
             }
             RoleAssignment::firstOrCreate([
                 'user_id' => $adminUser->id, 'role_id' => $roleId,
-                'school_id' => $created->id, 'is_active' => true,
+                'school_id' => $created->id, 'is_active' => false,
             ], ['assigned_by' => $operatorId]);
 
             $raw = Str::random(48);
+            $batchId = (string) Str::uuid();
             SchoolInvitation::create([
                 'school_id' => $created->id, 'user_id' => $adminUser->id,
                 'email' => $admin['email'] ?? null, 'phone' => $admin['phone'] ?? null,
                 'role_key' => 'school_admin', 'token_hash' => Hash::make($raw),
                 'expires_at' => now()->addDays(7), 'invited_by' => $operatorId,
+                'batch_id' => $batchId,
             ]);
 
             $this->audit->record('school.onboarded', $created, [

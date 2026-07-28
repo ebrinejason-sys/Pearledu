@@ -1,0 +1,24 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - bootstrap
+        - config
+        - database
+        - routes
+
+    # Baseline level for a large existing codebase; raise toward 8 over time.
+    level: 5
+
+    ignoreErrors:
+        # Blade / string views are resolved at runtime.
+        - '#Unable to resolve the template#'
+
+    excludePaths:
+        - bootstrap/cache/*
+        - database/migrations/*
+        - database/seeders/*
+
+    treatPhpDocTypesAsCertain: false

@@ -9,6 +9,12 @@
   </div>
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
 
+  @unless($hasAssignments)
+  <div class="card" style="margin-bottom:16px;color:var(--muted)">
+    No teaching assignments are linked to your account. Ask an administrator to assign you a class and subject before entering marks.
+  </div>
+  @endunless
+
   <div class="card">
     <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
       <div>
@@ -19,14 +25,22 @@
       </div>
       <div>
         <label>Class</label>
-        <select name="class_id" onchange="this.form.submit()">
-          @foreach($classes as $c)<option value="{{ $c->id }}" @selected($classId===$c->id)>{{ $c->name }}</option>@endforeach
+        <select name="class_id" onchange="this.form.submit()" @disabled(!$hasAssignments)>
+          @forelse($classes as $c)
+            <option value="{{ $c->id }}" @selected($classId===$c->id)>{{ $c->name }}</option>
+          @empty
+            <option value="">No assigned classes</option>
+          @endforelse
         </select>
       </div>
       <div>
         <label>Subject</label>
-        <select name="subject_id" onchange="this.form.submit()">
-          @foreach($subjects as $s)<option value="{{ $s->id }}" @selected($subjectId===$s->id)>{{ $s->name }}</option>@endforeach
+        <select name="subject_id" onchange="this.form.submit()" @disabled($subjects->isEmpty())>
+          @forelse($subjects as $s)
+            <option value="{{ $s->id }}" @selected($subjectId===$s->id)>{{ $s->name }}</option>
+          @empty
+            <option value="">No assigned subjects</option>
+          @endforelse
         </select>
       </div>
     </form>

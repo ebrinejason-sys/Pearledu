@@ -6,7 +6,7 @@
       <p class="page-header__eyebrow">Academics</p>
       <h2 class="page-header__title">Assessment periods</h2>
       <p style="margin:8px 0 0;color:var(--muted);font-size:14px">
-        <a href="{{ route('app.assessment.marks') }}">Marks</a> ·
+        @if($canEnter)<a href="{{ route('app.assessment.marks') }}">Marks</a> ·@endif
         <a href="{{ route('app.assessment.broadsheet') }}">Broadsheet</a> ·
         <a href="{{ route('app.assessment.reports') }}">Report cards</a>
       </p>
@@ -15,6 +15,7 @@
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
 
   <div class="grid g2">
+    @if($canManage)
     <div class="card">
       <h3 style="margin-top:0">New period</h3>
       <form method="post" action="{{ route('app.assessment.periods.store') }}">
@@ -31,6 +32,7 @@
         <p style="margin-top:14px"><button class="btn" type="submit">Create</button></p>
       </form>
     </div>
+    @endif
     <div class="card">
       <h3 style="margin-top:0">Periods</h3>
       <table>

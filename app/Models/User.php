@@ -24,6 +24,8 @@ class User extends Authenticatable
 
     public function roleAssignments(): HasMany { return $this->hasMany(RoleAssignment::class); }
 
+    public function teachingAssignments(): HasMany { return $this->hasMany(TeachingAssignment::class); }
+
     public function activeAssignments() {
         return $this->roleAssignments()->where('is_active', true)
             ->where(fn ($q) => $q->whereNull('starts_on')->orWhereDate('starts_on', '<=', now()))

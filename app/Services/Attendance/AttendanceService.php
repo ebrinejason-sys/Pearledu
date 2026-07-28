@@ -27,6 +27,19 @@ class AttendanceService
         $saved = [];
 
         DB::transaction(function () use ($schoolId, $classId, $attendedOn, $rows, $recordedBy, $notifyAbsent, &$saved) {
+            $studentIds = collect($rows)->pluck('student_id')->map(fn ($id) => (int) $id)->unique()->values();
+            $validCount = Student::query()
+                ->where('school_id', $schoolId)
+                ->where('class_id', $classId)
+                ->whereIn('id', $studentIds)
+                ->count();
+
+            if ($validCount !== $studentIds->count()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'records' => 'Every student must belong to the selected class.',
+                ]);
+            }
+
             foreach ($rows as $row) {
                 $record = AttendanceRecord::query()->updateOrCreate(
                     [

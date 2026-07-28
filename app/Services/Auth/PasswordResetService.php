@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services\Auth;
+
 use App\Mail\Auth\ResetPasswordMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
@@ -32,9 +34,18 @@ class PasswordResetService
     /** @return string Password broker status constant */
     public function reset(string $email, string $token, string $password): string
     {
+        $user = User::whereRaw('lower(email) = lower(?)', [$email])->first();
+        if ($user && $user->status === 'disabled') {
+            return Password::INVALID_USER;
+        }
+
         return Password::broker()->reset(
             ['email' => $email, 'password' => $password, 'password_confirmation' => $password, 'token' => $token],
             function (User $user, string $password) {
+                if ($user->status === 'disabled') {
+                    return;
+                }
+
                 $user->forceFill([
                     'password' => $password,
                     'status' => 'active',
@@ -42,5 +53,15 @@ class PasswordResetService
                 ])->save();
             }
         );
+    }
+
+    /** Invalidate outstanding reset tokens (call when disabling an account). */
+    public function revokeTokens(User $user): void
+    {
+        if (! $user->email) {
+            return;
+        }
+
+        Password::broker()->deleteToken($user);
     }
 }

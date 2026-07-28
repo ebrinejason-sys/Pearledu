@@ -107,7 +107,7 @@ class GuardianLinkService
                 ]);
             }
 
-            $this->ensureParentRole($user, $schoolId, $invitedBy);
+            $this->ensureParentRole($user, $schoolId, $invitedBy, active: false);
 
             $raw = Str::random(48);
             $invitation = SchoolInvitation::create([
@@ -119,6 +119,7 @@ class GuardianLinkService
                 'token_hash' => Hash::make($raw),
                 'expires_at' => now()->addDays(7),
                 'invited_by' => $invitedBy,
+                'batch_id' => (string) Str::uuid(),
             ]);
 
             $guardianship = $this->createGuardianship($student, $user, $relationship, $isPrimary);
@@ -211,7 +212,7 @@ class GuardianLinkService
         ]);
     }
 
-    private function ensureParentRole(User $user, int $schoolId, ?int $assignedBy): void
+    private function ensureParentRole(User $user, int $schoolId, ?int $assignedBy, bool $active = true): void
     {
         $roleId = Role::where('key', 'parent')->value('id');
         if (! $roleId) {
@@ -225,7 +226,7 @@ class GuardianLinkService
                 'school_id' => $schoolId,
             ],
             [
-                'is_active' => true,
+                'is_active' => $active,
                 'assigned_by' => $assignedBy,
             ],
         );

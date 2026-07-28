@@ -103,13 +103,19 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/attendance', [AttendanceController::class, 'store'])->name('app.attendance.store');
     });
 
-    Route::middleware('permission:assessment.enter')->group(function () {
+    Route::middleware('permission:assessment.view,assessment.enter,assessment.manage')->group(function () {
         Route::get('/assessment', [AssessmentController::class, 'index'])->name('app.assessment.index');
-        Route::post('/assessment/periods', [AssessmentController::class, 'storePeriod'])->name('app.assessment.periods.store');
-        Route::get('/assessment/marks', [AssessmentController::class, 'marks'])->name('app.assessment.marks');
-        Route::post('/assessment/marks', [AssessmentController::class, 'storeMarks'])->name('app.assessment.marks.store');
         Route::get('/assessment/broadsheet', [AssessmentController::class, 'broadsheet'])->name('app.assessment.broadsheet');
         Route::get('/assessment/report-cards', [AssessmentController::class, 'reportCards'])->name('app.assessment.reports');
+    });
+
+    Route::middleware('permission:assessment.manage')->group(function () {
+        Route::post('/assessment/periods', [AssessmentController::class, 'storePeriod'])->name('app.assessment.periods.store');
+    });
+
+    Route::middleware('permission:assessment.enter')->group(function () {
+        Route::get('/assessment/marks', [AssessmentController::class, 'marks'])->name('app.assessment.marks');
+        Route::post('/assessment/marks', [AssessmentController::class, 'storeMarks'])->name('app.assessment.marks.store');
     });
 
     Route::middleware('permission:promotions.approve')->group(function () {
@@ -209,9 +215,15 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/clinic/visits', [ClinicController::class, 'storeVisit'])->name('app.clinic.visits.store');
     });
 
-    Route::get('/helpdesk', [HelpdeskController::class, 'index'])->name('app.helpdesk.index');
-    Route::post('/helpdesk', [HelpdeskController::class, 'store'])->name('app.helpdesk.store');
-    Route::post('/helpdesk/{ticket}/close', [HelpdeskController::class, 'close'])->name('app.helpdesk.close');
+    Route::middleware('permission:helpdesk.create,helpdesk.view_own,helpdesk.manage')->group(function () {
+        Route::get('/helpdesk', [HelpdeskController::class, 'index'])->name('app.helpdesk.index');
+    });
+    Route::middleware('permission:helpdesk.create')->group(function () {
+        Route::post('/helpdesk', [HelpdeskController::class, 'store'])->name('app.helpdesk.store');
+    });
+    Route::middleware('permission:helpdesk.view_own,helpdesk.manage')->group(function () {
+        Route::post('/helpdesk/{ticket}/close', [HelpdeskController::class, 'close'])->name('app.helpdesk.close');
+    });
 
     Route::middleware('permission:emis.manage')->group(function () {
         Route::get('/emis/export', [EmisController::class, 'export'])->name('app.emis.export');

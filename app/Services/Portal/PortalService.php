@@ -114,8 +114,13 @@ class PortalService
         $schoolId = (int) $student->school_id;
         $isParent = $user->guardianships()->where('student_id', $student->id)->exists();
 
-        $audiences = ['all'];
-        $audiences[] = $isParent ? 'parents' : 'students';
+        // Canonical + legacy aliases (school→all, guardians→parents).
+        $audiences = ['all', 'school'];
+        if ($isParent) {
+            array_push($audiences, 'parents', 'guardians');
+        } else {
+            $audiences[] = 'students';
+        }
 
         return Announcement::query()
             ->where('school_id', $schoolId)

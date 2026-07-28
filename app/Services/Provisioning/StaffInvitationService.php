@@ -100,6 +100,7 @@ class StaffInvitationService
 
             $invitations = [];
             $tokens = [];
+            $batchId = (string) Str::uuid();
 
             foreach ($roleKeys as $roleKey) {
                 $roleId = Role::where('key', $roleKey)->value('id');
@@ -107,8 +108,8 @@ class StaffInvitationService
                     throw new RuntimeException('Role is not seeded: '.$roleKey);
                 }
 
-                // New invites stay inactive until accept (except re-invite of already-active members adding a role).
-                $isActive = $user->status === 'active';
+                // Always inactive until this invitation batch is accepted — never
+                // grant school access merely because the account already exists.
                 $assignmentClassId = $roleKey === 'class_teacher' ? $classId : null;
 
                 RoleAssignment::updateOrCreate(
@@ -118,7 +119,7 @@ class StaffInvitationService
                         'school_id' => $school->id,
                     ],
                     [
-                        'is_active' => $isActive,
+                        'is_active' => false,
                         'assigned_by' => $inviter->id,
                         'class_id' => $assignmentClassId,
                     ]
@@ -141,6 +142,7 @@ class StaffInvitationService
                     'token_hash' => Hash::make($raw),
                     'expires_at' => now()->addDays(7),
                     'invited_by' => $inviter->id,
+                    'batch_id' => $batchId,
                 ]);
 
                 $this->audit->record('staff.invited', $invitation, [
@@ -148,14 +150,14 @@ class StaffInvitationService
                     'role' => $roleKey,
                     'email' => $email,
                     'phone' => $phone,
+                    'batch_id' => $batchId,
                 ]);
 
-                // One delivery covers all roles when inviting multi-role at once — send once per invite call after loop for first token only
                 $invitations[] = $invitation;
                 $tokens[] = $raw;
             }
 
-            // Deliver a single activation link (first invitation token); accept activates all pending roles for user.
+            // One activation link covers every role in this invite batch.
             if ($invitations !== []) {
                 $this->dispatcher->send($invitations[0], $tokens[0], $school);
             }

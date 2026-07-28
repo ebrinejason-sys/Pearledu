@@ -13,7 +13,7 @@ class TenantContext
     private bool $isPlatform = false;
 
     public function forSchool(int $id): void { $this->schoolId = $id; $this->isPlatform = false; $this->apply(); }
-    public function forPlatform(): void { $this->isPlatform = true; $this->apply(); }
+    public function forPlatform(): void { $this->schoolId = null; $this->isPlatform = true; $this->apply(); }
     public function forPlatformInSchool(int $id): void { $this->schoolId = $id; $this->isPlatform = false; $this->apply(); }
     public function clear(): void { $this->schoolId = null; $this->isPlatform = false; $this->apply(); }
 

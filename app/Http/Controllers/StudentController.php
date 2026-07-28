@@ -56,6 +56,7 @@ class StudentController extends Controller
 
     public function show(Student $student)
     {
+        $this->assertTenantOwned($student);
         $student->load(['schoolClass', 'guardianships.guardian']);
 
         return view('app.students.show', compact('student'));
@@ -63,6 +64,8 @@ class StudentController extends Controller
 
     public function edit(Student $student)
     {
+        $this->assertTenantOwned($student);
+
         return view('app.students.edit', [
             'student' => $student,
             'classes' => $this->classesForSchool(),
@@ -72,6 +75,7 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
+        $this->assertTenantOwned($student);
         $student->update($this->validated($request, $student));
 
         return redirect()
@@ -81,6 +85,7 @@ class StudentController extends Controller
 
     public function destroy(Student $student)
     {
+        $this->assertTenantOwned($student);
         $student->delete();
 
         return redirect()
@@ -90,6 +95,7 @@ class StudentController extends Controller
 
     public function storeGuardian(Request $request, Student $student)
     {
+        $this->assertTenantOwned($student);
         $mode = $request->input('mode', 'attach');
 
         if ($mode === 'invite') {
@@ -133,6 +139,7 @@ class StudentController extends Controller
 
     public function makePrimary(Student $student, Guardianship $guardianship)
     {
+        $this->assertTenantOwned($student);
         abort_unless($guardianship->student_id === $student->id, 404);
         $this->guardians->makePrimary($guardianship);
 
@@ -141,10 +148,17 @@ class StudentController extends Controller
 
     public function destroyGuardian(Student $student, Guardianship $guardianship)
     {
+        $this->assertTenantOwned($student);
         abort_unless($guardianship->student_id === $student->id, 404);
         $this->guardians->detach($guardianship);
 
         return back()->with('status', 'Guardian detached.');
+    }
+
+    private function assertTenantOwned(Student $student): void
+    {
+        $schoolId = $this->context->schoolId();
+        abort_unless($schoolId !== null && (int) $student->school_id === (int) $schoolId, 404);
     }
 
     private function validated(Request $request, ?Student $student = null): array
