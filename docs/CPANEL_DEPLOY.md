@@ -45,17 +45,27 @@ in `.cpanel.yml` on every deploy.
    composer install --no-dev --optimize-autoloader
    php artisan db:verify-security   # must print OK — hard gate
    php artisan migrate --force
-   php artisan db:seed --force      # optional, only if you want demo data
+   php artisan db:seed --force      # REQUIRED once: RoleSeeder + PlatformSeeder + PricingPlanSeeder
+                                    # Keep SEED_DEMO_TENANT=false in production
    ```
 
-6. **Sessions on the shared host** — set `SESSION_DOMAIN=.voxsign.co.ug` and
+   After first seed, set a strong `PLATFORM_ADMIN_PASSWORD` (already used by seeder)
+   and sign in at `https://pearledu.voxsign.co.ug/login`.
+
+6. **Sessions on the shared host** — set `SESSION_DOMAIN=.voxsign.co.ug`,
+   `SESSION_SECURE_COOKIE=true`, `APP_DEBUG=false`, `APP_ENV=production`, and
    `APP_URL=https://pearledu.voxsign.co.ug` in `.env`. School users and
    PearlEdu operators all use the same host:
    - Schools: `https://pearledu.voxsign.co.ug/login` → `/home` (tenant from membership)
    - PearlEdu admin/staff: `https://pearledu.voxsign.co.ug/admin`
    - Legacy `/platform` and `/console` redirect to `/admin`
 
-7. **Subdomains are optional** — wildcard `*.voxsign.co.ug` may still point at
+7. **Cron / queue** — with `QUEUE_CONNECTION=database`, add a cPanel cron:
+   `* * * * * cd /home/voxsignco/pearledu-app && php artisan schedule:run >> /dev/null 2>&1`
+   (invitations, mail, and scheduled `queue:work --stop-when-empty` depend on this).
+   Until cron is live, use `QUEUE_CONNECTION=sync`.
+
+8. **Subdomains are optional** — wildcard `*.voxsign.co.ug` may still point at
    the same Document Root for legacy tenant hosts, but onboarding no longer
    requires creating a subdomain first. Isolation is by `schools.id` (tenant id)
    via role assignments + RLS.

@@ -37,11 +37,9 @@ jobs:
 
       - name: Pint (style)
         run: vendor/bin/pint --test
-        continue-on-error: true
 
       - name: PHPStan / Larastan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
-        continue-on-error: true
 
       - name: Composer audit
         run: composer audit --no-interaction

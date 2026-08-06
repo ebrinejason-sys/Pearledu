@@ -68,8 +68,9 @@ class AnnouncementController extends Controller
             foreach ($phones as $phone) {
                 try {
                     $sms->send($school->id, $phone, $ann->title.': '.mb_substr($ann->body, 0, 120), 'announcement');
-                } catch (\Throwable) {
+                } catch (\Throwable $e) {
                     // Delivery failures must not undo the announcement.
+                    report($e);
                 }
             }
         }

@@ -49,7 +49,7 @@ class SupportTicketController extends Controller
         return view('platform.support.index', compact('tickets', 'agents', 'filter', 'counts'));
     }
 
-    public function show(HelpdeskTicket $ticket)
+    public function show(Request $request, HelpdeskTicket $ticket)
     {
         $this->context->forPlatform();
         $ticket->load(['user', 'school', 'assignee']);
@@ -58,8 +58,23 @@ class SupportTicketController extends Controller
             ->where('status', 'active')
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'email']);
+        $requesterCanBeImitated = $ticket->user
+            && $ticket->school
+            && ! $ticket->user->isPlatformOperator()
+            && in_array($ticket->user->status, ['active', 'invited'], true)
+            && $ticket->user->activeAssignments()
+                ->where('school_id', $ticket->school_id)
+                ->exists();
+        $canImitate = $request->user()->hasPlatformPermission('platform.users.impersonate');
+        $canElevate = $request->user()->hasPlatformPermission('platform.users.impersonate_write');
 
-        return view('platform.support.show', compact('ticket', 'agents'));
+        return view('platform.support.show', compact(
+            'ticket',
+            'agents',
+            'requesterCanBeImitated',
+            'canImitate',
+            'canElevate',
+        ));
     }
 
     public function update(Request $request, HelpdeskTicket $ticket)

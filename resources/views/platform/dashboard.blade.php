@@ -61,6 +61,21 @@
     </a>
   </div>
 
+  <div class="grid g2" style="margin-bottom:16px">
+    @if(auth()->user()->hasPlatformPermission('platform.system.view'))
+      <a class="card dash-action" href="{{ route('platform.system.index') }}">
+        <h3>System &amp; security</h3>
+        <p>Review staff access, 2FA gaps, sessions, queues, failed jobs, and sensitive platform activity.</p>
+      </a>
+    @endif
+    @if(auth()->user()->hasPlatformPermission('platform.audit.view'))
+      <a class="card dash-action" href="{{ route('platform.audit.index') }}">
+        <h3>Audit trail</h3>
+        <p>Trace platform and school changes by actor, tenant, date, action, and IP address.</p>
+      </a>
+    @endif
+  </div>
+
   <h3 style="margin:20px 0 12px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Growth &amp; delivery</h3>
   <div class="grid g2" style="margin-bottom:16px">
     <a class="card dash-action" href="{{ route('platform.invitations.index') }}">

@@ -7,6 +7,7 @@ use App\Models\Guardianship;
 use App\Models\Student;
 use App\Services\Sms\SmsSender;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AttendanceService
 {
@@ -35,7 +36,7 @@ class AttendanceService
                 ->count();
 
             if ($validCount !== $studentIds->count()) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'records' => 'Every student must belong to the selected class.',
                 ]);
             }
@@ -90,8 +91,9 @@ class AttendanceService
             }
             try {
                 $this->sms->send($schoolId, $phone, $body, 'attendance');
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
                 // SMS failures must not roll back attendance.
+                report($e);
             }
         }
     }

@@ -1,12 +1,23 @@
 <?php
+
 namespace Database\Seeders;
+
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\SmsSetting;
 use App\Models\User;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 use RuntimeException;
 
-class PlatformSeeder extends Seeder {
-    public function run(): void {
+class PlatformSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // Platform role assignments have school_id = null and are protected by
+        // RLS, so seeding must explicitly use the platform policy branch.
+        app(TenantContext::class)->forPlatform();
+
         // Use config() so this works after `php artisan config:cache` (env() is empty then).
         $email = (string) config('platform.admin_email', 'admin@voxsign.co.ug');
         $name = (string) config('platform.admin_name', 'Platform Admin');
@@ -41,9 +52,9 @@ class PlatformSeeder extends Seeder {
             $user->forceFill(['is_platform' => true])->save();
         }
 
-        $roleId = \App\Models\Role::where('key', 'platform_admin')->value('id');
+        $roleId = Role::where('key', 'platform_admin')->value('id');
         if ($roleId) {
-            \App\Models\RoleAssignment::firstOrCreate([
+            RoleAssignment::firstOrCreate([
                 'user_id' => $user->id,
                 'role_id' => $roleId,
                 'school_id' => null,

@@ -34,6 +34,15 @@ class BlockImpersonationWrites
         }
 
         if ($this->impersonation->allowsWrites()) {
+            $this->audit->record('user.impersonation.write_attempted', $request->user(), [
+                'operator_id' => $this->impersonation->operatorId(),
+                'school_id' => $this->impersonation->schoolId(),
+                'method' => $request->method(),
+                'path' => $request->path(),
+                'reason' => $this->impersonation->reason(),
+                'ticket_id' => session(ImpersonationService::SESSION_TICKET),
+            ], actor: $this->impersonation->operator());
+
             return $next($request);
         }
 

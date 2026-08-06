@@ -15,7 +15,7 @@ class ImpersonationController extends Controller
     {
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:8', 'max:500'],
-            'ticket_id' => ['nullable', 'string', 'max:64'],
+            'ticket_id' => ['nullable', 'integer', 'min:1'],
             'elevated_write' => ['sometimes', 'boolean'],
         ]);
 

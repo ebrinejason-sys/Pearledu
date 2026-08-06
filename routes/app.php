@@ -75,6 +75,8 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/students/{student}/guardians', [StudentController::class, 'storeGuardian'])->name('app.students.guardians.store');
         Route::put('/students/{student}/guardians/{guardianship}/primary', [StudentController::class, 'makePrimary'])->name('app.students.guardians.primary');
         Route::delete('/students/{student}/guardians/{guardianship}', [StudentController::class, 'destroyGuardian'])->name('app.students.guardians.destroy');
+        Route::post('/students/{student}/account', [StudentController::class, 'storeAccount'])->name('app.students.account.store');
+        Route::delete('/students/{student}/account', [StudentController::class, 'destroyAccount'])->name('app.students.account.destroy');
 
         Route::get('/enrollments', [EnrollmentController::class, 'index'])->name('app.enrollments.index');
         Route::post('/enrollments', [EnrollmentController::class, 'store'])->name('app.enrollments.store');
@@ -138,6 +140,8 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/fees/invoices', [FeeController::class, 'storeInvoice'])->name('app.fees.invoices.store');
         Route::post('/fees/invoices/bulk', [FeeController::class, 'storeBulkInvoices'])->name('app.fees.invoices.bulk');
         Route::post('/fees/payments', [FeeController::class, 'storePayment'])->name('app.fees.payments.store');
+        Route::post('/fees/payments/{payment}/confirm', [FeeController::class, 'confirmPayment'])->name('app.fees.payments.confirm');
+        Route::post('/fees/payments/{payment}/reject', [FeeController::class, 'rejectPayment'])->name('app.fees.payments.reject');
     });
 
     Route::middleware('permission:announcements.manage')->group(function () {

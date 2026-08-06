@@ -149,4 +149,30 @@ class OperatorController extends Controller
             'Password reset, but the email could not be sent. Ask the user to use password reset.'
         );
     }
+
+    public function forceLogout(Request $request, User $operator)
+    {
+        abort_unless($operator->is_platform, 404);
+
+        try {
+            $this->staff->forceLogout($operator, $request->user());
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['security' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'All active sessions were ended for '.$operator->full_name.'.');
+    }
+
+    public function resetTwoFactor(Request $request, User $operator)
+    {
+        abort_unless($operator->is_platform, 404);
+
+        try {
+            $this->staff->resetTwoFactor($operator, $request->user());
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['security' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'Two-factor authentication was reset for '.$operator->full_name.'. They must set it up again.');
+    }
 }

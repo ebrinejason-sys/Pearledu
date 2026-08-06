@@ -306,6 +306,10 @@ class NavigationBuilder
                         ? $this->item('PearlEdu staff', 'platform.operators.index', icon: 'staff', active: request()->routeIs('platform.operators.*')) : null,
                     $user->hasPlatformPermission('platform.invitations.manage')
                         ? $this->item('Invitations', 'platform.invitations.index', icon: 'invites', active: request()->routeIs('platform.invitations.*')) : null,
+                    $user->hasPlatformPermission('platform.audit.view')
+                        ? $this->item('Audit trail', 'platform.audit.index', icon: 'assessment', active: request()->routeIs('platform.audit.*')) : null,
+                    $user->hasPlatformPermission('platform.system.view')
+                        ? $this->item('System overview', 'platform.system.index', icon: 'platform', active: request()->routeIs('platform.system.*')) : null,
                 ])),
             ],
             [

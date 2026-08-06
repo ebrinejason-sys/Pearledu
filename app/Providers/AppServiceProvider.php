@@ -1,5 +1,9 @@
 <?php
+
 namespace App\Providers;
+
+use App\Services\Navigation\NavigationBuilder;
+use App\Services\Platform\ImpersonationService;
 use App\Services\Sms\Gateway\FakeGateway;
 use App\Services\Sms\Gateway\LogGateway;
 use App\Services\Sms\Gateway\SmsGateway;
@@ -7,13 +11,16 @@ use App\Services\Sms\Gateway\TwilioGateway;
 use App\Services\Sms\Gateway\UnconfiguredGateway;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Theme\ThemeManager;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
-class AppServiceProvider extends ServiceProvider {
-    public function register(): void {
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
         $this->app->singleton(TenantContext::class);
-        $this->app->singleton(\App\Services\Platform\ImpersonationService::class);
+        $this->app->singleton(ImpersonationService::class);
         $this->app->bind(SmsGateway::class, function () {
             $driver = (string) config('sms.driver', 'fake');
 
@@ -25,16 +32,24 @@ class AppServiceProvider extends ServiceProvider {
             };
         });
     }
-    private function twilioGateway(): SmsGateway {
+
+    private function twilioGateway(): SmsGateway
+    {
         $sid = (string) config('sms.twilio.sid');
         $token = (string) config('sms.twilio.token');
         if ($sid === '' || $token === '') {
             return new UnconfiguredGateway('twilio (missing TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN)');
         }
+
         return new TwilioGateway($sid, $token, config('sms.twilio.from'));
     }
 
-    public function boot(): void {
+    public function boot(): void
+    {
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         View::composer('*', function ($view) {
             $theme = app(ThemeManager::class);
             $view->with([
@@ -45,7 +60,7 @@ class AppServiceProvider extends ServiceProvider {
         });
         View::composer(['layouts.app', 'layouts.partials.topbar', 'layouts.partials.sidebar'], function ($view) {
             if (auth()->check()) {
-                $view->with('nav', app(\App\Services\Navigation\NavigationBuilder::class)->build(auth()->user()));
+                $view->with('nav', app(NavigationBuilder::class)->build(auth()->user()));
             }
         });
     }

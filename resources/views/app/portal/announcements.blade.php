@@ -6,9 +6,12 @@
       <p class="page-header__eyebrow">{{ $school?->name }}</p>
       <h1 class="page-header__title">Announcements</h1>
     </div>
-    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', ['student_id' => $student->id]) }}">Portal home</a></div>
+    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', array_filter(['student_id' => $student?->id])) }}">Portal home</a></div>
   </div>
   @include('app.portal._learner_switcher')
+  @if(!$student)
+    <div class="card"><p>No linked learner yet. Ask the school to link your account to a student.</p></div>
+  @else
   @forelse($announcements as $a)
     <div class="card">
       <h3 style="margin:0 0 6px">{{ $a->title }}</h3>
@@ -18,4 +21,5 @@
   @empty
     <div class="card"><p>No announcements for you yet.</p></div>
   @endforelse
+  @endif
 @endsection

@@ -12,11 +12,19 @@ class InvitePolicyTest extends TestCase
     {
         $this->assertContains('deputy_head_teacher', InvitePolicy::PLATFORM_INVITABLE);
         $this->assertContains('school_admin', InvitePolicy::PLATFORM_INVITABLE);
+        $this->assertContains('student', InvitePolicy::PLATFORM_INVITABLE);
+        $this->assertContains('parent', InvitePolicy::PLATFORM_INVITABLE);
     }
 
     public function test_class_teacher_may_only_invite_parents(): void
     {
         $this->assertSame(['parent'], InvitePolicy::MATRIX['class_teacher']);
+    }
+
+    public function test_school_admin_may_invite_students(): void
+    {
+        $this->assertContains('student', InvitePolicy::MATRIX['school_admin']);
+        $this->assertContains('student', InvitePolicy::MATRIX['head_teacher']);
     }
 
     public function test_bursar_cannot_invite_staff(): void

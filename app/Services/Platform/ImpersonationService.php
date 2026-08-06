@@ -2,6 +2,7 @@
 
 namespace App\Services\Platform;
 
+use App\Models\HelpdeskTicket;
 use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\User;
@@ -84,8 +85,23 @@ class ImpersonationService
         return $id ? User::find($id) : null;
     }
 
+    public function grantsFullSchoolAccess(User $target, int $schoolId): bool
+    {
+        if (! $this->isActive() || ! $this->allowsWrites()) {
+            return false;
+        }
+        if ((int) Auth::id() !== (int) $target->id || (int) $this->schoolId() !== $schoolId) {
+            return false;
+        }
+
+        // SESSION_WRITE is set only after the operator permission check in start().
+        // Do not re-query the operator's platform RoleAssignment here: school RLS
+        // intentionally hides platform-scoped (school_id = null) assignments.
+        return $this->operatorId() !== null;
+    }
+
     /**
-     * @param  array{reason: string, ticket_id?: string|null, elevated_write?: bool}  $options
+     * @param  array{reason: string, ticket_id?: int|string|null, elevated_write?: bool}  $options
      */
     public function start(User $operator, User $target, School $school, array $options): void
     {
@@ -130,9 +146,24 @@ class ImpersonationService
         if ($ticket === '') {
             $ticket = null;
         }
+        if ($elevated && $ticket === null) {
+            throw ValidationException::withMessages([
+                'ticket_id' => 'A support ticket is required for elevated write imitation.',
+            ]);
+        }
+        if ($ticket !== null) {
+            $supportTicket = HelpdeskTicket::query()->find($ticket);
+            if (! $supportTicket || (int) $supportTicket->school_id !== (int) $school->id) {
+                throw ValidationException::withMessages([
+                    'ticket_id' => 'Select a support ticket belonging to this school.',
+                ]);
+            }
+        }
 
         // Audit BEFORE Auth::login so actor_id stays the operator.
-        $this->context->forPlatform();
+        // Attach the event to the affected school so it remains visible under
+        // that school's RLS scope as well as from the platform audit console.
+        $this->context->forSchool($school->id);
         $this->audit->record('user.impersonation.started', $target, [
             'operator_id' => $operator->id,
             'target_id' => $target->id,

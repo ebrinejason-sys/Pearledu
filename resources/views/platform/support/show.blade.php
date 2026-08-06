@@ -16,6 +16,38 @@
   </div>
 
   @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
+  @error('reason')<div class="err">{{ $message }}</div>@enderror
+  @error('ticket_id')<div class="err">{{ $message }}</div>@enderror
+  @error('user')<div class="err">{{ $message }}</div>@enderror
+
+  @if($canImitate && $requesterCanBeImitated)
+    <div class="card" style="margin-bottom:16px;border-color:var(--warning)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h3 style="margin:0 0 6px">Investigate in the requester’s account</h3>
+          <p style="margin:0;color:var(--muted);font-size:14px;max-width:72ch">
+            Read-only mode is safest for diagnosis. Elevated write mode gives a Platform Admin full school permissions
+            for this ticket, lasts at most 60 minutes, and records every write attempt.
+          </p>
+        </div>
+        <form method="post" action="{{ route('platform.schools.imitate', [$ticket->school, $ticket->user]) }}" style="display:flex;gap:8px;flex-wrap:wrap">
+          @csrf
+          <input type="hidden" name="reason" value="Support ticket #{{ $ticket->id }}: {{ \Illuminate\Support\Str::limit($ticket->subject, 400) }}">
+          <input type="hidden" name="ticket_id" value="{{ $ticket->id }}">
+          <button type="submit" class="btn ghost">Open read-only</button>
+          @if($canElevate)
+            <button
+              type="submit"
+              class="btn"
+              name="elevated_write"
+              value="1"
+              onclick="return confirm('Start elevated write access for ticket #{{ $ticket->id }}? Every change will be attributed to you and audited.')"
+            >Open with full write access</button>
+          @endif
+        </form>
+      </div>
+    </div>
+  @endif
 
   <div class="grid g2">
     <div class="card">

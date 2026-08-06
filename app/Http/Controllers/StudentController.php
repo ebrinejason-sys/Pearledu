@@ -6,6 +6,7 @@ use App\Models\Guardianship;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Services\Students\GuardianLinkService;
+use App\Services\Students\StudentAccountLinkService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,7 @@ class StudentController extends Controller
     public function __construct(
         private TenantContext $context,
         private GuardianLinkService $guardians,
+        private StudentAccountLinkService $studentAccounts,
     ) {}
 
     public function index(Request $request)
@@ -57,7 +59,7 @@ class StudentController extends Controller
     public function show(Student $student)
     {
         $this->assertTenantOwned($student);
-        $student->load(['schoolClass', 'guardianships.guardian']);
+        $student->load(['schoolClass', 'guardianships.guardian', 'user']);
 
         return view('app.students.show', compact('student'));
     }
@@ -153,6 +155,50 @@ class StudentController extends Controller
         $this->guardians->detach($guardianship);
 
         return back()->with('status', 'Guardian detached.');
+    }
+
+    public function storeAccount(Request $request, Student $student)
+    {
+        $this->assertTenantOwned($student);
+        $mode = $request->input('mode', 'attach');
+
+        if ($mode === 'invite') {
+            $data = $request->validate([
+                'full_name' => 'required|string|max:120',
+                'email' => 'required|email|max:190',
+                'phone' => 'nullable|string|max:30',
+            ]);
+
+            $this->studentAccounts->inviteNew(
+                $student,
+                $data['full_name'],
+                $data['email'],
+                $data['phone'] ?? null,
+                $request->user()?->id,
+            );
+
+            return back()->with('status', 'Student login invited and linked.');
+        }
+
+        $data = $request->validate([
+            'email' => 'required|email|max:190',
+        ]);
+
+        $this->studentAccounts->attachExisting(
+            $student,
+            $data['email'],
+            $request->user()?->id,
+        );
+
+        return back()->with('status', 'Student login linked.');
+    }
+
+    public function destroyAccount(Student $student)
+    {
+        $this->assertTenantOwned($student);
+        $this->studentAccounts->unlink($student);
+
+        return back()->with('status', 'Student login unlinked from this learner.');
     }
 
     private function assertTenantOwned(Student $student): void

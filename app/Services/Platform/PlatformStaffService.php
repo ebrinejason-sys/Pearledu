@@ -90,6 +90,12 @@ class PlatformStaffService
             return false; // never manage yourself via staff tools
         }
 
+        // Platform Admins are peers operationally, but one admin must be able to
+        // recover, disable, or remove another compromised admin account.
+        if ($this->resolvedRoleKey($actor) === 'platform_admin') {
+            return true;
+        }
+
         return $this->rank($this->resolvedRoleKey($actor)) > $this->rank($this->resolvedRoleKey($target));
     }
 
@@ -197,20 +203,29 @@ class PlatformStaffService
 
         $previousRole = $this->resolvedRoleKey($target);
         $previousStatus = $target->status;
+        $removesActiveAdmin = $previousRole === 'platform_admin'
+            && $previousStatus === 'active'
+            && ($data['role_key'] !== 'platform_admin' || $data['status'] !== 'active');
+        if ($removesActiveAdmin) {
+            $this->assertAnotherActiveAdmin($target);
+        }
 
-        $target->update([
-            'full_name' => $data['full_name'],
-            'email' => $email,
-            'phone' => $data['phone'] ?? null,
-            'status' => $data['status'],
-        ]);
+        DB::transaction(function () use ($target, $data, $email, $actor) {
+            $this->context->forPlatform();
+            $target->update([
+                'full_name' => $data['full_name'],
+                'email' => $email,
+                'phone' => $data['phone'] ?? null,
+                'status' => $data['status'],
+            ]);
 
-        $this->assignRoleQuietly($target, $data['role_key'], (int) $actor->id);
-        $this->audit->record('platform.staff.updated', $target, [
-            'role_key' => $data['role_key'],
-            'status' => $data['status'],
-            'by' => $actor->id,
-        ]);
+            $this->assignRoleQuietly($target, $data['role_key'], (int) $actor->id);
+            $this->audit->record('platform.staff.updated', $target, [
+                'role_key' => $data['role_key'],
+                'status' => $data['status'],
+                'by' => $actor->id,
+            ]);
+        });
 
         $roleChanged = $previousRole !== $data['role_key'];
         $disabled = $previousStatus !== 'disabled' && $data['status'] === 'disabled';
@@ -219,6 +234,7 @@ class PlatformStaffService
             $this->sessions->invalidate($fresh);
             if ($disabled) {
                 $this->passwordResets->revokeTokens($fresh);
+                $this->revokePendingTwoFactorCodes($fresh);
             }
         }
     }
@@ -227,22 +243,13 @@ class PlatformStaffService
     {
         $this->assertCanManage($actor, $target);
 
-        if ($this->resolvedRoleKey($target) === 'platform_admin') {
-            $otherAdmins = User::query()
-                ->where('is_platform', true)
-                ->where('id', '!=', $target->id)
-                ->where('status', 'active')
-                ->get()
-                ->filter(fn (User $u) => $this->resolvedRoleKey($u) === 'platform_admin')
-                ->count();
-
-            if ($otherAdmins < 1) {
-                throw new RuntimeException('Cannot delete the last Platform Admin.');
-            }
+        if ($this->resolvedRoleKey($target) === 'platform_admin' && $target->status === 'active') {
+            $this->assertAnotherActiveAdmin($target);
         }
 
         DB::transaction(function () use ($target, $actor) {
             $this->context->forPlatform();
+            $originalEmail = $target->email;
 
             RoleAssignment::query()
                 ->where('user_id', $target->id)
@@ -264,7 +271,7 @@ class PlatformStaffService
 
             $this->audit->record('platform.staff.deleted', null, [
                 'user_id' => $target->id,
-                'email' => $target->email,
+                'email' => $originalEmail,
                 'by' => $actor->id,
             ]);
         });
@@ -281,6 +288,7 @@ class PlatformStaffService
         $target->forceFill(['password' => $temp])->save();
 
         $this->sessions->invalidate($target);
+        $this->revokePendingTwoFactorCodes($target);
 
         $this->audit->record('platform.staff.password_reset', $target, ['by' => $actor->id]);
 
@@ -292,6 +300,30 @@ class PlatformStaffService
             'emailed' => $mail['ok'],
             'mail_error' => $mail['error'],
         ];
+    }
+
+    public function forceLogout(User $target, User $actor): void
+    {
+        $this->assertCanManage($actor, $target);
+        $this->context->forPlatform();
+        $this->sessions->invalidate($target);
+        $this->audit->record('platform.staff.force_logout', $target, ['by' => $actor->id]);
+    }
+
+    public function resetTwoFactor(User $target, User $actor): void
+    {
+        $this->assertCanManage($actor, $target);
+        $this->context->forPlatform();
+
+        $target->forceFill([
+            'two_factor_secret' => null,
+            'two_factor_confirmed_at' => null,
+            'two_factor_recovery_codes' => null,
+        ])->save();
+
+        $this->sessions->invalidate($target);
+        $this->revokePendingTwoFactorCodes($target);
+        $this->audit->record('platform.staff.two_factor_reset', $target, ['by' => $actor->id]);
     }
 
     public function platformRoleKey(User $user): ?string
@@ -319,6 +351,26 @@ class PlatformStaffService
             'is_active' => true,
             'assigned_by' => $assignedBy,
         ]);
+    }
+
+    private function assertAnotherActiveAdmin(User $target): void
+    {
+        $otherAdmins = User::query()
+            ->where('is_platform', true)
+            ->where('id', '!=', $target->id)
+            ->where('status', 'active')
+            ->get()
+            ->filter(fn (User $user) => $this->resolvedRoleKey($user) === 'platform_admin')
+            ->count();
+
+        if ($otherAdmins < 1) {
+            throw new RuntimeException('Cannot disable, demote, or delete the last active Platform Admin.');
+        }
+    }
+
+    private function revokePendingTwoFactorCodes(User $user): void
+    {
+        DB::table('two_factor_email_codes')->where('user_id', $user->id)->delete();
     }
 
     /** @return array{ok: bool, error: ?string} */

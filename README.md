@@ -61,10 +61,12 @@ php artisan test --filter=TenantIsolationTest
 
 Core MIS surfaces are implemented end-to-end (migrations, RLS, services, school routes/UI), including:
 
-- **Parent/student portal** — results, fees (manual pay with MoMo/bank ref), timetable, announcements
-- **Fees** — structures, single + bulk class invoicing, staff + parent payment recording
+- **Parent/student portal** — results, fees (parent pay submissions pending staff verification; staff can confirm/reject), timetable, announcements
+- **Fees** — structures, single + bulk class invoicing, staff payment recording + pending parent payment review
 - **CBT** — publish + student take + auto-score; **LMS** — student submit + staff grade
-- **Public admissions** — `/apply` on school tenant hosts
+- **Public admissions** — `/apply` on school tenant hosts (Turnstile + honeypot + tenant-scoped class validation)
 - **Ops polish** — library return, hostel vacate/capacity, HR leave approve/reject, helpdesk close
 
 Still planned for deeper polish: live MoMo gateway callbacks, UGSMS provider driver, parent phone OTP (deferred), live video classes, and broader school-user 2FA. Run migrations + `db:verify-security` + tests on real Postgres before production trust.
+
+**Production accounts:** platform operator (seeded), school staff (invite), parents (guardian invite/attach on student record), students (student login invite/attach on student record — sets `students.user_id`). Parent portal payments stay pending until bursar/finance confirms.

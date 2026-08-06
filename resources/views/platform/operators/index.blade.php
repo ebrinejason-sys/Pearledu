@@ -7,7 +7,7 @@
       <h2 class="page-header__title">PearlEdu staff</h2>
       <p style="margin:8px 0 0;color:var(--muted);font-size:14px;max-width:72ch">
         You are <strong>{{ $roles[$actorRole] ?? ($actorRole ?: 'unknown') }}</strong>.
-        You can edit, reset, or remove anyone <em>below</em> your role.
+        Platform Admins can recover or manage any other staff account; other roles can manage only staff below them.
         Staff accounts use <code>/admin</code> — not school tenant logins.
       </p>
     </div>
@@ -29,6 +29,7 @@
   @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
   @error('delete')<div class="err">{{ $message }}</div>@enderror
   @error('password')<div class="err">{{ $message }}</div>@enderror
+  @error('security')<div class="err">{{ $message }}</div>@enderror
 
   <div class="card">
     <table>
@@ -64,6 +65,16 @@
                 <button type="submit" class="btn-link-action">Reset password</button>
               </form>
               ·
+              <form method="post" action="{{ route('platform.operators.force-logout', $op) }}" style="display:inline" onsubmit="return confirm('End every active session for this staff account?')">
+                @csrf
+                <button type="submit" class="btn-link-action">Force logout</button>
+              </form>
+              @if($op->hasTwoFactorEnabled())
+                <form method="post" action="{{ route('platform.operators.reset-two-factor', $op) }}" style="display:inline" onsubmit="return confirm('Reset two-factor authentication? This staff member must enroll again.')">
+                  @csrf
+                  <button type="submit" class="btn-link-action btn-link-danger">Reset 2FA</button>
+                </form>
+              @endif
               <form method="post" action="{{ route('platform.operators.destroy', $op) }}" style="display:inline" class="js-confirm-delete" data-label="{{ e($op->full_name) }}">
                 @csrf
                 @method('DELETE')

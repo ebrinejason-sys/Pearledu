@@ -9,6 +9,7 @@
   </div>
   <div class="card" style="max-width:560px">
     <form method="post" action="{{ route('public.admissions.store') }}">@csrf
+      <div style="position:absolute;left:-9999px" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div>
       <label>Applicant full name</label><input name="applicant_name" value="{{ old('applicant_name') }}" required>
       <label>Guardian name</label><input name="guardian_name" value="{{ old('guardian_name') }}">
       <label>Guardian phone</label><input name="guardian_phone" value="{{ old('guardian_phone') }}">
@@ -19,6 +20,7 @@
         @foreach($classes as $c)<option value="{{ $c->id }}" @selected(old('requested_class_id') == $c->id)>{{ $c->name }}</option>@endforeach
       </select>
       <label>Notes</label><textarea name="notes" rows="3">{{ old('notes') }}</textarea>
+      @include('partials.turnstile', ['errorClass' => 'err'])
       @foreach($errors->all() as $e)<div class="err">{{ $e }}</div>@endforeach
       <p style="margin-top:14px"><button class="btn" type="submit">Submit application</button></p>
     </form>

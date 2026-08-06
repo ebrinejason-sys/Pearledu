@@ -6,10 +6,13 @@
       <p class="page-header__eyebrow">{{ $school?->name }}</p>
       <h1 class="page-header__title">Fees</h1>
     </div>
-    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', ['student_id' => $student->id]) }}">Portal home</a></div>
+    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', array_filter(['student_id' => $student?->id])) }}">Portal home</a></div>
   </div>
   @include('app.portal._learner_switcher')
 
+  @if(!$student)
+    <div class="card"><p>No linked learner yet. Ask the school to link your account to a student.</p></div>
+  @else
   @foreach($invoices as $invoice)
     <div class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:start">
@@ -28,7 +31,7 @@
 
       @if($invoice->payments->isNotEmpty())
         <table style="margin-top:14px">
-          <thead><tr><th>Date</th><th>Method</th><th>Ref</th><th>Amount</th></tr></thead>
+          <thead><tr><th>Date</th><th>Method</th><th>Ref</th><th>Amount</th><th>Status</th></tr></thead>
           <tbody>
             @foreach($invoice->payments as $p)
               <tr>
@@ -36,19 +39,25 @@
                 <td>{{ str_replace('_', ' ', $p->method) }}</td>
                 <td>{{ $p->provider_ref ?? '—' }}</td>
                 <td>UGX {{ number_format((float)$p->amount, 0) }}</td>
+                <td><span class="pill">{{ $p->status }}</span></td>
               </tr>
             @endforeach
           </tbody>
         </table>
       @endif
 
-      @if($canPay && $invoice->balance > 0 && !in_array($invoice->status, ['paid','void'], true))
+      @php
+        $pendingTotal = $invoice->payments->where('status', 'pending')->sum(fn ($p) => (float) $p->amount);
+        $payable = max(0, round((float) $invoice->balance - $pendingTotal, 2));
+      @endphp
+
+      @if($canPay && $payable > 0 && !in_array($invoice->status, ['paid','void'], true))
         <form method="post" action="{{ route('app.portal.fees.pay', $invoice) }}" style="margin-top:14px" class="grid g2">
           @csrf
           <input type="hidden" name="student_id" value="{{ $student->id }}">
           <div>
             <label>Amount (UGX)</label>
-            <input name="amount" type="number" step="0.01" min="0.01" max="{{ $invoice->balance }}" value="{{ $invoice->balance }}" required>
+            <input name="amount" type="number" step="0.01" min="0.01" max="{{ $payable }}" value="{{ $payable }}" required>
           </div>
           <div>
             <label>Method</label>
@@ -63,14 +72,17 @@
             <label>Transaction reference</label>
             <input name="provider_ref" placeholder="Optional MoMo / bank ref">
           </div>
-          <div style="display:flex;align-items:end"><button class="btn accent" type="submit">Record payment</button></div>
+          <div style="display:flex;align-items:end"><button class="btn accent" type="submit">Submit for verification</button></div>
         </form>
-        <p style="color:var(--muted);font-size:12px;margin:8px 0 0">Live MoMo auto-confirm comes later. For now, enter the amount and reference used when you paid.</p>
+        <p style="color:var(--muted);font-size:12px;margin:8px 0 0">Submissions stay pending until the school verifies the payment. Balance is not reduced until then.</p>
+      @elseif($canPay && $pendingTotal > 0 && $payable <= 0)
+        <p style="color:var(--muted);font-size:13px;margin:12px 0 0">Awaiting school verification of your submitted payment(s).</p>
       @endif
     </div>
   @endforeach
 
   @if($invoices->isEmpty())
     <div class="card"><p>No fee invoices for this learner.</p></div>
+  @endif
   @endif
 @endsection

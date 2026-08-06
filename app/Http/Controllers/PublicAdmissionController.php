@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\AdmissionApplication;
 use App\Models\SchoolClass;
+use App\Services\Security\TurnstileVerifier;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /** Public apply form on a school tenant host (no login). */
 class PublicAdmissionController extends Controller
@@ -21,7 +23,7 @@ class PublicAdmissionController extends Controller
         ]);
     }
 
-    public function store(Request $request, TenantContext $ctx)
+    public function store(Request $request, TenantContext $ctx, TurnstileVerifier $turnstile)
     {
         $school = $ctx->school();
         abort_unless($school, 404);
@@ -31,9 +33,17 @@ class PublicAdmissionController extends Controller
             'guardian_name' => 'nullable|string|max:120',
             'guardian_email' => 'nullable|email',
             'guardian_phone' => 'nullable|string|max:30',
-            'requested_class_id' => 'nullable|integer',
+            'requested_class_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('school_classes', 'id')->where(fn ($q) => $q->where('school_id', $school->id)),
+            ],
             'notes' => 'nullable|string',
+            'website' => 'nullable|max:0', // honeypot: must be empty
         ]);
+        $turnstile->assertValid($request);
+
+        unset($data['website']);
 
         AdmissionApplication::create($data + [
             'school_id' => $school->id,

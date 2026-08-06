@@ -171,8 +171,13 @@
               <form method="post" action="{{ route('platform.schools.imitate', [$school, $user]) }}" style="display:grid;gap:6px;min-width:220px">
                 @csrf
                 <input type="text" name="reason" required minlength="8" maxlength="500" placeholder="Support reason (required)" style="font-size:12px;padding:6px 8px">
-                <input type="text" name="ticket_id" maxlength="64" placeholder="Ticket # (optional)" style="font-size:12px;padding:6px 8px">
-                <button type="submit" class="btn ghost">Imitate (read-only)</button>
+                <input type="number" min="1" name="ticket_id" placeholder="Ticket # (required for write)" style="font-size:12px;padding:6px 8px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <button type="submit" class="btn ghost">Read-only</button>
+                  @if(auth()->user()->hasPlatformPermission('platform.users.impersonate_write'))
+                    <button type="submit" class="btn" name="elevated_write" value="1" onclick="return confirm('Use full school write access? A matching support ticket is required and every write will be audited.')">Full write access</button>
+                  @endif
+                </div>
               </form>
             @else
               <span style="color:var(--muted);font-size:13px">—</span>

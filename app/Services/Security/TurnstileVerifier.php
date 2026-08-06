@@ -7,7 +7,8 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Optional Cloudflare Turnstile. When TURNSTILE_SECRET is empty, verification is skipped
- * (honeypot + throttle still apply). Set both site + secret keys to enforce it.
+ * (honeypot + throttle still apply). Set both site + secret keys to enforce it on
+ * contact, onboard, and public /apply.
  */
 class TurnstileVerifier
 {

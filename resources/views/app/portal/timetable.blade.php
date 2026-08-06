@@ -15,9 +15,12 @@
       <p class="page-header__eyebrow">{{ $school?->name }}</p>
       <h1 class="page-header__title">Timetable</h1>
     </div>
-    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', ['student_id' => $student->id]) }}">Portal home</a></div>
+    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', array_filter(['student_id' => $student?->id])) }}">Portal home</a></div>
   </div>
   @include('app.portal._learner_switcher')
+  @if(!$student)
+    <div class="card"><p>No linked learner yet. Ask the school to link your account to a student.</p></div>
+  @else
   <div class="card">
     @if($slots->isEmpty() || $periods->isEmpty())
       <p style="color:var(--muted);margin:0">No timetable slots for this class yet.</p>
@@ -57,4 +60,5 @@
       </div>
     @endif
   </div>
+  @endif
 @endsection

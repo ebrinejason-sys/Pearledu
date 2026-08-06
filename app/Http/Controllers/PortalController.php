@@ -35,30 +35,21 @@ class PortalController extends Controller
 
     public function results(Request $request)
     {
-        $user = $request->user();
-        $student = $this->portal->resolveStudent($user, $request->integer('student_id') ?: null);
-
-        return view('app.portal.results', [
-            'school' => $this->context->school(),
-            'learners' => $this->portal->learnersFor($user),
-            'student' => $student,
-            'marks' => $this->portal->results($student),
-        ]);
+        return $this->portalPage($request, 'app.portal.results', function ($user, $student) {
+            return ['marks' => $student ? $this->portal->results($student) : collect()];
+        });
     }
 
     public function fees(Request $request)
     {
-        $user = $request->user();
-        $student = $this->portal->resolveStudent($user, $request->integer('student_id') ?: null);
-        $canPay = in_array('fees.pay', $user->permissionsForSchool($this->context->schoolId()), true);
+        return $this->portalPage($request, 'app.portal.fees', function ($user, $student) {
+            $canPay = in_array('fees.pay', $user->permissionsForSchool($this->context->schoolId()), true);
 
-        return view('app.portal.fees', [
-            'school' => $this->context->school(),
-            'learners' => $this->portal->learnersFor($user),
-            'student' => $student,
-            'invoices' => $this->portal->invoices($student),
-            'canPay' => $canPay,
-        ]);
+            return [
+                'invoices' => $student ? $this->portal->invoices($student) : collect(),
+                'canPay' => $canPay,
+            ];
+        });
     }
 
     public function pay(Request $request, FeeInvoice $invoice, FeePaymentService $payments)
@@ -79,34 +70,43 @@ class PortalController extends Controller
             'method' => $data['method'],
             'provider_ref' => $data['provider_ref'] ?? null,
             'recorded_by' => $user->id,
-        ]);
+        ], confirmImmediately: false);
 
-        return back()->with('status', 'Payment recorded. Thank you.');
+        return back()->with('status', 'Payment submitted for school verification. Balance updates after confirmation.');
     }
 
     public function timetable(Request $request)
     {
-        $user = $request->user();
-        $student = $this->portal->resolveStudent($user, $request->integer('student_id') ?: null);
-
-        return view('app.portal.timetable', [
-            'school' => $this->context->school(),
-            'learners' => $this->portal->learnersFor($user),
-            'student' => $student,
-            'slots' => $this->portal->timetable($student),
-        ]);
+        return $this->portalPage($request, 'app.portal.timetable', function ($user, $student) {
+            return ['slots' => $student ? $this->portal->timetable($student) : collect()];
+        });
     }
 
     public function announcements(Request $request)
     {
-        $user = $request->user();
-        $student = $this->portal->resolveStudent($user, $request->integer('student_id') ?: null);
+        return $this->portalPage($request, 'app.portal.announcements', function ($user, $student) {
+            return ['announcements' => $student ? $this->portal->announcements($student, $user) : collect()];
+        });
+    }
 
-        return view('app.portal.announcements', [
+    /**
+     * Soft-empty portal pages when the account has no linked learner yet.
+     *
+     * @param  callable(mixed, mixed): array<string, mixed>  $payload
+     */
+    private function portalPage(Request $request, string $view, callable $payload)
+    {
+        $user = $request->user();
+        $learners = $this->portal->learnersFor($user);
+        $student = null;
+        if ($learners->isNotEmpty()) {
+            $student = $this->portal->resolveStudent($user, $request->integer('student_id') ?: null);
+        }
+
+        return view($view, array_merge([
             'school' => $this->context->school(),
-            'learners' => $this->portal->learnersFor($user),
+            'learners' => $learners,
             'student' => $student,
-            'announcements' => $this->portal->announcements($student, $user),
-        ]);
+        ], $payload($user, $student)));
     }
 }

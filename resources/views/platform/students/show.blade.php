@@ -30,6 +30,44 @@
     </div>
 
     <div class="card">
+      <h3 style="margin-top:0">Student login</h3>
+      @if($student->user)
+        <p>
+          <strong>{{ $student->user->full_name }}</strong>
+          <span class="pill">{{ $student->user->status }}</span>
+        </p>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 12px">{{ $student->user->email }}@if($student->user->phone) · {{ $student->user->phone }}@endif</p>
+        <form method="post" action="{{ route('platform.students.account.destroy', $student) }}" onsubmit="return confirm('Unlink this login from the learner? The user account is kept.')">
+          @csrf
+          @method('DELETE')
+          <button class="btn ghost" type="submit">Unlink login</button>
+        </form>
+      @else
+        <p style="color:var(--muted)">No portal login linked. Invite or attach one so the learner can use results, LMS, and CBT.</p>
+        <h4>Attach existing member</h4>
+        <form method="post" action="{{ route('platform.students.account.store', $student) }}" style="margin-bottom:18px">
+          @csrf
+          <input type="hidden" name="mode" value="attach">
+          <label>Email</label><input name="email" type="email" required>
+          @error('email')<div class="err">{{ $message }}</div>@enderror
+          <p style="margin-top:8px"><button class="btn" type="submit">Attach login</button></p>
+        </form>
+        <h4>Invite new student login</h4>
+        <form method="post" action="{{ route('platform.students.account.store', $student) }}">
+          @csrf
+          <input type="hidden" name="mode" value="invite">
+          <div class="grid g2">
+            <div><label>Full name</label><input name="full_name" required value="{{ $student->full_name }}"></div>
+            <div><label>Email</label><input name="email" type="email" required></div>
+            <div><label>Phone</label><input name="phone"></div>
+          </div>
+          <p style="margin-top:8px"><button class="btn" type="submit">Invite &amp; link</button></p>
+        </form>
+      @endif
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
       <h3 style="margin-top:0">Guardians</h3>
       @if($student->guardianships->isEmpty())
         <p style="color:var(--muted)">No guardians linked yet.</p>
@@ -95,6 +133,5 @@
         @error('full_name')<div class="err">{{ $message }}</div>@enderror
         <button class="btn" type="submit">Invite &amp; link</button>
       </form>
-    </div>
   </div>
 @endsection

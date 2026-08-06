@@ -22,7 +22,7 @@ We follow the DPPA's data-protection principles: collect lawfully and fairly; co
 | Learner records | name, class, EMIS number | school's statutory record-keeping | normal |
 | **Sensitive identifiers** | **NIN, LIN** | EMIS/Ministry compliance | **high** |
 | Guardianship | parent ↔ student links | parent communication | normal |
-| Finance | fee charges, payments (integer money) | school operations | normal |
+| Finance | fee charges, payments (decimal UGX) | school operations | normal |
 | Communications | SMS records, credit ledger | deliver notifications | normal |
 | Security telemetry | audit log (actor id, action, IP, time) | security / legal obligation | normal |
 
@@ -92,7 +92,7 @@ A living list of ways tenant isolation or privacy could fail, with status.
 |---|---|---|---|
 | 1 | Superuser/`BYPASSRLS` role silently skips RLS | non-privileged role + `db:verify-security` gate | **enforced** |
 | 2 | Raw SQL bypasses Eloquent scope | RLS constrains raw queries too | **enforced** |
-| 3 | Queued job runs with no/other tenant context | `TenantAware` jobs re-pin context at run time | **enforced** |
+| 3 | Queued job runs with no/other tenant context | Jobs use `TenantAware` + `RestoreTenantContext` middleware to re-pin GUCs | **enforced (contract ready; no tenant jobs yet)** |
 | 4 | Connection reuse leaks session GUCs between requests | GUCs re-set every request (fail-closed) by `ResolveTenant` | **enforced** |
 | 5 | IDOR — guessing another tenant's record id | scope + RLS both return null cross-tenant | **enforced** |
 | 6 | Forged `is_platform` via header/token | set server-side post-auth only | **enforced** |
@@ -104,12 +104,12 @@ A living list of ways tenant isolation or privacy could fail, with status.
 | 12 | SMS toll fraud / credit tampering | append-only credit ledger, locked balance writes, platform-only top-up | **enforced** |
 | 13 | Email enumeration on login/reset | uniform error messages | **enforced** |
 | 14 | Mass-assignment of protected fields | explicit `$fillable`; `is_platform` never user-fillable on tenant paths | **enforced** |
-| 15 | Cross-subdomain session/cookie leakage | `SESSION_DOMAIN=.voxsign.co.ug` with HTTPS-only cookies | **enforced** |
+| 15 | Cross-subdomain session/cookie leakage | `SESSION_DOMAIN=.voxsign.co.ug` + `SESSION_SECURE_COOKIE=true` in production; TrustProxies + HTTPS force | **enforced (env + code)** |
 | 16 | Custom-domain spoofing to impersonate a tenant | domains require `verified_at` before routing | **enforced** |
 | 17 | Backups exfiltrated | encrypted sensitive fields stay encrypted in dumps; encrypt backups at rest | **partial (encrypt backups — planned)** |
 | 18 | Third-party processor over-sharing | send minimum payload; DPA with each processor | **planned** |
 | 19 | Data export endpoints leaking across tenants | all exports run under tenant scope + RLS | **enforced for current endpoints** |
-| 20 | 2FA not enforced for high-privilege accounts | TOTP fields exist; enforcement for platform/admin | **planned** |
+| 20 | 2FA not enforced for high-privilege accounts | Platform operators require email OTP; authenticator TOTP optional; school-user 2FA | **partial (platform email OTP enforced; school-user 2FA planned)** |
 | 21 | Insider/operator over-access | every `school.entered` is audited + scoped | **enforced** |
 | 22 | CSRF on state-changing actions | Laravel CSRF tokens on all forms | **enforced** |
 

@@ -103,6 +103,35 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0">Pending parent payments</h3>
+    <table>
+      <thead><tr><th>When</th><th>Invoice</th><th>Student</th><th>Method</th><th>Ref</th><th>Amount</th><th></th></tr></thead>
+      <tbody>
+        @forelse($pendingPayments as $p)
+          <tr>
+            <td>{{ $p->created_at?->format('d M Y H:i') }}</td>
+            <td>{{ $p->invoice?->reference ?? '—' }}</td>
+            <td>{{ $p->invoice?->student?->full_name ?? '—' }}</td>
+            <td>{{ str_replace('_', ' ', $p->method) }}</td>
+            <td>{{ $p->provider_ref ?? '—' }}</td>
+            <td>{{ number_format((float) $p->amount) }}</td>
+            <td style="white-space:nowrap">
+              <form method="post" action="{{ route('app.fees.payments.confirm', $p) }}" style="display:inline">@csrf
+                <button class="btn accent" type="submit" style="padding:4px 10px;font-size:12px">Confirm</button>
+              </form>
+              <form method="post" action="{{ route('app.fees.payments.reject', $p) }}" style="display:inline">@csrf
+                <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Reject</button>
+              </form>
+            </td>
+          </tr>
+        @empty
+          <tr><td colspan="7">No pending parent payments.</td></tr>
+        @endforelse
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0">Recent invoices</h3>
     <table>
       <thead><tr><th>Ref</th><th>Student</th><th>Amount</th><th>Balance</th><th>Status</th></tr></thead>

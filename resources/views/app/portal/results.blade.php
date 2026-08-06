@@ -6,9 +6,12 @@
       <p class="page-header__eyebrow">{{ $school?->name }}</p>
       <h1 class="page-header__title">Results</h1>
     </div>
-    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', ['student_id' => $student->id]) }}">Portal home</a></div>
+    <div class="page-header__actions"><a class="btn ghost" href="{{ route('app.portal.home', array_filter(['student_id' => $student?->id])) }}">Portal home</a></div>
   </div>
   @include('app.portal._learner_switcher')
+  @if(!$student)
+    <div class="card"><p>No linked learner yet. Ask the school to link your account to a student.</p></div>
+  @else
   <div class="card">
     <table>
       <thead><tr><th>Period</th><th>Subject</th><th>Score</th><th>Grade</th><th>Comment</th></tr></thead>
@@ -27,4 +30,5 @@
       </tbody>
     </table>
   </div>
+  @endif
 @endsection

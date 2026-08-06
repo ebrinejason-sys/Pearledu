@@ -6,12 +6,15 @@ use App\Http\Middleware\RequireRecentPlatformAuth;
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\User;
+use App\Services\Tenancy\TenantContext;
 use Database\Seeders\RoleSeeder;
 
 trait ActsAsPlatformOperator
 {
     protected function ensurePlatformAdminRole(User $user, string $roleKey = 'platform_admin'): void
     {
+        app(TenantContext::class)->forPlatform();
+
         if (! Role::where('key', $roleKey)->exists()) {
             $this->seed(RoleSeeder::class);
         }

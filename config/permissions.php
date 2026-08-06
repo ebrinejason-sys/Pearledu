@@ -16,8 +16,8 @@ return [
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'director' => [
-            'school.view', 'finance.view', 'assessment.view', 'reports.view', 'sms.send',
-            'staff.manage', 'learners.manage', 'attendance.view', 'promotions.approve',
+            'school.view', 'finance.view', 'finance.manage', 'assessment.view', 'reports.view', 'sms.send',
+            'staff.manage', 'learners.manage', 'attendance.view', 'attendance.mark', 'promotions.approve',
             'announcements.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],

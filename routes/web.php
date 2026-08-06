@@ -22,5 +22,5 @@ Route::post('/onboard', [PearlEduLandingController::class, 'onboard'])
 
 Route::get('/apply', [PublicAdmissionController::class, 'create'])->name('public.admissions.create');
 Route::post('/apply', [PublicAdmissionController::class, 'store'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:3,1')
     ->name('public.admissions.store');
