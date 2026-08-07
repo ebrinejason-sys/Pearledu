@@ -14,12 +14,14 @@
       </p>
     </div>
   </div>
+  @unless(!empty($scrollAvatar))
   <div class="vx-hero-avatar-wrap">
     <div class="vx-hero-avatar-stage" aria-hidden="true"></div>
     <div id="vx-hero-avatar-3d" class="vx-hero-avatar-3d" role="img" aria-label="Interactive 3D figure. Drag horizontally to rotate."></div>
     <p class="vx-hero-avatar-hint" aria-hidden="true">Drag to rotate</p>
   </div>
   <p class="vx-sr-only">Decorative full-length 3D figure of a person; drag horizontally to rotate it.</p>
+  @endunless
 </section>
 <style>
   .vx-hero{min-height:clamp(520px,60vw,720px)}
@@ -60,8 +62,9 @@
     .vx-hero-avatar-hint{display:none}
   }
 </style>
+@unless(!empty($scrollAvatar))
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js?v=4';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=5';
   if (!window.matchMedia('(max-width:860px)').matches) {
     mountAvatar({
       container: 'vx-hero-avatar-3d',
@@ -74,4 +77,4 @@
     });
   }
 </script>
-
+@endunless

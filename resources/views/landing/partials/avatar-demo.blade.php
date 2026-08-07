@@ -1,4 +1,4 @@
-<section class="vx-section vx-band">
+<section id="preview" class="vx-section vx-band">
   <div class="vx-wrap vx-reveal">
     <div class="vx-eyebrow">See it in motion</div>
     <h2 class="vx-h2" style="color:#fff">The idea, previewed.</h2>
@@ -6,13 +6,21 @@
       <span style="display:inline-block;background:var(--sign);color:var(--ink);font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px">Concept preview</span>
     </p>
     <p class="vx-lead vx-sec-head">
-      An early look at how hand-shape signing could look — illustrative, not a verified Ugandan Sign Language rendering.
+      @if(!empty($scrollAvatar))
+        Follow the guide figure as you scroll — an early look at how signing could feel on screen (illustrative, not verified Ugandan Sign Language).
+      @else
+        An early look at how hand-shape signing could look — illustrative, not a verified Ugandan Sign Language rendering.
+      @endif
     </p>
+    @unless(!empty($scrollAvatar))
     <div class="vx-avatar-demo">
       <div id="vx-avatar-3d" class="vx-avatar-3d"></div>
       <p id="vx-avatar-caption" class="vx-avatar-caption" style="font-family:var(--display);font-weight:700;font-size:20px;margin-top:14px">How are you?</p>
       <p class="vx-sr-only">3D figure demonstrating basic hand-shape signing for the two phrases named in the caption above and below it.</p>
     </div>
+    @else
+    <p class="vx-preview-guide-note">The floating guide is the same avatar — scroll to bring it here, then drag to turn it.</p>
+    @endunless
   </div>
 </section>
 <style>
@@ -29,10 +37,12 @@
   .vx-avatar-fallback .vx-hand-2{opacity:0}
   .vx-avatar-fallback.vx-phrase-2 .vx-hand-1{opacity:0}
   .vx-avatar-fallback.vx-phrase-2 .vx-hand-2{opacity:1}
+  .vx-preview-guide-note{margin:28px 0 8px;color:#C5DDE8;font-size:15px;max-width:520px}
   @media(prefers-reduced-motion:reduce){.vx-avatar-fallback .vx-hand{transition:none}}
 </style>
+@unless(!empty($scrollAvatar))
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js?v=4';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=5';
   mountAvatar({
     container: 'vx-avatar-3d',
     captionId: 'vx-avatar-caption',
@@ -70,3 +80,4 @@
     }
   });
 </script>
+@endunless

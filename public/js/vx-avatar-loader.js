@@ -22,7 +22,7 @@ export function mountAvatar(config) {
   var width = config.width || 280;
   var height = config.height || 320;
   var captionIndex = 0;
-  var interactHost = container.closest('.vx-hero-avatar-wrap') || container;
+  var interactHost = container.closest('.vx-scroll-avatar-stage') || container.closest('.vx-hero-avatar-wrap') || container;
 
   function showLoading(percent) {
     var pct = typeof percent === 'number' ? Math.max(0, Math.min(100, Math.round(percent))) : null;
