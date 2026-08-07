@@ -24,7 +24,7 @@
 <style>
   :root{
     --ink:#053F5C; --ink-2:#034A6B; --hero:#0A6A8F; --paper:#FFFFFF; --surface:#FFFFFF;
-    --fg:#2A3542; --logo:#FFFFFF;
+    --fg:#2A3542; --logo:#053F5C;
     --voice:#F27F0C; --gold:#F7AD19; --sign:#429EBD; --cyan:#9FE7F5;
     --muted:#5B6B78; --line:#E6EEF2;
     --input-bg:#fff; --status-bg:#E8F7FA;
@@ -47,52 +47,114 @@
   .pe-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   :focus-visible{outline:3px solid var(--sign);outline-offset:3px;border-radius:4px}
 
-  /* —— EMIS-style top bar —— */
-  .pe-topbar{position:absolute;top:0;left:0;right:0;z-index:60;color:#fff}
-  .pe-nav{display:flex;align-items:center;gap:16px;max-width:1140px;margin:0 auto;padding:14px 24px;min-height:76px}
-  .pe-brand{display:flex;align-items:center;gap:12px;color:#fff;min-width:0;flex-shrink:0}
-  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,34px);width:auto}
-  .pe-brand-text{display:flex;flex-direction:column;line-height:1.15;min-width:0}
-  .pe-brand-name{font-family:var(--display);font-weight:700;font-size:18px;color:#fff;letter-spacing:.04em;text-transform:uppercase}
-  .pe-brand-tagline{font-size:11px;color:rgba(255,255,255,.8);letter-spacing:.06em;text-transform:uppercase}
-  .pe-nav-end{margin-left:auto;display:flex;align-items:center;gap:18px;min-width:0}
-  .pe-nav-links{display:flex;align-items:center;gap:22px;font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.92)}
-  .pe-nav-links a:hover{color:#fff}
-  .pe-nav-cta{display:flex;gap:10px;align-items:center;flex-shrink:0}
-  .pe-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;
-                border:1.5px solid rgba(255,255,255,.4);background:transparent;color:#fff;cursor:pointer}
-  .pe-theme-btn:hover{background:rgba(255,255,255,.1);border-color:#fff}
+  /* Floating rounded nav — tone adapts per section */
+  .pe-nav-shell{
+    position:fixed;top:12px;left:0;right:0;z-index:60;padding:0 16px;pointer-events:none;
+  }
+  .pe-nav{
+    pointer-events:auto;position:relative;display:flex;align-items:center;gap:12px;
+    max-width:1140px;margin:0 auto;padding:10px 14px 10px 12px;
+    background:var(--nav-glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--nav-line);border-radius:999px;
+    box-shadow:0 12px 34px -22px rgba(11,16,32,.45);
+    color:var(--nav-fg);
+    transition:background .28s ease,border-color .28s ease,box-shadow .28s ease,color .28s ease;
+  }
+  .pe-nav-shell[data-nav-tone="dark"]{
+    --nav-glass:rgba(5,63,92,.42);
+    --nav-line:rgba(255,255,255,.28);
+    --nav-fg:#FFFFFF;
+    --nav-muted:rgba(255,255,255,.86);
+    --nav-logo:#FFFFFF;
+    --nav-btn-bg:transparent;
+    --nav-btn-fg:#FFFFFF;
+    --nav-btn-border:rgba(255,255,255,.75);
+    --nav-menu-bg:rgba(5,63,92,.96);
+  }
+  .pe-nav-shell[data-nav-tone="light"]{
+    --nav-glass:rgba(255,255,255,.92);
+    --nav-line:var(--line);
+    --nav-fg:var(--ink);
+    --nav-muted:var(--muted);
+    --nav-logo:var(--ink);
+    --nav-btn-bg:var(--ink);
+    --nav-btn-fg:#FFFFFF;
+    --nav-btn-border:var(--ink);
+    --nav-menu-bg:var(--surface);
+  }
+  html[data-theme="dark"] .pe-nav-shell[data-nav-tone="light"]{
+    --nav-glass:rgba(20,27,42,.94);
+    --nav-fg:var(--fg);
+    --nav-logo:#FFFFFF;
+    --nav-btn-bg:var(--sign);
+    --nav-btn-border:var(--sign);
+  }
+  .pe-brand{display:flex;align-items:center;gap:10px;padding-left:4px;color:var(--nav-logo);min-width:0;flex-shrink:0;
+            transition:color .28s ease}
+  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,32px);width:auto;color:inherit;fill:currentColor}
+  .pe-brand-text{display:flex;flex-direction:column;line-height:1.12;min-width:0}
+  .pe-brand-name{font-family:var(--display);font-weight:700;font-size:16px;color:var(--nav-fg);letter-spacing:-.01em;
+                 transition:color .28s ease}
+  .pe-brand-tagline{font-size:10.5px;color:var(--nav-muted);transition:color .28s ease}
+  .pe-nav-end{margin-left:auto;display:flex;align-items:center;gap:14px;min-width:0}
+  .pe-nav-links{display:flex;align-items:center;gap:18px;font-family:var(--display);font-size:14.5px;font-weight:500;
+                color:var(--nav-muted);transition:color .28s ease}
+  .pe-nav-links a:hover{color:var(--nav-fg)}
+  .pe-nav-cta{display:flex;gap:8px;align-items:center;flex-shrink:0}
+  .pe-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;
+                border:1.5px solid var(--nav-line);background:transparent;color:var(--nav-fg);cursor:pointer;flex-shrink:0;
+                transition:border-color .28s ease,color .28s ease,background .28s ease}
+  .pe-theme-btn:hover{border-color:var(--nav-fg)}
   .pe-theme-btn .pe-theme-icon-dark{display:none}
   html[data-theme="dark"] .pe-theme-btn .pe-theme-icon-light{display:none}
   html[data-theme="dark"] .pe-theme-btn .pe-theme-icon-dark{display:block}
-  .pe-nav-toggle{display:none;background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:8px;padding:8px 12px;font-size:18px;cursor:pointer;color:#fff}
+  .pe-nav-toggle{display:none;background:none;border:1.5px solid var(--nav-line);border-radius:999px;padding:8px 12px;
+                 font-size:18px;cursor:pointer;color:var(--nav-fg);transition:border-color .28s ease,color .28s ease}
   .pe-nav-mobile-cta{display:none}
 
-  .pe-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:700;font-size:13px;
-          letter-spacing:.07em;text-transform:uppercase;background:transparent;color:#fff;border:1.5px solid #fff;border-radius:6px;padding:11px 18px;cursor:pointer}
-  .pe-btn:hover{background:rgba(255,255,255,.12)}
-  .pe-btn-grad{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:700;font-size:13px;
-          letter-spacing:.07em;text-transform:uppercase;background:var(--voice);color:#fff;border:1.5px solid var(--voice);border-radius:6px;padding:11px 18px;cursor:pointer}
-  .pe-btn-grad:hover{filter:brightness(1.06)}
-  .pe-btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:700;font-size:13px;
-                letter-spacing:.07em;text-transform:uppercase;background:transparent;color:#fff;border:1.5px solid #fff;border-radius:6px;padding:12px 22px;cursor:pointer}
+  .pe-nav .pe-btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:600;font-size:14px;
+    background:var(--nav-btn-bg);color:var(--nav-btn-fg);border:1.5px solid var(--nav-btn-border);border-radius:999px;
+    padding:10px 18px;cursor:pointer;
+    transition:background .28s ease,color .28s ease,border-color .28s ease,transform .15s ease,box-shadow .2s ease;
+  }
+  .pe-nav .pe-btn:hover{transform:translateY(-1px)}
+  .pe-btn-grad{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:600;font-size:14px;
+    background:var(--voice);color:#fff;border:1.5px solid var(--voice);border-radius:999px;padding:10px 18px;cursor:pointer;
+    box-shadow:0 10px 26px -12px rgba(242,127,12,.45);transition:transform .15s ease,filter .2s ease;
+  }
+  .pe-btn-grad:hover{transform:translateY(-1px);filter:brightness(1.05)}
+  .pe-btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:600;font-size:14px;
+    background:var(--ink);color:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:11px 20px;cursor:pointer;
+  }
+  .pe-btn-ghost{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:600;font-size:14px;
+    background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.8);border-radius:999px;padding:12px 22px;cursor:pointer;
+  }
   .pe-btn-ghost:hover{background:rgba(255,255,255,.12)}
-  .pe-btn-solid{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:700;font-size:13px;
-                letter-spacing:.07em;text-transform:uppercase;background:#fff;color:var(--ink);border:1.5px solid #fff;border-radius:6px;padding:12px 22px;cursor:pointer}
+  .pe-btn-solid{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:600;font-size:14px;
+    background:#fff;color:var(--ink);border:1.5px solid #fff;border-radius:999px;padding:12px 22px;cursor:pointer;
+  }
   .pe-btn-solid:hover{background:var(--cyan);border-color:var(--cyan)}
+  @media(prefers-reduced-motion:reduce){
+    .pe-nav,.pe-brand,.pe-brand-name,.pe-brand-tagline,.pe-nav-links,.pe-theme-btn,.pe-nav .pe-btn{transition:none}
+    .pe-nav .pe-btn:hover,.pe-btn-grad:hover{transform:none}
+  }
 
   @media(max-width:900px){
     .pe-brand-tagline{display:none}
     .pe-nav-end{margin-left:0;flex:1;justify-content:flex-end}
-    .pe-nav-links{display:none;position:absolute;top:76px;left:0;right:0;flex-direction:column;align-items:stretch;
-                  background:rgba(3,74,107,.98);padding:16px 20px;gap:14px;margin:0;border-bottom:1px solid rgba(255,255,255,.12)}
+    .pe-nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;flex-direction:column;align-items:stretch;
+                  background:var(--nav-menu-bg);border:1px solid var(--nav-line);border-radius:20px;
+                  box-shadow:0 18px 40px -20px rgba(11,16,32,.4);padding:16px 20px;gap:14px;margin:0;color:var(--nav-fg)}
     .pe-nav-links.open{display:flex}
     .pe-nav-cta .pe-btn,.pe-nav-cta .pe-btn-grad{display:none}
     .pe-nav-toggle{display:block}
     .pe-nav-mobile-cta{display:flex;margin-top:8px;gap:10px}
-    .pe-nav-mobile-cta a{width:100%;min-height:46px}
-    .pe-nav{position:relative}
-    .pe-topbar{position:absolute}
+    .pe-nav-mobile-cta a{width:100%;min-height:46px;justify-content:center}
   }
 
   .pe-cta-row{display:flex;gap:12px;flex-wrap:wrap}
@@ -101,7 +163,7 @@
     .pe-cta-row > a{width:100%;min-height:48px}
   }
 
-  /* —— EMIS-style bounce-dot page preloader —— */
+  /* EMIS bounce-dot page preloader */
   #pe-loader-wrap{
     position:fixed;inset:0;z-index:2000;display:grid;place-items:center;
     background:var(--sign);transition:opacity .45s ease,visibility .45s ease;
@@ -129,7 +191,7 @@
     #pe-loader-wrap{transition:none}
   }
 
-  /* —— EMIS two-column hero + concave wave —— */
+  /* EMIS two-column hero + concave wave */
   .pe-hero{
     position:relative;min-height:100vh;min-height:100dvh;
     background:
@@ -167,9 +229,8 @@
     position:absolute;left:0;right:0;bottom:-1px;width:100%;height:56px;z-index:3;display:block;
     color:var(--paper);pointer-events:none;
   }
-  html[data-theme="dark"] .pe-hero-wave{color:var(--paper)}
 
-  /* —— Content sections —— */
+  /* Content sections */
   .pe-section{padding:clamp(48px,7vw,88px) 0}
   .pe-modules{background:var(--paper)}
   .pe-modules-head{margin-bottom:clamp(28px,4vw,40px);text-align:center}
@@ -210,7 +271,7 @@
 
   .pe-pricing-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:stretch}
   .pe-price-card{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);
-                 border-radius:12px;padding:28px 26px}
+                 border-radius:16px;padding:28px 26px}
   .pe-price-card--hot{background:var(--ink);color:#fff;border-color:transparent}
   .pe-price-card--hot .pe-price-amount,.pe-price-card--hot h3{color:#fff}
   .pe-price-card--hot .pe-price-tagline,.pe-price-card--hot .pe-price-period{color:rgba(255,255,255,.75)}
@@ -225,14 +286,15 @@
   .pe-price-card ul{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
   .pe-price-card li{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--muted)}
   .pe-price-card li svg{width:16px;height:16px;flex-shrink:0;margin-top:3px;color:var(--sign)}
-  .pe-price-card .pe-btn-grad,.pe-price-card .pe-btn{width:100%;border-radius:6px}
-  .pe-price-card:not(.pe-price-card--hot) .pe-btn{color:var(--ink);border-color:var(--ink)}
+  .pe-price-card .pe-btn-grad,.pe-price-card .pe-btn{width:100%}
+  .pe-price-card:not(.pe-price-card--hot) .pe-btn{background:transparent;color:var(--ink);border-color:var(--ink)}
   .pe-price-card:not(.pe-price-card--hot) .pe-btn:hover{background:rgba(5,63,92,.06)}
+  .pe-price-card--hot .pe-btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
 
   .pe-faq-wrap{max-width:820px;margin:0 auto}
   .pe-faq-wrap > h2{text-align:center}
   .pe-faq-wrap > p{text-align:center;margin:0 auto 28px}
-  .pe-faq details{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+  .pe-faq details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
   .pe-faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;
                   padding:16px 18px;font-family:var(--display);font-weight:600;font-size:15.5px}
   .pe-faq summary::-webkit-details-marker{display:none}
@@ -242,13 +304,14 @@
   .pe-faq-mail{text-align:center;margin-top:22px;color:var(--muted);font-size:15px}
   .pe-faq-mail a{color:var(--sign);font-weight:600;text-decoration:underline}
 
-  .pe-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--fg);font:inherit;font-size:16px;margin-bottom:12px}
+  .pe-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:999px;background:var(--input-bg);color:var(--fg);font:inherit;font-size:16px;margin-bottom:12px}
+  textarea.pe-input{border-radius:16px;resize:vertical}
   .pe-input:focus{border-color:var(--sign);outline:none}
   .pe-label{display:block;font-family:var(--display);font-weight:600;font-size:13px;color:var(--fg);margin:0 0 6px}
   .pe-err{color:#D0392B;font-size:13px;margin:-8px 0 12px}
-  .pe-status{background:var(--status-bg);border:1px solid var(--sign);color:var(--fg);padding:12px 16px;margin:16px 0;border-radius:10px;font-size:15px}
+  .pe-status{background:var(--status-bg);border:1px solid var(--sign);color:var(--fg);padding:12px 16px;margin:16px 0;border-radius:12px;font-size:15px}
   .pe-form-card{position:relative;max-width:520px;margin:0 auto;background:var(--surface);color:var(--fg);border:1px solid var(--line);
-                border-radius:12px;padding:clamp(20px,4vw,28px);text-align:left;box-shadow:0 12px 32px -24px rgba(11,16,32,.35)}
+                border-radius:20px;padding:clamp(20px,4vw,28px);text-align:left;box-shadow:0 12px 32px -24px rgba(11,16,32,.35)}
   .pe-form-card .pe-btn-grad{min-height:48px;width:100%}
   .pe-onboard{background:var(--ink);color:#fff}
   .pe-onboard .pe-h2,.pe-onboard .pe-sec-label{color:#fff}
@@ -258,7 +321,7 @@
   .pe-footer{background:#032A3D;color:#c7cdda;padding:48px 24px 24px}
   .pe-footer-inner{max-width:1140px;margin:0 auto}
   .pe-footer-brand{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-  .pe-footer-brand b{font-family:var(--display);font-size:16px;color:#fff;text-transform:uppercase;letter-spacing:.04em}
+  .pe-footer-brand b{font-family:var(--display);font-size:16px;color:#fff;letter-spacing:-.01em}
   .pe-footer-tagline{color:#aeb4c2;font-size:14px;margin:0 0 28px}
   .pe-footer-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.12)}
   .pe-footer-col h4{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#fff;margin:0 0 12px}
@@ -285,10 +348,10 @@
     </div>
   </div>
 
-  <header class="pe-topbar">
+  <div class="pe-nav-shell" id="pe-nav-shell" data-nav-tone="dark">
     <div class="pe-nav">
       <a href="{{ url('/') }}" class="pe-brand" aria-label="PearlEdu home">
-        @include('layouts.partials.logo', ['height' => 34, 'color' => '#FFFFFF', 'label' => 'PearlEdu'])
+        @include('layouts.partials.logo', ['height' => 32, 'color' => 'currentColor', 'label' => 'PearlEdu'])
         <span class="pe-brand-text">
           <span class="pe-brand-name">PearlEdu</span>
           <span class="pe-brand-tagline">By VoxSign Technologies</span>
@@ -316,15 +379,15 @@
         </div>
       </div>
     </div>
-  </header>
+  </div>
 
   @if(session('status'))
-    <div class="pe-wrap" style="position:relative;z-index:70"><div class="pe-status">{{ session('status') }}</div></div>
+    <div class="pe-wrap" style="position:relative;z-index:40;padding-top:84px"><div class="pe-status">{{ session('status') }}</div></div>
   @endif
 
   @yield('content')
 
-  <footer class="pe-footer">
+  <footer class="pe-footer" data-nav="dark">
     <div class="pe-footer-inner">
       <div class="pe-footer-brand">
         @include('layouts.partials.logo', ['height' => 24, 'color' => '#9FE7F5', 'label' => 'PearlEdu'])
@@ -379,7 +442,6 @@
     }, {threshold: .12});
     document.querySelectorAll('.pe-reveal').forEach(function(el){ io.observe(el); });
 
-    // EMIS-style count-up when stats enter view
     var statsIo = new IntersectionObserver(function(entries){
       entries.forEach(function(entry){
         if (!entry.isIntersecting) return;
@@ -421,6 +483,43 @@
         });
       });
     }
+
+    // Adaptive nav tone based on the section under the floating pill
+    (function(){
+      var shell = document.getElementById('pe-nav-shell');
+      if (!shell) return;
+      var sections = [];
+      function collect(){
+        sections = Array.prototype.slice.call(document.querySelectorAll('[data-nav]'));
+      }
+      function currentTone(){
+        var probeY = 44;
+        var tone = 'dark';
+        for (var i = 0; i < sections.length; i++) {
+          var r = sections[i].getBoundingClientRect();
+          if (r.top <= probeY && r.bottom > probeY) {
+            tone = sections[i].getAttribute('data-nav') || 'dark';
+            break;
+          }
+        }
+        return tone === 'light' ? 'light' : 'dark';
+      }
+      function apply(){
+        var next = currentTone();
+        if (shell.getAttribute('data-nav-tone') !== next) {
+          shell.setAttribute('data-nav-tone', next);
+        }
+      }
+      collect();
+      apply();
+      var ticking = false;
+      window.addEventListener('scroll', function(){
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(function(){ apply(); ticking = false; });
+      }, {passive:true});
+      window.addEventListener('resize', function(){ collect(); apply(); });
+    })();
 
     var themeKey = 'voxsign-color-scheme';
     var themeBtn = document.getElementById('pe-theme-toggle');

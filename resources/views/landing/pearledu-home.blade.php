@@ -2,7 +2,7 @@
 
 @section('content')
   {{-- EMIS-style two-column hero --}}
-  <section class="pe-hero">
+  <section class="pe-hero" data-nav="dark">
     <div class="pe-wrap pe-hero-grid">
       <div class="pe-hero-copy">
         <h1>School Management Platform (PearlEdu)</h1>
@@ -14,7 +14,7 @@
           <a href="{{ url('/login') }}" class="pe-btn-solid">Staff login</a>
           <a href="#onboard" class="pe-btn-ghost">Onboard school</a>
         </p>
-        <p class="pe-hero-note">New to PearlEdu? <a href="#onboard">Request onboarding</a> and we’ll set up your school.</p>
+        <p class="pe-hero-note">New to PearlEdu? <a href="#onboard">Request onboarding</a> and we'll set up your school.</p>
       </div>
       <div class="pe-hero-visual" aria-hidden="true">
         <svg class="pe-hero-art" viewBox="0 0 480 520" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -54,8 +54,8 @@
     </svg>
   </section>
 
-  {{-- Modules (EMIS feature-row style) --}}
-  <section id="modules" class="pe-section pe-modules">
+  {{-- Modules --}}
+  <section id="modules" class="pe-section pe-modules" data-nav="light">
     <div class="pe-wrap">
       <div class="pe-modules-head pe-reveal">
         <h2>What PearlEdu manages for your school</h2>
@@ -125,7 +125,7 @@
           </div>
           <div>
             <h3>Secure school data</h3>
-            <p>Each school’s records are isolated at the database level. Your learners, fees, and staff stay visible only to authorised users.</p>
+            <p>Each school's records are isolated at the database level. Your learners, fees, and staff stay visible only to authorised users.</p>
           </div>
         </article>
       </div>
@@ -133,7 +133,7 @@
   </section>
 
   {{-- Stats band with count-up --}}
-  <section class="pe-stats" aria-label="PearlEdu at a glance">
+  <section class="pe-stats" data-nav="dark" aria-label="PearlEdu at a glance">
     <div class="pe-wrap">
       <div class="pe-stats-grid pe-reveal">
         <div class="pe-stat"><b data-count="1">0</b><span>Unified school system</span></div>
@@ -145,7 +145,7 @@
   </section>
 
   {{-- Pricing --}}
-  <section id="pricing" class="pe-section pe-tint">
+  <section id="pricing" class="pe-section pe-tint" data-nav="light">
     <div class="pe-wrap">
       <div class="pe-reveal" style="text-align:center">
         <p class="pe-sec-label">Pricing</p>
@@ -180,7 +180,7 @@
         @empty
           <p class="pe-lead" style="text-align:center;margin:0 auto">
             Pricing is being finalised — <a href="#onboard" style="color:var(--sign);text-decoration:underline">talk to us</a>
-            and we’ll put together a plan for your school.
+            and we'll put together a plan for your school.
           </p>
         @endforelse
       </div>
@@ -188,7 +188,7 @@
   </section>
 
   {{-- FAQ --}}
-  <section id="faq" class="pe-section">
+  <section id="faq" class="pe-section" data-nav="light">
     <div class="pe-wrap">
       <div class="pe-faq-wrap pe-reveal">
         <h2 class="pe-h2">Have questions? Look here.</h2>
@@ -212,12 +212,12 @@
           <details>
             <summary>Does PearlEdu work with mobile money?</summary>
             <p>Yes — fee payments can be received and reconciled through mobile money alongside bank and
-               cash payments, so the bursar sees one complete picture of every student’s balance.</p>
+               cash payments, so the bursar sees one complete picture of every student's balance.</p>
           </details>
           <details>
-            <summary>Is our school’s data secure and private?</summary>
-            <p>Each school’s data is strictly isolated at the database level — your records are visible
-               only to your school’s authorised staff. Access is controlled by roles you assign.</p>
+            <summary>Is our school's data secure and private?</summary>
+            <p>Each school's data is strictly isolated at the database level — your records are visible
+               only to your school's authorised staff. Access is controlled by roles you assign.</p>
           </details>
         </div>
         <p class="pe-faq-mail">Still have a question? Mail us at <a href="mailto:info@voxsign.co.ug">info@voxsign.co.ug</a></p>
@@ -226,12 +226,12 @@
   </section>
 
   {{-- Onboard --}}
-  <section id="onboard" class="pe-section pe-onboard">
+  <section id="onboard" class="pe-section pe-onboard" data-nav="dark">
     <div class="pe-wrap pe-reveal" style="text-align:center">
       <p class="pe-sec-label">Get started</p>
       <h2 class="pe-h2">Onboard your school</h2>
       <p class="pe-lead" style="margin:0 auto 28px">
-        Tell us about your school and we’ll be in touch to get you set up on PearlEdu.
+        Tell us about your school and we'll be in touch to get you set up on PearlEdu.
       </p>
       <form method="post" action="{{ route('pearledu.onboard') }}" class="pe-form-card">
         @csrf
