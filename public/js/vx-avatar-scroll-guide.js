@@ -1,7 +1,9 @@
 /**
  * Scroll-guided floating avatar (desktop experiment).
  * Disable by setting window.__VX_SCROLL_AVATAR__ = false before load,
- * or remove the scroll-avatar partial include from home.blade.php.
+ * or set $vxScrollAvatar = false in home.blade.php.
+ *
+ * Publishes window.__VX_AVATAR_MOTION__ so the skeletal controller can react.
  */
 export function startAvatarScrollGuide(options) {
   var stage = typeof options.stage === 'string' ? document.querySelector(options.stage) : options.stage;
@@ -11,17 +13,18 @@ export function startAvatarScrollGuide(options) {
   var desktop = window.matchMedia('(min-width: 861px)').matches;
   if (!desktop || reduceMotion || window.__VX_SCROLL_AVATAR__ === false) {
     stage.classList.add('is-static-hero');
+    window.__VX_AVATAR_MOTION__ = { pose: 'hero', nextPose: 'hero', blend: 1, velocity: 0, side: 1, energy: 0.3 };
     return function () {};
   }
 
   var stops = (options.stops || [
-    { sel: '.vx-hero', left: 78, top: 6, scale: 1, opacity: 1 },
-    { sel: '#pearledu', left: 8, top: 16, scale: 0.82, opacity: 1 },
-    { sel: '#accessibility', left: 80, top: 14, scale: 0.82, opacity: 1 },
-    { sel: '#preview', left: 50, top: 12, scale: 0.9, opacity: 1 },
-    { sel: '#how-it-works', left: 76, top: 18, scale: 0.74, opacity: 1 },
-    { sel: '#team', left: 12, top: 20, scale: 0.7, opacity: 1 },
-    { sel: '#contact', left: 82, top: 26, scale: 0.55, opacity: 0.88 }
+    { sel: '.vx-hero', left: 78, top: 6, scale: 1, opacity: 1, pose: 'hero' },
+    { sel: '#pearledu', left: 8, top: 16, scale: 0.82, opacity: 1, pose: 'pearledu' },
+    { sel: '#accessibility', left: 80, top: 14, scale: 0.82, opacity: 1, pose: 'accessibility' },
+    { sel: '#preview', left: 50, top: 12, scale: 0.9, opacity: 1, pose: 'preview' },
+    { sel: '#how-it-works', left: 76, top: 18, scale: 0.74, opacity: 1, pose: 'how-it-works' },
+    { sel: '#team', left: 12, top: 20, scale: 0.7, opacity: 1, pose: 'team' },
+    { sel: '#contact', left: 82, top: 26, scale: 0.55, opacity: 0.88, pose: 'contact' }
   ]).map(function (stop) {
     return Object.assign({}, stop, { el: document.querySelector(stop.sel) });
   }).filter(function (stop) { return !!stop.el; });
@@ -37,7 +40,10 @@ export function startAvatarScrollGuide(options) {
     scale: stops[0].scale,
     opacity: stops[0].opacity,
     dragging: false,
-    raf: 0
+    raf: 0,
+    lastScrollY: window.scrollY || 0,
+    lastScrollT: performance.now(),
+    velocity: 0
   };
 
   stage.classList.add('is-guided');
@@ -76,6 +82,19 @@ export function startAvatarScrollGuide(options) {
     return { from: points[0].stop, to: points[0].stop, t: 0 };
   }
 
+  function publishMotion(m) {
+    var side = (m.to.left - m.from.left) >= 0 ? 1 : -1;
+    if (Math.abs(m.to.left - m.from.left) < 1) side = state.left > 50 ? 1 : -1;
+    window.__VX_AVATAR_MOTION__ = {
+      pose: m.from.pose || 'idle',
+      nextPose: m.to.pose || m.from.pose || 'idle',
+      blend: m.t,
+      velocity: state.velocity,
+      side: side,
+      energy: 0.35 + Math.min(0.9, Math.abs(state.velocity) / 1200)
+    };
+  }
+
   function applyTarget(immediate) {
     if (state.dragging) return;
     var m = measure();
@@ -92,7 +111,6 @@ export function startAvatarScrollGuide(options) {
       state.scale = target.scale;
       state.opacity = target.opacity;
     } else {
-      // Soft follow so scroll feels alive without snapping
       state.left = lerp(state.left, target.left, 0.14);
       state.top = lerp(state.top, target.top, 0.14);
       state.scale = lerp(state.scale, target.scale, 0.14);
@@ -103,15 +121,21 @@ export function startAvatarScrollGuide(options) {
     stage.style.top = state.top + '%';
     stage.style.opacity = String(state.opacity);
     stage.style.transform = 'translate(-50%, 0) scale(' + state.scale + ')';
+    publishMotion(m);
   }
 
-  function tick() {
+  function tick(now) {
+    var y = window.scrollY || 0;
+    var dt = Math.max(0.016, (now - state.lastScrollT) / 1000);
+    var rawV = (y - state.lastScrollY) / dt;
+    state.velocity = state.velocity * 0.85 + rawV * 0.15;
+    state.lastScrollY = y;
+    state.lastScrollT = now;
     applyTarget(false);
     state.raf = requestAnimationFrame(tick);
   }
 
   function onScroll() {
-    // rAF loop already follows; this keeps it warm after idle
     if (!state.raf) state.raf = requestAnimationFrame(tick);
   }
 

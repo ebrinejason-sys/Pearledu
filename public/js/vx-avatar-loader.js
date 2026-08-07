@@ -96,12 +96,15 @@ export function mountAvatar(config) {
   Promise.all([
     import('three'),
     import('three/addons/loaders/GLTFLoader.js'),
-    import('three/addons/loaders/DRACOLoader.js')
+    import('three/addons/loaders/DRACOLoader.js'),
+    import('/js/vx-avatar-motion.js?v=1')
   ])
-    .then(function (mods) { initScene(mods[0], mods[1].GLTFLoader, mods[2].DRACOLoader); })
+    .then(function (mods) {
+      initScene(mods[0], mods[1].GLTFLoader, mods[2].DRACOLoader, mods[3]);
+    })
     .catch(function () { showFallback(); });
 
-  function initScene(THREE, GLTFLoader, DRACOLoader) {
+  function initScene(THREE, GLTFLoader, DRACOLoader, motionMod) {
     var w = container.clientWidth || width;
     var h = container.clientHeight || height;
 
@@ -151,7 +154,7 @@ export function mountAvatar(config) {
       modelUrl,
       function (gltf) {
         hideLoading();
-        onModelLoaded(gltf, THREE, scene, camera, renderer);
+        onModelLoaded(gltf, THREE, scene, camera, renderer, motionMod);
         dracoLoader.dispose();
       },
       function (event) {
@@ -299,39 +302,27 @@ export function mountAvatar(config) {
     });
   }
 
-  function findBone(root, names) {
-    for (var i = 0; i < names.length; i++) {
-      var b = root.getObjectByName(names[i]);
-      if (b) return b;
-    }
-    return null;
-  }
-
-  function onModelLoaded(gltf, THREE, scene, camera, renderer) {
+  function onModelLoaded(gltf, THREE, scene, camera, renderer, motionMod) {
     var root = gltf.scene;
     scene.add(root);
     fitCameraToModel(THREE, root, camera);
     applyRealisticSkin(THREE, root, renderer, scene, camera);
 
-    var bones = {
-      spine: findBone(root, ['chestUpper', 'chestUpper(drv)', 'chestLower', 'abdomenUpper(drv)', 'mixamorig:Spine1']),
-      arm: findBone(root, ['rCollar', 'rCollar(drv)', 'rForearmBend', 'mixamorig:RightArm']),
-      hand: findBone(root, ['rHand', 'mixamorig:RightHand'])
-    };
-    var restQuats = {};
-    Object.keys(bones).forEach(function (key) {
-      if (bones[key]) restQuats[key] = bones[key].quaternion.clone();
-    });
-
-    var dragState = { active: false, yaw: 0 };
+    var dragState = { active: false, yaw: root.rotation.y || 0 };
     if (interactive) {
       enableDragRotate(renderer, root, dragState, interactHost);
     }
 
+    var motion = null;
+    if (motionMod && motionMod.createAvatarMotion) {
+      motion = motionMod.createAvatarMotion(THREE, root, { autoRotate: autoRotate && mode === 'idle' });
+      window.__VX_AVATAR_CTRL__ = motion;
+    }
+
     if (mode === 'idle') {
-      runIdle(THREE, bones, restQuats, renderer, scene, camera, root, dragState);
+      runIdle(THREE, renderer, scene, camera, root, dragState, motion);
     } else {
-      runCycle(THREE, root, restQuats, renderer, scene, camera, dragState);
+      runCycle(THREE, root, renderer, scene, camera, dragState, motion);
     }
   }
 
@@ -378,18 +369,12 @@ export function mountAvatar(config) {
     surface.addEventListener('pointercancel', pointerUp);
   }
 
-  function runIdle(THREE, bones, restQuats, renderer, scene, camera, root, dragState) {
+  function runIdle(THREE, renderer, scene, camera, root, dragState, motion) {
     if (reduceMotion) { renderer.render(scene, camera); return; }
-    var start = performance.now();
     function tick(now) {
-      var t = (now - start) / 1000;
-      if (bones.spine && restQuats.spine) {
-        bones.spine.quaternion.copy(restQuats.spine).multiply(deg(THREE, Math.sin(t * 0.55) * 2.2, Math.sin(t * 0.35) * 1.4, 0));
-      }
-      if (bones.arm && restQuats.arm) {
-        bones.arm.quaternion.copy(restQuats.arm).multiply(deg(THREE, Math.sin(t * 0.45 + 1) * 2.5, 0, Math.sin(t * 0.3) * 1.5));
-      }
-      if (autoRotate && !dragState.active && !reduceMotion) {
+      if (motion) {
+        motion.tick(now, dragState);
+      } else if (autoRotate && !dragState.active) {
         dragState.yaw += 0.0022;
         root.rotation.y = dragState.yaw;
       }
@@ -399,10 +384,9 @@ export function mountAvatar(config) {
     requestAnimationFrame(tick);
   }
 
-  function runCycle(THREE, root, restQuats, renderer, scene, camera, dragState) {
-    // Pose cycle still expects Mixamo-style bone maps from config; fall back to idle motion if empty
+  function runCycle(THREE, root, renderer, scene, camera, dragState, motion) {
     if (!poseOrder.length) {
-      runIdle(THREE, {}, restQuats, renderer, scene, camera, root, dragState);
+      runIdle(THREE, renderer, scene, camera, root, dragState, motion);
       return;
     }
 
@@ -412,6 +396,8 @@ export function mountAvatar(config) {
       var b = root.getObjectByName(name);
       if (b) bones[name] = b;
     });
+    var restQuats = {};
+    Object.keys(bones).forEach(function (name) { restQuats[name] = bones[name].quaternion.clone(); });
 
     var builtPoses = {};
     poseOrder.forEach(function (key) {
@@ -471,6 +457,11 @@ export function mountAvatar(config) {
           if (target) bones[name].quaternion.slerpQuaternions(fromPose[name], target, e);
         });
         if (t >= 1) { phase = 'hold'; phaseStart = now; }
+      }
+      if (motion && phase === 'hold') {
+        // Keep subtle breathing under scripted poses
+        var m = window.__VX_AVATAR_MOTION__;
+        if (m) { m.energy = 0.25; m.velocity = 0; }
       }
       if (autoRotate && !dragState.active) {
         dragState.yaw += 0.0015;

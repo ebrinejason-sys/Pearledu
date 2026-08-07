@@ -53,8 +53,8 @@
   }
 </style>
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js?v=5';
-  import { startAvatarScrollGuide } from '/js/vx-avatar-scroll-guide.js?v=1';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=6';
+  import { startAvatarScrollGuide } from '/js/vx-avatar-scroll-guide.js?v=2';
 
   if (!window.matchMedia('(max-width:860px)').matches && window.__VX_SCROLL_AVATAR__ !== false) {
     mountAvatar({
