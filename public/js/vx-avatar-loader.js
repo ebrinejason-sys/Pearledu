@@ -79,24 +79,34 @@ export function mountAvatar(config) {
     }
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) {
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+    } else if ('outputEncoding' in renderer && THREE.sRGBEncoding) {
+      renderer.outputEncoding = THREE.sRGBEncoding;
+    }
+    if (THREE.ACESFilmicToneMapping != null) {
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+    }
     renderer.domElement.setAttribute('aria-hidden', 'true');
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    var key = new THREE.DirectionalLight(0xffffff, 0.9);
-    key.position.set(2, 3, 2);
+    scene.add(new THREE.HemisphereLight(0xfff2e8, 0x6b7c8f, 0.85));
+    var key = new THREE.DirectionalLight(0xfff5ea, 1.15);
+    key.position.set(2.2, 3.4, 2.4);
     scene.add(key);
-
-    function getCssVar(name, fallback) {
-      var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-      return v || fallback;
-    }
+    var fill = new THREE.DirectionalLight(0xb8d4ff, 0.35);
+    fill.position.set(-2.5, 1.2, -1.5);
+    scene.add(fill);
+    var rim = new THREE.DirectionalLight(0xffffff, 0.25);
+    rim.position.set(0, 2, -3);
+    scene.add(rim);
 
     var loader = new GLTFLoader();
     loader.load(
       modelUrl,
-      function (gltf) { onModelLoaded(gltf, THREE, scene, camera, renderer, getCssVar); },
+      function (gltf) { onModelLoaded(gltf, THREE, scene, camera, renderer); },
       undefined,
       function () { showFallback(); }
     );
@@ -135,20 +145,110 @@ export function mountAvatar(config) {
     camera.updateProjectionMatrix();
   }
 
-  function onModelLoaded(gltf, THREE, scene, camera, renderer, getCssVar) {
+  function applyRealisticSkin(THREE, root) {
+    var texLoader = new THREE.TextureLoader();
+    var bodyMap = texLoader.load('/models/textures/skin-body.png');
+    var faceMap = texLoader.load('/models/textures/skin-face.png');
+    var lipsMap = texLoader.load('/models/textures/skin-lips.png');
+    var roughMap = texLoader.load('/models/textures/skin-roughness.png');
+    [bodyMap, faceMap, lipsMap, roughMap].forEach(function (tex) {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 2);
+      tex.anisotropy = 4;
+      if ('colorSpace' in tex && THREE.SRGBColorSpace) {
+        if (tex !== roughMap) tex.colorSpace = THREE.SRGBColorSpace;
+      } else if ('encoding' in tex && THREE.sRGBEncoding) {
+        if (tex !== roughMap) tex.encoding = THREE.sRGBEncoding;
+      }
+    });
+    roughMap.repeat.set(3, 3);
+
+    var skinNames = /^(Face|Body|Arms|Legs|Head|Lips|Fingernails|Toenails|EyeSocket)/i;
+    var eyeNames = /^(Pupils|Irises|Sclera|Cornea)/i;
+    var hairNames = /Hair|Eyelash/i;
+    var clothNames = /Shirt|Boxer|Material\.002/i;
+
+    function skinMat(map, tint, roughness) {
+      var Mat = THREE.MeshPhysicalMaterial || THREE.MeshStandardMaterial;
+      var opts = {
+        map: map,
+        color: new THREE.Color(tint),
+        roughness: roughness,
+        metalness: 0,
+        roughnessMap: roughMap,
+        envMapIntensity: 0.35
+      };
+      if (THREE.MeshPhysicalMaterial) {
+        opts.sheen = 0.45;
+        opts.sheenRoughness = 0.55;
+        opts.sheenColor = new THREE.Color(0xc47a5a);
+        opts.clearcoat = 0.06;
+        opts.clearcoatRoughness = 0.55;
+      }
+      return new Mat(opts);
+    }
+
+    root.traverse(function (node) {
+      if (!node.isMesh || !node.material) return;
+      var mats = Array.isArray(node.material) ? node.material : [node.material];
+      var next = mats.map(function (mat) {
+        var name = mat.name || node.name || '';
+        if (skinNames.test(name)) {
+          if (/Lips/i.test(name)) return skinMat(lipsMap, 0xf0c2b4, 0.42);
+          if (/Face|Head/i.test(name)) return skinMat(faceMap, 0xf3d0b8, 0.48);
+          if (/Nail/i.test(name)) {
+            var nail = skinMat(bodyMap, 0xe8c4b0, 0.35);
+            if (nail.clearcoat != null) { nail.clearcoat = 0.35; nail.clearcoatRoughness = 0.25; }
+            return nail;
+          }
+          return skinMat(bodyMap, 0xedc6a8, 0.52);
+        }
+        if (eyeNames.test(name)) {
+          var eye = mat.clone();
+          eye.metalness = 0;
+          if (/Cornea/i.test(name)) {
+            eye.transparent = true;
+            eye.opacity = 0.15;
+            eye.roughness = 0.05;
+          } else if (/Pupils/i.test(name)) {
+            eye.color = new THREE.Color(0x1a120e);
+            eye.roughness = 0.2;
+          } else if (/Irises/i.test(name)) {
+            eye.color = new THREE.Color(0x3d2a1f);
+            eye.roughness = 0.35;
+          } else {
+            eye.color = new THREE.Color(0xf5f2ec);
+            eye.roughness = 0.25;
+          }
+          return eye;
+        }
+        if (hairNames.test(name)) {
+          var hair = mat.clone();
+          hair.color = new THREE.Color(0x2a221c);
+          hair.roughness = 0.65;
+          hair.metalness = 0;
+          return hair;
+        }
+        if (clothNames.test(name)) {
+          var cloth = mat.clone();
+          if (!cloth.map) cloth.color = new THREE.Color(0x4a5d6a);
+          cloth.roughness = 0.85;
+          cloth.metalness = 0;
+          return cloth;
+        }
+        return mat;
+      });
+      node.material = Array.isArray(node.material) ? next : next[0];
+      node.castShadow = false;
+      node.receiveShadow = false;
+    });
+  }
+
+  function onModelLoaded(gltf, THREE, scene, camera, renderer) {
     var root = gltf.scene;
     scene.add(root);
     fitCameraToModel(THREE, root, camera);
-
-    var bodyColor = new THREE.Color(getCssVar(colorVars[0], colorFallbacks[0]));
-    var jointColor = new THREE.Color(getCssVar(colorVars[1], colorFallbacks[1]));
-    root.traverse(function (node) {
-      if (node.isMesh && node.material) {
-        node.material = node.material.clone();
-        var isJoint = (node.material.name || '').indexOf('Joint') !== -1;
-        node.material.color.copy(isJoint ? jointColor : bodyColor);
-      }
-    });
+    applyRealisticSkin(THREE, root);
 
     var boneNames = [
       'mixamorig:RightArm', 'mixamorig:RightForeArm', 'mixamorig:RightHand',
