@@ -17,8 +17,13 @@
 </section>
 <style>
   .vx-avatar-demo{text-align:center}
-  .vx-avatar-3d{width:280px;height:320px;margin:0 auto}
+  .vx-avatar-3d{position:relative;width:280px;height:320px;margin:0 auto}
   .vx-avatar-3d canvas{display:block;margin:0 auto}
+  .vx-avatar-loading{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none}
+  .vx-avatar-loading-silhouette{width:38%;aspect-ratio:1/2.2;border-radius:48% 48% 40% 40%;background:rgba(159,231,245,.28)}
+  .vx-avatar-loading-bar{height:4px;width:160px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;margin:0 auto}
+  .vx-avatar-loading-bar > i{display:block;height:100%;width:12%;background:var(--cyan,#9FE7F5)}
+  .vx-avatar-loading-text{margin:8px 0 0;font-size:12px;color:rgba(255,255,255,.8)}
   .vx-avatar-fallback{display:flex;align-items:center;justify-content:center;height:100%}
   .vx-avatar-fallback .vx-hand{transition:opacity .5s ease}
   .vx-avatar-fallback .vx-hand-2{opacity:0}
@@ -27,7 +32,7 @@
   @media(prefers-reduced-motion:reduce){.vx-avatar-fallback .vx-hand{transition:none}}
 </style>
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js?v=3';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=4';
   mountAvatar({
     container: 'vx-avatar-3d',
     captionId: 'vx-avatar-caption',

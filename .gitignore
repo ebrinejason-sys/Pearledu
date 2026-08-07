@@ -31,3 +31,7 @@ Thumbs.db
 
 # Gosfem reference source (unconfirmed license — inspiration only, never committed)
 /open
+
+/public/models/avatar.original.glb
+/public/models/avatar.simp.glb
+

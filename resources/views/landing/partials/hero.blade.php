@@ -35,6 +35,16 @@
     background:radial-gradient(circle,rgba(159,231,245,.28) 0%,rgba(66,158,189,.12) 55%,transparent 72%)}
   .vx-hero-avatar-3d{position:relative;width:100%;height:100%;z-index:1}
   .vx-hero-avatar-3d canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+  .vx-avatar-loading{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none}
+  .vx-avatar-loading-silhouette{width:42%;aspect-ratio:1/2.35;border-radius:48% 48% 40% 40%;
+    background:linear-gradient(180deg,rgba(159,231,245,.35),rgba(66,158,189,.18));
+    animation:vx-avatar-pulse 1.2s ease-in-out infinite}
+  .vx-avatar-loading-meta{width:min(220px,70%);text-align:center}
+  .vx-avatar-loading-bar{height:4px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}
+  .vx-avatar-loading-bar > i{display:block;height:100%;width:12%;border-radius:inherit;background:var(--cyan,#9FE7F5);transition:width .2s ease}
+  .vx-avatar-loading-text{margin:10px 0 0;font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.82);font-family:var(--display)}
+  @keyframes vx-avatar-pulse{0%,100%{opacity:.55;transform:scale(.98)}50%{opacity:1;transform:scale(1)}}
+  @media(prefers-reduced-motion:reduce){.vx-avatar-loading-silhouette{animation:none}}
   .vx-hero-avatar-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:2;
     margin:0;padding:6px 12px;border-radius:999px;font-size:12px;font-family:var(--display);
     letter-spacing:.04em;color:rgba(255,255,255,.85);background:rgba(5,63,92,.45);
@@ -51,7 +61,7 @@
   }
 </style>
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js?v=3';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=4';
   if (!window.matchMedia('(max-width:860px)').matches) {
     mountAvatar({
       container: 'vx-hero-avatar-3d',
@@ -64,3 +74,4 @@
     });
   }
 </script>
+

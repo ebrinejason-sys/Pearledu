@@ -24,6 +24,39 @@ export function mountAvatar(config) {
   var captionIndex = 0;
   var interactHost = container.closest('.vx-hero-avatar-wrap') || container;
 
+  function showLoading(percent) {
+    var pct = typeof percent === 'number' ? Math.max(0, Math.min(100, Math.round(percent))) : null;
+    var label = pct == null ? 'Loading figure…' : ('Loading figure… ' + pct + '%');
+    var host = interactHost || container;
+    var existing = host.querySelector('.vx-avatar-loading');
+    if (!existing) {
+      existing = document.createElement('div');
+      existing.className = 'vx-avatar-loading';
+      existing.setAttribute('role', 'status');
+      existing.setAttribute('aria-live', 'polite');
+      existing.innerHTML =
+        '<div class="vx-avatar-loading-silhouette" aria-hidden="true"></div>' +
+        '<div class="vx-avatar-loading-meta">' +
+          '<div class="vx-avatar-loading-bar" aria-hidden="true"><i></i></div>' +
+          '<p class="vx-avatar-loading-text"></p>' +
+        '</div>';
+      host.appendChild(existing);
+    }
+    existing.hidden = false;
+    var bar = existing.querySelector('.vx-avatar-loading-bar > i');
+    var text = existing.querySelector('.vx-avatar-loading-text');
+    if (bar) bar.style.width = (pct == null ? 12 : pct) + '%';
+    if (text) text.textContent = label;
+  }
+
+  function hideLoading() {
+    var host = interactHost || container;
+    var existing = host.querySelector('.vx-avatar-loading');
+    if (existing) existing.remove();
+  }
+
+  showLoading(0);
+
   function buildFallbackSvg() {
     return '<svg class="vx-avatar-fallback-svg" viewBox="0 0 200 200" width="180" height="180" role="img" aria-label="Hand-shape illustration">' +
         '<g class="vx-hand vx-hand-1">' +
@@ -60,11 +93,15 @@ export function mountAvatar(config) {
 
   if (!window.WebGLRenderingContext) { showFallback(); return; }
 
-  Promise.all([import('three'), import('three/addons/loaders/GLTFLoader.js')])
-    .then(function (mods) { initScene(mods[0], mods[1].GLTFLoader); })
+  Promise.all([
+    import('three'),
+    import('three/addons/loaders/GLTFLoader.js'),
+    import('three/addons/loaders/DRACOLoader.js')
+  ])
+    .then(function (mods) { initScene(mods[0], mods[1].GLTFLoader, mods[2].DRACOLoader); })
     .catch(function () { showFallback(); });
 
-  function initScene(THREE, GLTFLoader) {
+  function initScene(THREE, GLTFLoader, DRACOLoader) {
     var w = container.clientWidth || width;
     var h = container.clientHeight || height;
 
@@ -104,12 +141,31 @@ export function mountAvatar(config) {
     rim.position.set(-0.5, 2.5, -3.5);
     scene.add(rim);
 
+    var dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+    dracoLoader.preload();
+
     var loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
     loader.load(
       modelUrl,
-      function (gltf) { onModelLoaded(gltf, THREE, scene, camera, renderer); },
-      undefined,
-      function () { showFallback(); }
+      function (gltf) {
+        hideLoading();
+        onModelLoaded(gltf, THREE, scene, camera, renderer);
+        dracoLoader.dispose();
+      },
+      function (event) {
+        if (event && event.total) {
+          showLoading((event.loaded / event.total) * 100);
+        } else if (event && event.loaded) {
+          // Indeterminate but advancing feel for servers without Content-Length
+          showLoading(Math.min(92, 12 + (event.loaded / 650000) * 80));
+        }
+      },
+      function () {
+        hideLoading();
+        showFallback();
+      }
     );
 
     window.addEventListener('resize', function () {

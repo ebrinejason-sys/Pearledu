@@ -219,6 +219,8 @@
   }
 }
 </script>
+<link rel="preload" href="{{ asset('models/avatar.glb') }}" as="fetch" crossorigin>
+<link rel="modulepreload" href="https://unpkg.com/three@0.170.0/build/three.module.js">
 </head>
 <body>
   <div class="vx-nav-shell">
