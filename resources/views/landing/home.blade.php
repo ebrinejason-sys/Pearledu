@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 @section('content')
-  {{-- Scroll-avatar experiment: set false to roll back to hero-only avatar --}}
-  @php($vxScrollAvatar = true)
+  {{-- Hero-only avatar (scroll-guide rolled back) --}}
+  @php($vxScrollAvatar = false)
 
   @include('landing.partials.hero', ['scrollAvatar' => $vxScrollAvatar])
   @include('landing.partials.partners')
@@ -15,8 +15,4 @@
   @include('landing.partials.testimonials')
   @include('landing.partials.roadmap')
   @include('landing.partials.contact')
-
-  @if($vxScrollAvatar)
-    @include('landing.partials.scroll-avatar')
-  @endif
 @endsection

@@ -66,9 +66,10 @@
     .vx-logo-link .vx-logo{--vx-logo-h:28px;height:28px}
     .vx-logo-wordmark{font-size:15px}
   }
-  .vx-nav-links{margin-left:10px;display:flex;gap:22px;font-size:14.5px;color:var(--muted);flex-wrap:wrap}
+  .vx-nav-end{margin-left:auto;display:flex;align-items:center;gap:18px;min-width:0}
+  .vx-nav-links{display:flex;gap:22px;font-size:14.5px;color:var(--muted);flex-wrap:wrap;align-items:center}
   .vx-nav-links a:hover{color:var(--fg)}
-  .vx-nav-cta{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .vx-nav-cta{display:flex;align-items:center;gap:8px;flex-shrink:0}
   .vx-nav-cta .vx-btn{padding:10px 20px}
   .vx-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;
                  border:1.5px solid var(--line);background:transparent;color:var(--fg);cursor:pointer;flex-shrink:0}
@@ -79,6 +80,7 @@
   .vx-nav-toggle{display:none;background:none;border:1.5px solid var(--line);border-radius:999px;padding:8px 12px;font-size:18px;cursor:pointer;color:var(--fg)}
   .vx-nav-mobile-cta{display:none}
   @media(max-width:860px){
+    .vx-nav-end{margin-left:0;flex:1;justify-content:flex-end}
     .vx-nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;flex-direction:column;
                   background:var(--surface);border:1px solid var(--line);border-radius:20px;
                   box-shadow:0 18px 40px -20px rgba(11,16,32,.4);padding:16px 20px;gap:14px;margin:0}
@@ -229,20 +231,22 @@
       @include('layouts.partials.logo', ['height' => 36, 'color' => 'currentColor', 'label' => 'VoxSign'])
       <span class="vx-logo-wordmark" aria-hidden="true">VoxSign</span>
     </a>
-    <div class="vx-nav-links" id="vx-nav-links">
-      <a href="#accessibility">Accessibility</a>
-      <a href="#pearledu">Institutions</a>
-      <a href="#team">Team</a>
-      <a href="#contact">Contact</a>
-      <div class="vx-nav-mobile-cta"><a href="#contact" class="vx-btn">Talk to us</a></div>
-    </div>
-    <div class="vx-nav-cta">
-      <button type="button" class="vx-theme-btn" id="vx-theme-toggle" aria-label="Toggle color theme" title="Toggle light/dark mode">
-        <svg class="vx-theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-        <svg class="vx-theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/></svg>
-      </button>
-      <a href="#contact" class="vx-btn">Talk to us</a>
-      <button class="vx-nav-toggle" aria-label="Menu" aria-expanded="false" id="vx-nav-toggle">&#9776;</button>
+    <div class="vx-nav-end">
+      <div class="vx-nav-links" id="vx-nav-links">
+        <a href="#accessibility">Accessibility</a>
+        <a href="#pearledu">Institutions</a>
+        <a href="#team">Team</a>
+        <a href="#contact">Contact</a>
+        <div class="vx-nav-mobile-cta"><a href="#contact" class="vx-btn">Talk to us</a></div>
+      </div>
+      <div class="vx-nav-cta">
+        <button type="button" class="vx-theme-btn" id="vx-theme-toggle" aria-label="Toggle color theme" title="Toggle light/dark mode">
+          <svg class="vx-theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="vx-theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/></svg>
+        </button>
+        <a href="#contact" class="vx-btn">Talk to us</a>
+        <button class="vx-nav-toggle" aria-label="Menu" aria-expanded="false" id="vx-nav-toggle">&#9776;</button>
+      </div>
     </div>
   </div>
   </div>

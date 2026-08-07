@@ -55,9 +55,10 @@
   .pe-brand-text{display:flex;flex-direction:column;line-height:1.15;min-width:0}
   .pe-brand-name{font-family:var(--display);font-weight:700;font-size:18px;color:#fff;letter-spacing:.02em;text-transform:uppercase}
   .pe-brand-tagline{font-size:11px;color:rgba(255,255,255,.78);letter-spacing:.04em;text-transform:uppercase}
-  .pe-nav-links{margin-left:auto;display:flex;align-items:center;gap:22px;font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.88)}
+  .pe-nav-links{display:flex;align-items:center;gap:22px;font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.88)}
   .pe-nav-links a:hover{color:#fff}
-  .pe-nav-cta{display:flex;gap:10px;align-items:center;margin-left:8px}
+  .pe-nav-end{margin-left:auto;display:flex;align-items:center;gap:18px;min-width:0}
+  .pe-nav-cta{display:flex;gap:10px;align-items:center;flex-shrink:0}
   .pe-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;
                 border:1.5px solid rgba(255,255,255,.35);background:transparent;color:#fff;cursor:pointer;flex-shrink:0}
   .pe-theme-btn:hover{border-color:#fff;background:rgba(255,255,255,.08)}
@@ -82,6 +83,7 @@
 
   @media(max-width:900px){
     .pe-brand-tagline{display:none}
+    .pe-nav-end{margin-left:0;flex:1;justify-content:flex-end}
     .pe-nav-links{display:none;position:absolute;top:72px;left:0;right:0;flex-direction:column;align-items:stretch;
                   background:var(--ink-2);padding:16px 20px;gap:14px;margin:0;border-bottom:1px solid rgba(255,255,255,.12)}
     .pe-nav-links.open{display:flex}
@@ -216,24 +218,26 @@
           <span class="pe-brand-tagline">By VoxSign Technologies</span>
         </span>
       </a>
-      <nav class="pe-nav-links" id="pe-nav-links" aria-label="Primary">
-        <a href="#modules">Modules</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#faq">FAQ</a>
-        <a href="#onboard">Onboard</a>
-        <div class="pe-nav-mobile-cta">
+      <div class="pe-nav-end">
+        <nav class="pe-nav-links" id="pe-nav-links" aria-label="Primary">
+          <a href="#modules">Modules</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
+          <a href="#onboard">Onboard</a>
+          <div class="pe-nav-mobile-cta">
+            <a href="{{ url('/login') }}" class="pe-btn">Login</a>
+            <a href="#onboard" class="pe-btn-grad">Onboard</a>
+          </div>
+        </nav>
+        <div class="pe-nav-cta">
+          <button type="button" class="pe-theme-btn" id="pe-theme-toggle" aria-label="Toggle color theme" title="Toggle light/dark mode">
+            <svg class="pe-theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <svg class="pe-theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/></svg>
+          </button>
           <a href="{{ url('/login') }}" class="pe-btn">Login</a>
           <a href="#onboard" class="pe-btn-grad">Onboard</a>
+          <button class="pe-nav-toggle" aria-label="Menu" aria-expanded="false" id="pe-nav-toggle">&#9776;</button>
         </div>
-      </nav>
-      <div class="pe-nav-cta">
-        <button type="button" class="pe-theme-btn" id="pe-theme-toggle" aria-label="Toggle color theme" title="Toggle light/dark mode">
-          <svg class="pe-theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-          <svg class="pe-theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/></svg>
-        </button>
-        <a href="{{ url('/login') }}" class="pe-btn">Login</a>
-        <a href="#onboard" class="pe-btn-grad">Onboard</a>
-        <button class="pe-nav-toggle" aria-label="Menu" aria-expanded="false" id="pe-nav-toggle">&#9776;</button>
       </div>
     </div>
   </header>

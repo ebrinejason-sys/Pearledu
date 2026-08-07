@@ -42,7 +42,7 @@
 </style>
 @unless(!empty($scrollAvatar))
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js?v=5';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=6';
   mountAvatar({
     container: 'vx-avatar-3d',
     captionId: 'vx-avatar-caption',
