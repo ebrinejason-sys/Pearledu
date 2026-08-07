@@ -10,6 +10,7 @@ export function mountAvatar(config) {
   var mode = config.mode || 'cycle';
   var frame = config.frame || 'upper';
   var interactive = !!config.interactive;
+  var autoRotate = config.autoRotate !== false && !!config.interactive;
   var preset = FRAME_PRESETS[frame] || FRAME_PRESETS.upper;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var captionEl = config.captionId ? document.getElementById(config.captionId) : null;
@@ -18,10 +19,10 @@ export function mountAvatar(config) {
   var poseOrder = config.poseOrder || Object.keys(poses);
   var modelUrl = config.modelUrl || '/models/avatar.glb';
   var colorVars = config.colorVars || ['--sign', '--voice'];
-  var colorFallbacks = config.colorFallbacks || ['#12B3A6', '#FF6A3D'];
   var width = config.width || 280;
   var height = config.height || 320;
   var captionIndex = 0;
+  var interactHost = container.closest('.vx-hero-avatar-wrap') || container;
 
   function buildFallbackSvg() {
     return '<svg class="vx-avatar-fallback-svg" viewBox="0 0 200 200" width="180" height="180" role="img" aria-label="Hand-shape illustration">' +
@@ -34,10 +35,10 @@ export function mountAvatar(config) {
           '<rect x="55" y="95" width="30" height="15" rx="7" fill="var(' + colorVars[0] + ')" transform="rotate(-35 70 102)"/>' +
         '</g>' +
         '<g class="vx-hand vx-hand-2">' +
-          '<rect x="80" y="100" width="42" height="55" rx="18" fill="var(' + colorVars[1] + ')"/>' +
-          '<rect x="90" y="40" width="18" height="70" rx="9" fill="var(' + colorVars[1] + ')"/>' +
-          '<rect x="60" y="105" width="24" height="16" rx="8" fill="var(' + colorVars[1] + ')"/>' +
-          '<rect x="118" y="105" width="24" height="16" rx="8" fill="var(' + colorVars[1] + ')"/>' +
+          '<rect x="80" y="100" width="42" height="55" rx="18" fill="var(--voice, #FF6A3D)"/>' +
+          '<rect x="90" y="40" width="18" height="70" rx="9" fill="var(--voice, #FF6A3D)"/>' +
+          '<rect x="60" y="105" width="24" height="16" rx="8" fill="var(--voice, #FF6A3D)"/>' +
+          '<rect x="118" y="105" width="24" height="16" rx="8" fill="var(--voice, #FF6A3D)"/>' +
         '</g>' +
       '</svg>';
   }
@@ -72,7 +73,7 @@ export function mountAvatar(config) {
 
     var renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     } catch (e) {
       showFallback();
       return;
@@ -86,21 +87,21 @@ export function mountAvatar(config) {
     }
     if (THREE.ACESFilmicToneMapping != null) {
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05;
+      renderer.toneMappingExposure = 1.12;
     }
     renderer.domElement.setAttribute('aria-hidden', 'true');
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xfff2e8, 0x6b7c8f, 0.85));
-    var key = new THREE.DirectionalLight(0xfff5ea, 1.15);
-    key.position.set(2.2, 3.4, 2.4);
+    scene.add(new THREE.HemisphereLight(0xfff0e6, 0x4a5a6e, 1.05));
+    var key = new THREE.DirectionalLight(0xfff6ee, 1.35);
+    key.position.set(2.4, 4.2, 2.8);
     scene.add(key);
-    var fill = new THREE.DirectionalLight(0xb8d4ff, 0.35);
-    fill.position.set(-2.5, 1.2, -1.5);
+    var fill = new THREE.DirectionalLight(0xa8c8ff, 0.45);
+    fill.position.set(-3, 1.5, -1.2);
     scene.add(fill);
-    var rim = new THREE.DirectionalLight(0xffffff, 0.25);
-    rim.position.set(0, 2, -3);
+    var rim = new THREE.DirectionalLight(0xffffff, 0.4);
+    rim.position.set(-0.5, 2.5, -3.5);
     scene.add(rim);
 
     var loader = new GLTFLoader();
@@ -110,6 +111,14 @@ export function mountAvatar(config) {
       undefined,
       function () { showFallback(); }
     );
+
+    window.addEventListener('resize', function () {
+      var nw = container.clientWidth || width;
+      var nh = container.clientHeight || height;
+      camera.aspect = nw / nh;
+      camera.updateProjectionMatrix();
+      renderer.setSize(nw, nh);
+    });
   }
 
   function deg(THREE, x, y, z) {
@@ -145,46 +154,63 @@ export function mountAvatar(config) {
     camera.updateProjectionMatrix();
   }
 
-  function applyRealisticSkin(THREE, root) {
+  function applyRealisticSkin(THREE, root, renderer, scene, camera) {
     var texLoader = new THREE.TextureLoader();
-    var bodyMap = texLoader.load('/models/textures/skin-body.png');
-    var faceMap = texLoader.load('/models/textures/skin-face.png');
-    var lipsMap = texLoader.load('/models/textures/skin-lips.png');
-    var roughMap = texLoader.load('/models/textures/skin-roughness.png');
-    [bodyMap, faceMap, lipsMap, roughMap].forEach(function (tex) {
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(2, 2);
-      tex.anisotropy = 4;
-      if ('colorSpace' in tex && THREE.SRGBColorSpace) {
-        if (tex !== roughMap) tex.colorSpace = THREE.SRGBColorSpace;
-      } else if ('encoding' in tex && THREE.sRGBEncoding) {
-        if (tex !== roughMap) tex.encoding = THREE.sRGBEncoding;
-      }
-    });
-    roughMap.repeat.set(3, 3);
+    var pending = 0;
+    var maps = {};
 
-    var skinNames = /^(Face|Body|Arms|Legs|Head|Lips|Fingernails|Toenails|EyeSocket)/i;
-    var eyeNames = /^(Pupils|Irises|Sclera|Cornea)/i;
-    var hairNames = /Hair|Eyelash/i;
-    var clothNames = /Shirt|Boxer|Material\.002/i;
+    function loadMap(key, url, isColor) {
+      pending += 1;
+      maps[key] = texLoader.load(url, function (tex) {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 4);
+        if (isColor) {
+          tex.repeat.set(1.15, 1.15);
+          if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+          else if ('encoding' in tex && THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+        } else {
+          tex.repeat.set(4, 4);
+        }
+        tex.needsUpdate = true;
+        pending -= 1;
+        if (pending === 0) renderer.render(scene, camera);
+      }, undefined, function () { pending -= 1; });
+    }
 
-    function skinMat(map, tint, roughness) {
+    loadMap('body', '/models/textures/skin-body.png', true);
+    loadMap('face', '/models/textures/skin-face.png', true);
+    loadMap('lips', '/models/textures/skin-lips.png', true);
+    loadMap('rough', '/models/textures/skin-roughness.png', false);
+
+    function skinMat(mapKey, tintHex, roughness) {
       var Mat = THREE.MeshPhysicalMaterial || THREE.MeshStandardMaterial;
       var opts = {
-        map: map,
-        color: new THREE.Color(tint),
+        map: maps[mapKey],
+        color: new THREE.Color(tintHex),
         roughness: roughness,
         metalness: 0,
-        roughnessMap: roughMap,
-        envMapIntensity: 0.35
+        roughnessMap: maps.rough,
+        flatShading: false
       };
       if (THREE.MeshPhysicalMaterial) {
-        opts.sheen = 0.45;
-        opts.sheenRoughness = 0.55;
-        opts.sheenColor = new THREE.Color(0xc47a5a);
-        opts.clearcoat = 0.06;
-        opts.clearcoatRoughness = 0.55;
+        opts.sheen = 0.55;
+        opts.sheenRoughness = 0.62;
+        opts.sheenColor = new THREE.Color(0xb86a4a);
+        opts.clearcoat = 0.08;
+        opts.clearcoatRoughness = 0.5;
       }
+      var mat = new Mat(opts);
+      mat.name = 'Skin-' + mapKey;
+      return mat;
+    }
+
+    function solidMat(hex, roughness, extras) {
+      var Mat = THREE.MeshStandardMaterial;
+      var opts = Object.assign({
+        color: new THREE.Color(hex),
+        roughness: roughness,
+        metalness: 0
+      }, extras || {});
       return new Mat(opts);
     }
 
@@ -192,134 +218,124 @@ export function mountAvatar(config) {
       if (!node.isMesh || !node.material) return;
       var mats = Array.isArray(node.material) ? node.material : [node.material];
       var next = mats.map(function (mat) {
-        var name = mat.name || node.name || '';
-        if (skinNames.test(name)) {
-          if (/Lips/i.test(name)) return skinMat(lipsMap, 0xf0c2b4, 0.42);
-          if (/Face|Head/i.test(name)) return skinMat(faceMap, 0xf3d0b8, 0.48);
-          if (/Nail/i.test(name)) {
-            var nail = skinMat(bodyMap, 0xe8c4b0, 0.35);
-            if (nail.clearcoat != null) { nail.clearcoat = 0.35; nail.clearcoatRoughness = 0.25; }
-            return nail;
-          }
-          return skinMat(bodyMap, 0xedc6a8, 0.52);
+        if (!mat) return solidMat(0xc99574, 0.55);
+        var name = (mat.name || '') + ' ' + (node.name || '');
+
+        if (/Lips/i.test(name)) return skinMat('lips', 0xc97878, 0.4);
+        if (/Face|Head/i.test(name)) return skinMat('face', 0xd4a07a, 0.48);
+        if (/Body|Arms|Legs|EyeSocket|Fingernail|Toenail/i.test(name)) return skinMat('body', 0xc99574, 0.55);
+        if (/Cornea/i.test(name)) {
+          return solidMat(0xffffff, 0.05, { transparent: true, opacity: 0.12, depthWrite: false });
         }
-        if (eyeNames.test(name)) {
-          var eye = mat.clone();
-          eye.metalness = 0;
-          if (/Cornea/i.test(name)) {
-            eye.transparent = true;
-            eye.opacity = 0.15;
-            eye.roughness = 0.05;
-          } else if (/Pupils/i.test(name)) {
-            eye.color = new THREE.Color(0x1a120e);
-            eye.roughness = 0.2;
-          } else if (/Irises/i.test(name)) {
-            eye.color = new THREE.Color(0x3d2a1f);
-            eye.roughness = 0.35;
-          } else {
-            eye.color = new THREE.Color(0xf5f2ec);
-            eye.roughness = 0.25;
-          }
-          return eye;
-        }
-        if (hairNames.test(name)) {
-          var hair = mat.clone();
-          hair.color = new THREE.Color(0x2a221c);
-          hair.roughness = 0.65;
-          hair.metalness = 0;
-          return hair;
-        }
-        if (clothNames.test(name)) {
-          var cloth = mat.clone();
-          if (!cloth.map) cloth.color = new THREE.Color(0x4a5d6a);
-          cloth.roughness = 0.85;
-          cloth.metalness = 0;
-          return cloth;
-        }
+        if (/Pupil/i.test(name)) return solidMat(0x140e0c, 0.25);
+        if (/Iris/i.test(name)) return solidMat(0x3a2418, 0.35);
+        if (/Sclera/i.test(name)) return solidMat(0xf3efe8, 0.3);
+        if (/Hair|Eyelash/i.test(name)) return solidMat(0x1c1612, 0.72);
+        if (/Shirt/i.test(name)) return solidMat(0x2f6f86, 0.82);
+        if (/Boxer/i.test(name)) return solidMat(0x1e2a36, 0.88);
+        if (/Material\.002|Tear/i.test(name)) return solidMat(0xe8f4f8, 0.2, { transparent: true, opacity: 0.35 });
+        // Unknown mesh parts: keep a warm skin default so nothing stays plastic white
+        if (!mat.map) return skinMat('body', 0xc99574, 0.55);
         return mat;
       });
       node.material = Array.isArray(node.material) ? next : next[0];
-      node.castShadow = false;
-      node.receiveShadow = false;
+      node.frustumCulled = true;
     });
+  }
+
+  function findBone(root, names) {
+    for (var i = 0; i < names.length; i++) {
+      var b = root.getObjectByName(names[i]);
+      if (b) return b;
+    }
+    return null;
   }
 
   function onModelLoaded(gltf, THREE, scene, camera, renderer) {
     var root = gltf.scene;
     scene.add(root);
     fitCameraToModel(THREE, root, camera);
-    applyRealisticSkin(THREE, root);
+    applyRealisticSkin(THREE, root, renderer, scene, camera);
 
-    var boneNames = [
-      'mixamorig:RightArm', 'mixamorig:RightForeArm', 'mixamorig:RightHand',
-      'mixamorig:RightHandIndex1', 'mixamorig:RightHandIndex2', 'mixamorig:RightHandIndex3',
-      'mixamorig:RightHandMiddle1', 'mixamorig:RightHandMiddle2', 'mixamorig:RightHandMiddle3',
-      'mixamorig:RightHandRing1', 'mixamorig:RightHandRing2', 'mixamorig:RightHandRing3',
-      'mixamorig:RightHandPinky1', 'mixamorig:RightHandPinky2', 'mixamorig:RightHandPinky3',
-      'mixamorig:RightHandThumb1', 'mixamorig:RightHandThumb2', 'mixamorig:RightHandThumb3',
-      'mixamorig:Spine1'
-    ];
-    var bones = {};
-    boneNames.forEach(function (name) {
-      var b = root.getObjectByName(name);
-      if (b) bones[name] = b;
+    var bones = {
+      spine: findBone(root, ['chestUpper', 'chestUpper(drv)', 'chestLower', 'abdomenUpper(drv)', 'mixamorig:Spine1']),
+      arm: findBone(root, ['rCollar', 'rCollar(drv)', 'rForearmBend', 'mixamorig:RightArm']),
+      hand: findBone(root, ['rHand', 'mixamorig:RightHand'])
+    };
+    var restQuats = {};
+    Object.keys(bones).forEach(function (key) {
+      if (bones[key]) restQuats[key] = bones[key].quaternion.clone();
     });
 
-    var restQuats = {};
-    Object.keys(bones).forEach(function (name) { restQuats[name] = bones[name].quaternion.clone(); });
-
-    if (interactive) { enableDragRotate(renderer, root); }
+    var dragState = { active: false, yaw: 0 };
+    if (interactive) {
+      enableDragRotate(renderer, root, dragState, interactHost);
+    }
 
     if (mode === 'idle') {
-      runIdle(THREE, bones, restQuats, renderer, scene, camera);
+      runIdle(THREE, bones, restQuats, renderer, scene, camera, root, dragState);
     } else {
-      runCycle(THREE, bones, restQuats, renderer, scene, camera);
+      runCycle(THREE, root, restQuats, renderer, scene, camera, dragState);
     }
   }
 
-  function enableDragRotate(renderer, root) {
+  function enableDragRotate(renderer, root, dragState, host) {
     var dragging = false;
     var lastX = 0;
-    var baseY = root.rotation.y;
     var el = renderer.domElement;
-    el.style.touchAction = 'pan-y';
-    el.style.cursor = 'grab';
+    var surface = host || el;
+    el.style.touchAction = 'none';
+    surface.style.cursor = 'grab';
+    surface.style.touchAction = 'none';
+
+    function markInteracted() {
+      if (host && host.classList) host.classList.add('has-interacted');
+    }
 
     function pointerDown(e) {
       dragging = true;
+      dragState.active = true;
       lastX = e.clientX;
-      baseY = root.rotation.y;
-      el.style.cursor = 'grabbing';
-      el.setPointerCapture(e.pointerId);
+      surface.style.cursor = 'grabbing';
+      if (host && host.classList) host.classList.add('is-dragging');
+      try { surface.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
     }
     function pointerMove(e) {
       if (!dragging) return;
       var deltaX = e.clientX - lastX;
-      root.rotation.y = baseY + deltaX * 0.012;
+      lastX = e.clientX;
+      dragState.yaw += deltaX * 0.01;
+      root.rotation.y = dragState.yaw;
+      markInteracted();
     }
     function pointerUp() {
       dragging = false;
-      el.style.cursor = 'grab';
+      dragState.active = false;
+      surface.style.cursor = 'grab';
+      if (host && host.classList) host.classList.remove('is-dragging');
     }
 
-    el.addEventListener('pointerdown', pointerDown);
-    el.addEventListener('pointermove', pointerMove);
-    el.addEventListener('pointerup', pointerUp);
-    el.addEventListener('pointerleave', pointerUp);
+    surface.addEventListener('pointerdown', pointerDown);
+    surface.addEventListener('pointermove', pointerMove);
+    surface.addEventListener('pointerup', pointerUp);
+    surface.addEventListener('pointercancel', pointerUp);
   }
 
-  function runIdle(THREE, bones, restQuats, renderer, scene, camera) {
+  function runIdle(THREE, bones, restQuats, renderer, scene, camera, root, dragState) {
     if (reduceMotion) { renderer.render(scene, camera); return; }
     var start = performance.now();
     function tick(now) {
       var t = (now - start) / 1000;
-      var spine = bones['mixamorig:Spine1'];
-      if (spine && restQuats['mixamorig:Spine1']) {
-        spine.quaternion.copy(restQuats['mixamorig:Spine1']).multiply(deg(THREE, Math.sin(t * 0.6) * 2.5, Math.sin(t * 0.4) * 1.5, 0));
+      if (bones.spine && restQuats.spine) {
+        bones.spine.quaternion.copy(restQuats.spine).multiply(deg(THREE, Math.sin(t * 0.55) * 2.2, Math.sin(t * 0.35) * 1.4, 0));
       }
-      var arm = bones['mixamorig:RightArm'];
-      if (arm && restQuats['mixamorig:RightArm']) {
-        arm.quaternion.copy(restQuats['mixamorig:RightArm']).multiply(deg(THREE, Math.sin(t * 0.5 + 1) * 3, 0, 0));
+      if (bones.arm && restQuats.arm) {
+        bones.arm.quaternion.copy(restQuats.arm).multiply(deg(THREE, Math.sin(t * 0.45 + 1) * 2.5, 0, Math.sin(t * 0.3) * 1.5));
+      }
+      if (autoRotate && !dragState.active && !reduceMotion) {
+        dragState.yaw += 0.0022;
+        root.rotation.y = dragState.yaw;
       }
       renderer.render(scene, camera);
       requestAnimationFrame(tick);
@@ -327,7 +343,20 @@ export function mountAvatar(config) {
     requestAnimationFrame(tick);
   }
 
-  function runCycle(THREE, bones, restQuats, renderer, scene, camera) {
+  function runCycle(THREE, root, restQuats, renderer, scene, camera, dragState) {
+    // Pose cycle still expects Mixamo-style bone maps from config; fall back to idle motion if empty
+    if (!poseOrder.length) {
+      runIdle(THREE, {}, restQuats, renderer, scene, camera, root, dragState);
+      return;
+    }
+
+    var boneNames = Object.keys(poses[poseOrder[0]] || {});
+    var bones = {};
+    boneNames.forEach(function (name) {
+      var b = root.getObjectByName(name);
+      if (b) bones[name] = b;
+    });
+
     var builtPoses = {};
     poseOrder.forEach(function (key) {
       var raw = poses[key] || {};
@@ -383,9 +412,13 @@ export function mountAvatar(config) {
         var e = easeInOutQuad(t);
         Object.keys(bones).forEach(function (name) {
           var target = toPose[name] || restQuats[name];
-          bones[name].quaternion.slerpQuaternions(fromPose[name], target, e);
+          if (target) bones[name].quaternion.slerpQuaternions(fromPose[name], target, e);
         });
         if (t >= 1) { phase = 'hold'; phaseStart = now; }
+      }
+      if (autoRotate && !dragState.active) {
+        dragState.yaw += 0.0015;
+        root.rotation.y = dragState.yaw;
       }
       renderer.render(scene, camera);
       requestAnimationFrame(tick);

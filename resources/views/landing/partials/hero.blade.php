@@ -14,40 +14,53 @@
       </p>
     </div>
   </div>
-  <div class="vx-hero-avatar-wrap" aria-hidden="true">
+  <div class="vx-hero-avatar-wrap">
     <div class="vx-hero-avatar-stage" aria-hidden="true"></div>
-    <div id="vx-hero-avatar-3d" class="vx-hero-avatar-3d"></div>
+    <div id="vx-hero-avatar-3d" class="vx-hero-avatar-3d" role="img" aria-label="Interactive 3D figure. Drag horizontally to rotate."></div>
+    <p class="vx-hero-avatar-hint" aria-hidden="true">Drag to rotate</p>
   </div>
-  <p class="vx-sr-only">Decorative full-length 3D figure of a person, shown for visual interest; drag horizontally to rotate it.</p>
+  <p class="vx-sr-only">Decorative full-length 3D figure of a person; drag horizontally to rotate it.</p>
 </section>
 <style>
   .vx-hero{min-height:clamp(520px,60vw,720px)}
-  .vx-hero .vx-wrap{position:relative;z-index:2}
-  .vx-hero-copy{max-width:620px}
+  .vx-hero .vx-wrap{position:relative;z-index:2;pointer-events:none}
+  .vx-hero-copy{max-width:620px;pointer-events:auto}
   .vx-hero-copy strong{color:#fff}
-  .vx-hero-avatar-wrap{position:absolute;right:0;top:0;bottom:0;width:min(480px,44vw);z-index:1}
+  .vx-hero-avatar-wrap{position:absolute;right:0;top:0;bottom:0;width:min(520px,48vw);z-index:3;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    pointer-events:auto;cursor:grab;touch-action:none}
+  .vx-hero-avatar-wrap:active{cursor:grabbing}
   .vx-hero-avatar-stage{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);width:78%;aspect-ratio:1;
     border-radius:50%;pointer-events:none;
-    background:rgba(66,158,189,.16)}
-  .vx-hero-avatar-3d{position:relative;width:100%;height:100%}
-  .vx-hero-avatar-3d canvas{display:block;touch-action:pan-y}
+    background:radial-gradient(circle,rgba(159,231,245,.28) 0%,rgba(66,158,189,.12) 55%,transparent 72%)}
+  .vx-hero-avatar-3d{position:relative;width:100%;height:100%;z-index:1}
+  .vx-hero-avatar-3d canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+  .vx-hero-avatar-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:2;
+    margin:0;padding:6px 12px;border-radius:999px;font-size:12px;font-family:var(--display);
+    letter-spacing:.04em;color:rgba(255,255,255,.85);background:rgba(5,63,92,.45);
+    border:1px solid rgba(159,231,245,.35);pointer-events:none;opacity:.9;
+    transition:opacity .4s ease}
+  .vx-hero-avatar-wrap.is-dragging .vx-hero-avatar-hint,
+  .vx-hero-avatar-wrap.has-interacted .vx-hero-avatar-hint{opacity:0}
   @media(max-width:860px){
     .vx-hero{min-height:0}
     .vx-hero-avatar-wrap{display:none}
   }
+  @media(prefers-reduced-motion:reduce){
+    .vx-hero-avatar-hint{display:none}
+  }
 </style>
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=3';
   if (!window.matchMedia('(max-width:860px)').matches) {
     mountAvatar({
       container: 'vx-hero-avatar-3d',
       mode: 'idle',
       frame: 'full',
       interactive: true,
-      width: 420,
-      height: 640,
-      colorVars: ['--avatar-skin', '--avatar-skin-joint'],
-      colorFallbacks: ['#C68863', '#A8714F']
+      autoRotate: true,
+      width: 480,
+      height: 680,
     });
   }
 </script>

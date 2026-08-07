@@ -35,7 +35,7 @@
   }
   html[data-theme="dark"]{
     color-scheme:dark;
-    --paper:#0B1220; --surface:#141B2A; --fg:#E8EEF5; --logo:#9FE7F5;
+    --paper:#0B1220; --surface:#141B2A; --fg:#E8EEF5; --logo:#FFFFFF;
     --muted:#9AA8B8; --line:#2A3447;
     --nav-glass:rgba(20,27,42,.92);
     --input-bg:#141B2A; --status-bg:rgba(66,158,189,.16);
@@ -55,10 +55,16 @@
   .vx-nav{position:relative;display:flex;align-items:center;gap:12px;max-width:1120px;margin:0 auto;padding:10px 14px 10px 16px;
           background:var(--nav-glass);backdrop-filter:blur(14px);border:1px solid var(--line);
           border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
-  .vx-logo-link{display:flex;align-items:center;color:var(--logo);min-width:0}
-  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,30px);width:auto}
+  .vx-logo-link{display:inline-flex;align-items:center;gap:10px;color:var(--logo);min-width:0;
+                 padding:4px 10px 4px 6px;border-radius:999px;transition:background .2s ease,color .2s ease}
+  .vx-logo-link:hover{background:rgba(5,63,92,.06)}
+  html[data-theme="dark"] .vx-logo-link:hover{background:rgba(255,255,255,.08)}
+  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,36px);width:auto;filter:drop-shadow(0 1px 0 rgba(255,255,255,.35))}
+  html[data-theme="dark"] .vx-logo{filter:drop-shadow(0 0 10px rgba(159,231,245,.35))}
+  .vx-logo-wordmark{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1;color:var(--logo)}
   @media(max-width:860px){
-    .vx-logo-link .vx-logo{--vx-logo-h:22px;height:22px}
+    .vx-logo-link .vx-logo{--vx-logo-h:28px;height:28px}
+    .vx-logo-wordmark{font-size:15px}
   }
   .vx-nav-links{margin-left:10px;display:flex;gap:22px;font-size:14.5px;color:var(--muted);flex-wrap:wrap}
   .vx-nav-links a:hover{color:var(--fg)}
@@ -218,7 +224,8 @@
   <div class="vx-nav-shell">
   <div class="vx-nav">
     <a href="{{ url('/') }}" class="vx-logo-link" aria-label="VoxSign home">
-      @include('layouts.partials.logo', ['height' => 28, 'color' => 'currentColor', 'label' => 'VoxSign'])
+      @include('layouts.partials.logo', ['height' => 36, 'color' => 'currentColor', 'label' => 'VoxSign'])
+      <span class="vx-logo-wordmark" aria-hidden="true">VoxSign</span>
     </a>
     <div class="vx-nav-links" id="vx-nav-links">
       <a href="#accessibility">Accessibility</a>

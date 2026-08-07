@@ -27,7 +27,7 @@
   @media(prefers-reduced-motion:reduce){.vx-avatar-fallback .vx-hand{transition:none}}
 </style>
 <script type="module">
-  import { mountAvatar } from '/js/vx-avatar-loader.js';
+  import { mountAvatar } from '/js/vx-avatar-loader.js?v=3';
   mountAvatar({
     container: 'vx-avatar-3d',
     captionId: 'vx-avatar-caption',

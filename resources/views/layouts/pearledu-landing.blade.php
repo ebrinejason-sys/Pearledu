@@ -35,7 +35,7 @@
   }
   html[data-theme="dark"]{
     color-scheme:dark;
-    --paper:#0B1220; --surface:#141B2A; --fg:#E8EEF5; --logo:#9FE7F5;
+    --paper:#0B1220; --surface:#141B2A; --fg:#E8EEF5; --logo:#FFFFFF;
     --muted:#9AA8B8; --line:#2A3447;
     --nav-glass:rgba(20,27,42,.92);
     --input-bg:#141B2A; --status-bg:rgba(66,158,189,.16);
@@ -56,10 +56,11 @@
           background:var(--nav-glass);backdrop-filter:blur(14px);border:1px solid var(--line);
           border-radius:999px;box-shadow:0 12px 34px -22px rgba(11,16,32,.45)}
   .pe-brand{display:flex;align-items:center;gap:10px;padding-left:4px;color:var(--logo);min-width:0}
-  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,26px);width:auto}
+  .vx-logo{display:block;flex-shrink:0;height:var(--vx-logo-h,32px);width:auto;filter:drop-shadow(0 1px 0 rgba(255,255,255,.35))}
+  html[data-theme="dark"] .vx-logo{filter:drop-shadow(0 0 10px rgba(159,231,245,.35))}
   .pe-brand-text{display:flex;flex-direction:column;line-height:1.12;min-width:0}
   @media(max-width:760px){
-    .pe-brand .vx-logo{--vx-logo-h:20px;height:20px}
+    .pe-brand .vx-logo{--vx-logo-h:24px;height:24px}
     .pe-brand-tagline{display:none}
   }
   .pe-brand-name{font-family:var(--display);font-weight:700;font-size:16px;color:var(--fg)}
@@ -247,7 +248,7 @@
   <div class="pe-nav-shell">
     <div class="pe-nav">
       <a href="{{ url('/') }}" class="pe-brand" aria-label="PearlEdu home">
-        @include('layouts.partials.logo', ['height' => 26, 'color' => 'currentColor', 'label' => 'PearlEdu'])
+        @include('layouts.partials.logo', ['height' => 32, 'color' => 'currentColor', 'label' => 'PearlEdu'])
         <span class="pe-brand-text">
           <span class="pe-brand-name">PearlEdu</span>
           <span class="pe-brand-tagline">By VoxSign Technologies</span>
