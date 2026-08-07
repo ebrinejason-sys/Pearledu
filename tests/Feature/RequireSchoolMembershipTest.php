@@ -8,10 +8,12 @@ use App\Models\User;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Support\ActsAsPlatformOperator;
 use Tests\TestCase;
 
 class RequireSchoolMembershipTest extends TestCase
 {
+    use ActsAsPlatformOperator;
     use RefreshDatabase;
 
     private School $alpha;
@@ -53,5 +55,35 @@ class RequireSchoolMembershipTest extends TestCase
         $response = $this->actingAs($this->alice)->get('http://beta.voxsign.test/home');
 
         $response->assertForbidden();
+    }
+
+    public function test_platform_operator_hitting_home_is_sent_to_admin(): void
+    {
+        $host = 'http://'.config('tenancy.pearledu_landing_host');
+        $operator = User::factory()->create([
+            'email' => 'ops@voxsign.test',
+            'status' => 'active',
+            'password' => Hash::make('password12345'),
+        ]);
+        $this->ensurePlatformAdminRole($operator);
+
+        $response = $this->actingAs($operator)->get($host.'/home');
+
+        $response->assertRedirect(route('platform.dashboard'));
+    }
+
+    public function test_authenticated_platform_operator_login_redirects_to_admin(): void
+    {
+        $host = 'http://'.config('tenancy.pearledu_landing_host');
+        $operator = User::factory()->create([
+            'email' => 'ops2@voxsign.test',
+            'status' => 'active',
+            'password' => Hash::make('password12345'),
+        ]);
+        $this->ensurePlatformAdminRole($operator);
+
+        $response = $this->actingAs($operator)->get($host.'/login');
+
+        $response->assertRedirect(route('platform.dashboard'));
     }
 }

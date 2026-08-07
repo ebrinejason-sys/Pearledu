@@ -4,6 +4,7 @@ use App\Models\School;
 use App\Services\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -17,9 +18,14 @@ class RequireSchoolMembership {
         $user = $request->user();
         abort_unless($user, 403);
 
+        // Platform operators use /admin — never the school /home surface.
+        if ($user->isPlatformOperator()) {
+            return redirect()->route('platform.dashboard');
+        }
+
         $schoolId = $this->context->schoolId();
 
-        if ($schoolId === null && ! $user->isPlatformOperator()) {
+        if ($schoolId === null) {
             $sessionId = session(TenantContext::SESSION_SCHOOL_ID);
             if ($sessionId
                 && $user->activeAssignments()->where('school_id', (int) $sessionId)->exists()
@@ -33,7 +39,15 @@ class RequireSchoolMembership {
             }
         }
 
-        abort_if($schoolId === null, 404);
+        if ($schoolId === null) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('login')
+                ->withErrors(['identifier' => 'No active school is linked to this account. Contact PearlEdu support.']);
+        }
 
         $schoolOk = School::where('id', $schoolId)->where('status', 'active')->exists();
         abort_unless($schoolOk, 403, 'This school is not active.');

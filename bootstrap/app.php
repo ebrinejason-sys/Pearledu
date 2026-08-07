@@ -36,6 +36,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_AWS_ELB,
         );
 
+        // Authenticated users hitting /login must not bounce to /home (404 for platform ops).
+        $middleware->redirectUsersTo(function (Request $request) {
+            $user = $request->user();
+
+            return $user?->appHomeUrl() ?? '/home';
+        });
+
         $middleware->web(prepend: [ResolveTenant::class]);
         // After StartSession + auth: pin school from auth/session on the shared pearledu host.
         $middleware->web(append: [
