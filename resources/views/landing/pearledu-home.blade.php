@@ -1,22 +1,60 @@
 @extends('layouts.pearledu-landing')
 
 @section('content')
-  {{-- Hero — EMIS-style portal intro --}}
+  {{-- EMIS-style two-column hero --}}
   <section class="pe-hero">
-    <div class="pe-wrap pe-hero-inner pe-reveal">
-      <h1>School Management Platform (PearlEdu)</h1>
-      <p>
-        PearlEdu gives schools timely attendance, grading, fees, and parent communication in one system —
-        so leaders can plan, budget, and manage with clear evidence instead of scattered spreadsheets.
-      </p>
-      <p class="pe-cta-row">
-        <a href="{{ url('/login') }}" class="pe-btn-solid">Staff login</a>
-        <a href="#onboard" class="pe-btn-ghost">Onboard school</a>
-      </p>
+    <div class="pe-wrap pe-hero-grid">
+      <div class="pe-hero-copy">
+        <h1>School Management Platform (PearlEdu)</h1>
+        <p class="pe-hero-lead">
+          Providing timely school operations data for planning, budgeting, and evidence-based
+          management — attendance, grading, fees, and parent communication in one place.
+        </p>
+        <p class="pe-cta-row">
+          <a href="{{ url('/login') }}" class="pe-btn-solid">Staff login</a>
+          <a href="#onboard" class="pe-btn-ghost">Onboard school</a>
+        </p>
+        <p class="pe-hero-note">New to PearlEdu? <a href="#onboard">Request onboarding</a> and we’ll set up your school.</p>
+      </div>
+      <div class="pe-hero-visual" aria-hidden="true">
+        <svg class="pe-hero-art" viewBox="0 0 480 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="peArtSky" x1="80" y1="40" x2="420" y2="480" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#9FE7F5" stop-opacity=".35"/>
+              <stop offset="1" stop-color="#053F5C" stop-opacity=".15"/>
+            </linearGradient>
+            <linearGradient id="peArtCard" x1="120" y1="90" x2="360" y2="380" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#FFFFFF"/>
+              <stop offset="1" stop-color="#E8F7FA"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="240" cy="460" rx="150" ry="22" fill="rgba(5,63,92,.25)"/>
+          <rect x="70" y="70" width="340" height="380" rx="28" fill="url(#peArtSky)" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+          <rect x="108" y="108" width="264" height="300" rx="18" fill="url(#peArtCard)" stroke="rgba(5,63,92,.08)"/>
+          <rect x="128" y="132" width="120" height="14" rx="7" fill="#053F5C"/>
+          <rect x="128" y="156" width="180" height="8" rx="4" fill="#429EBD" opacity=".55"/>
+          <rect x="128" y="188" width="224" height="64" rx="12" fill="#053F5C"/>
+          <rect x="144" y="206" width="72" height="10" rx="5" fill="#9FE7F5"/>
+          <rect x="144" y="224" width="112" height="8" rx="4" fill="rgba(255,255,255,.45)"/>
+          <circle cx="320" cy="220" r="18" fill="#F27F0C"/>
+          <rect x="128" y="272" width="100" height="72" rx="12" fill="rgba(66,158,189,.18)"/>
+          <rect x="240" y="272" width="100" height="72" rx="12" fill="rgba(242,127,12,.16)"/>
+          <rect x="144" y="288" width="48" height="8" rx="4" fill="#429EBD"/>
+          <rect x="144" y="304" width="68" height="6" rx="3" fill="#053F5C" opacity=".35"/>
+          <rect x="256" y="288" width="48" height="8" rx="4" fill="#F27F0C"/>
+          <rect x="256" y="304" width="68" height="6" rx="3" fill="#053F5C" opacity=".35"/>
+          <rect x="128" y="360" width="224" height="22" rx="11" fill="#429EBD"/>
+          <path d="M168 420c28-48 56-72 84-72s56 24 84 72" stroke="#9FE7F5" stroke-width="10" stroke-linecap="round" opacity=".7"/>
+          <circle cx="252" cy="330" r="36" fill="#053F5C" opacity=".08"/>
+        </svg>
+      </div>
     </div>
+    <svg class="pe-hero-wave" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true">
+      <path fill="currentColor" d="M0,24 C360,56 1080,0 1440,28 L1440,56 L0,56 Z"/>
+    </svg>
   </section>
 
-  {{-- Modules — icon + copy grid like EMIS feature blocks --}}
+  {{-- Modules (EMIS feature-row style) --}}
   <section id="modules" class="pe-section pe-modules">
     <div class="pe-wrap">
       <div class="pe-modules-head pe-reveal">
@@ -94,14 +132,14 @@
     </div>
   </section>
 
-  {{-- Stats band — EMIS-style numbers strip --}}
+  {{-- Stats band with count-up --}}
   <section class="pe-stats" aria-label="PearlEdu at a glance">
     <div class="pe-wrap">
       <div class="pe-stats-grid pe-reveal">
-        <div class="pe-stat"><b>1</b><span>Unified school system</span></div>
-        <div class="pe-stat"><b>4</b><span>Core operations modules</span></div>
-        <div class="pe-stat"><b>24/7</b><span>Access for staff &amp; leaders</span></div>
-        <div class="pe-stat"><b>UG</b><span>Built for Ugandan schools</span></div>
+        <div class="pe-stat"><b data-count="1">0</b><span>Unified school system</span></div>
+        <div class="pe-stat"><b data-count="4">0</b><span>Core operations modules</span></div>
+        <div class="pe-stat"><b data-count="24" data-suffix="/7">0</b><span>Access for staff &amp; leaders</span></div>
+        <div class="pe-stat"><b data-count="100" data-suffix="%">0</b><span>School-isolated data</span></div>
       </div>
     </div>
   </section>
@@ -149,7 +187,7 @@
     </div>
   </section>
 
-  {{-- FAQ — EMIS “Have Questions? Look Here.” --}}
+  {{-- FAQ --}}
   <section id="faq" class="pe-section">
     <div class="pe-wrap">
       <div class="pe-faq-wrap pe-reveal">
@@ -187,7 +225,7 @@
     </div>
   </section>
 
-  {{-- Onboard CTA --}}
+  {{-- Onboard --}}
   <section id="onboard" class="pe-section pe-onboard">
     <div class="pe-wrap pe-reveal" style="text-align:center">
       <p class="pe-sec-label">Get started</p>
