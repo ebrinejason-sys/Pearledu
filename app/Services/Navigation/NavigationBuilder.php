@@ -77,6 +77,8 @@ class NavigationBuilder
             $zone = 'school';
         }
 
+        $sections = $this->withoutDeadLinks($sections);
+
         return [
             'zone' => $zone,
             'sections' => array_values(array_filter($sections, fn ($s) => count($s['items']) > 0)),
@@ -349,6 +351,24 @@ class NavigationBuilder
             'highlight' => $highlight,
             'icon' => $icon,
         ];
+    }
+
+    /**
+     * Drop nav entries whose routes are missing so the sidebar never shows dead ends.
+     *
+     * @param  list<array{key: string, label: string, items: list<array>}>  $sections
+     * @return list<array{key: string, label: string, items: list<array>}>
+     */
+    private function withoutDeadLinks(array $sections): array
+    {
+        return array_map(static function (array $section) {
+            $section['items'] = array_values(array_filter(
+                $section['items'] ?? [],
+                static fn ($item) => is_array($item) && ! empty($item['url'])
+            ));
+
+            return $section;
+        }, $sections);
     }
 
     private function has(array $permissions, string $perm): bool
