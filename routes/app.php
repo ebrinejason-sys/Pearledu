@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\AdmissionController;
 use App\Http\Controllers\AnnouncementController;
@@ -43,6 +44,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     });
     Route::middleware('permission:fees.pay')->group(function () {
         Route::post('/portal/fees/{invoice}/pay', [PortalController::class, 'pay'])->name('app.portal.fees.pay');
+        Route::post('/portal/fees/{invoice}/schoolpay', [PortalController::class, 'payWithSchoolPay'])->name('app.portal.fees.schoolpay');
     });
     Route::middleware('permission:self.timetable.view')->group(function () {
         Route::get('/portal/timetable', [PortalController::class, 'timetable'])->name('app.portal.timetable');
@@ -142,6 +144,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/fees/payments', [FeeController::class, 'storePayment'])->name('app.fees.payments.store');
         Route::post('/fees/payments/{payment}/confirm', [FeeController::class, 'confirmPayment'])->name('app.fees.payments.confirm');
         Route::post('/fees/payments/{payment}/reject', [FeeController::class, 'rejectPayment'])->name('app.fees.payments.reject');
+        Route::post('/fees/schoolpay/sync', [FeeController::class, 'syncSchoolPay'])->name('app.fees.schoolpay.sync');
     });
 
     Route::middleware('permission:announcements.manage')->group(function () {

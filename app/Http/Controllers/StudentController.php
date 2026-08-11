@@ -229,10 +229,18 @@ class StudentController extends Controller
             'status' => ['required', Rule::in($this->statuses())],
             'lin' => 'nullable|string|max:120',
             'nin' => 'nullable|string|max:120',
+            'schoolpay_payment_code' => [
+                'nullable',
+                'string',
+                'max:32',
+                Rule::unique('students', 'schoolpay_payment_code')
+                    ->where(fn ($q) => $q->where('school_id', $schoolId)->whereNull('deleted_at'))
+                    ->ignore($student?->id),
+            ],
         ]);
 
         // Empty strings → null so unique(emis) and encryption stay clean
-        foreach (['emis_number', 'lin', 'nin', 'class_id'] as $key) {
+        foreach (['emis_number', 'lin', 'nin', 'class_id', 'schoolpay_payment_code'] as $key) {
             if (array_key_exists($key, $data) && $data[$key] === '') {
                 $data[$key] = null;
             }

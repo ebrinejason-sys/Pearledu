@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\School;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +16,8 @@ class SchoolSettingsController extends Controller
         return view('app.settings.school', [
             'school' => $school,
             'themes' => config('themes.themes', []),
+            'schoolPayCallbackUrl' => route('webhooks.schoolpay.callback', $school),
+            'schoolPayNotifyUrl' => route('webhooks.schoolpay.notify', $school),
         ]);
     }
 
@@ -35,6 +36,9 @@ class SchoolSettingsController extends Controller
             'theme' => 'required|string|in:'.implode(',', array_keys(config('themes.themes', []))),
             'logo' => 'nullable|image|max:2048',
             'remove_logo' => 'nullable|boolean',
+            'schoolpay_enabled' => 'sometimes|boolean',
+            'schoolpay_school_code' => 'nullable|string|max:32',
+            'schoolpay_api_password' => 'nullable|string|max:200',
         ]);
 
         if (! empty($data['remove_logo']) && $school->logo_path) {
@@ -57,8 +61,19 @@ class SchoolSettingsController extends Controller
             'district' => $data['district'] ?? null,
             'emis_number' => $data['emis_number'] ?? null,
             'theme' => $data['theme'],
-        ])->save();
+            'schoolpay_enabled' => (bool) ($data['schoolpay_enabled'] ?? false),
+            'schoolpay_school_code' => filled($data['schoolpay_school_code'] ?? null)
+                ? trim((string) $data['schoolpay_school_code'])
+                : null,
+        ]);
 
-        return back()->with('status', 'School identity saved. Theme, badge and logo apply across the school app.');
+        // Only overwrite the encrypted password when a new value is submitted.
+        if (filled($data['schoolpay_api_password'] ?? null)) {
+            $school->schoolpay_api_password = trim((string) $data['schoolpay_api_password']);
+        }
+
+        $school->save();
+
+        return back()->with('status', 'School identity and SchoolPay settings saved.');
     }
 }

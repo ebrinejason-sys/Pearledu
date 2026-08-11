@@ -9,9 +9,11 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Term;
 use App\Services\Fees\FeePaymentService;
+use App\Services\SchoolPay\SchoolPayPaymentService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class FeeController extends Controller
 {
@@ -129,7 +131,7 @@ class FeeController extends Controller
         $data = $request->validate([
             'invoice_id' => 'required|integer',
             'amount' => 'required|numeric|min:0.01',
-            'method' => 'required|in:cash,mtn_momo,airtel_money,bank',
+            'method' => 'required|in:cash,mtn_momo,airtel_money,bank,schoolpay',
             'provider_ref' => 'nullable|string|max:120',
         ]);
         $invoice = FeeInvoice::where('school_id', $school->id)->findOrFail($data['invoice_id']);
@@ -143,6 +145,31 @@ class FeeController extends Controller
         ], confirmImmediately: true);
 
         return back()->with('status', 'Payment recorded.');
+    }
+
+    public function syncSchoolPay(Request $request, TenantContext $ctx, SchoolPayPaymentService $schoolPay)
+    {
+        $school = $ctx->school();
+        abort_unless($school, 404);
+        abort_unless($school->schoolPayConfigured(), 422, 'Enable SchoolPay and save credentials under School identity first.');
+
+        $data = $request->validate([
+            'date' => 'nullable|date_format:Y-m-d',
+        ]);
+        $date = $data['date'] ?? now(config('app.timezone'))->toDateString();
+
+        try {
+            $stats = $schoolPay->syncDay($school, $date);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            return back()->withErrors(['schoolpay' => 'SchoolPay sync failed: '.$e->getMessage()]);
+        }
+
+        return back()->with(
+            'status',
+            "SchoolPay sync {$date}: applied {$stats['applied']}, skipped {$stats['skipped']}, unmatched {$stats['unmatched']}."
+        );
     }
 
     public function confirmPayment(FeePayment $payment, TenantContext $ctx, FeePaymentService $svc, Request $request)

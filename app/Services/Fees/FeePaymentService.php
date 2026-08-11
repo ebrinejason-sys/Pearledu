@@ -16,6 +16,10 @@ class FeePaymentService
      *   amount:float|string,
      *   method?:string,
      *   provider_ref?:string|null,
+     *   external_reference?:string|null,
+     *   schoolpay_reference?:string|null,
+     *   provider_txn_id?:string|null,
+     *   channel_name?:string|null,
      *   recorded_by?:int|null
      * }  $data
      * @param  bool  $confirmImmediately  Staff recordings confirm and clear balance; parent portal submissions stay pending.
@@ -50,6 +54,10 @@ class FeePaymentService
                 'amount' => $amount,
                 'method' => $data['method'] ?? 'cash',
                 'provider_ref' => $data['provider_ref'] ?? null,
+                'external_reference' => $data['external_reference'] ?? null,
+                'schoolpay_reference' => $data['schoolpay_reference'] ?? null,
+                'provider_txn_id' => $data['provider_txn_id'] ?? null,
+                'channel_name' => $data['channel_name'] ?? null,
                 'status' => $confirmImmediately ? 'confirmed' : 'pending',
                 'recorded_by' => $data['recorded_by'] ?? null,
                 'verified_by' => $confirmImmediately ? ($data['recorded_by'] ?? null) : null,
@@ -64,7 +72,10 @@ class FeePaymentService
         });
     }
 
-    public function confirm(FeePayment $payment, int $verifiedBy): FeePayment
+    /**
+     * @param  int|null  $verifiedBy  Null when an external provider (e.g. SchoolPay) confirms the payment.
+     */
+    public function confirm(FeePayment $payment, ?int $verifiedBy): FeePayment
     {
         return DB::transaction(function () use ($payment, $verifiedBy) {
             /** @var FeePayment $payment */

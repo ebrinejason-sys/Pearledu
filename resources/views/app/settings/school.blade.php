@@ -5,14 +5,20 @@
     <div>
       <p class="page-header__eyebrow">Setup</p>
       <h1 class="page-header__title">School identity</h1>
-      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Badge and logo appear on report cards and school printouts.</p>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Badge, logo, theme, and SchoolPay credentials for fee collection.</p>
     </div>
   </div>
 
-  <div class="grid g2">
-    <div class="card">
-      <form method="post" action="{{ route('app.settings.school.update') }}" enctype="multipart/form-data">
-        @csrf @method('PUT')
+  @if(session('status'))
+    <div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>
+  @endif
+
+  <form method="post" action="{{ route('app.settings.school.update') }}" enctype="multipart/form-data">
+    @csrf @method('PUT')
+
+    <div class="grid g2">
+      <div class="card">
+        <h3 style="margin-top:0">Identity</h3>
         <label>School name</label>
         <input name="name" value="{{ old('name', $school->name) }}" required>
         <label>Motto</label>
@@ -49,16 +55,36 @@
             <input type="checkbox" name="remove_logo" value="1"> Remove current logo
           </label>
         @endif
-        @foreach($errors->all() as $e)<div class="err">{{ $e }}</div>@endforeach
-        <p style="margin-top:14px"><button class="btn" type="submit">Save identity</button></p>
-      </form>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Card preview</h3>
+        @include('partials.school-badge', ['school' => $school, 'size' => 'lg'])
+        <p style="margin:14px 0 0;color:var(--muted);font-size:13px">{{ $school->motto ?: 'Add a motto to show under the name.' }}</p>
+        <p style="margin:6px 0 0;color:var(--muted);font-size:12px">{{ $school->address ?: $school->district }}</p>
+
+        <hr style="margin:18px 0;border:0;border-top:1px solid var(--border, #e5e7eb)">
+
+        <h3 style="margin-top:0">SchoolPay fees</h3>
+        <p style="margin:0 0 12px;color:var(--muted);font-size:13px">
+          Connect SchoolPay so parent MoMo requests and channel payments post to PearlEdu invoices automatically.
+          Credentials come from <a href="https://schoolpay.co.ug" target="_blank" rel="noopener">schoolpay.co.ug</a>.
+        </p>
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <input type="checkbox" name="schoolpay_enabled" value="1" @checked(old('schoolpay_enabled', $school->schoolpay_enabled))>
+          Enable SchoolPay for this school
+        </label>
+        <label>SchoolPay school code</label>
+        <input name="schoolpay_school_code" value="{{ old('schoolpay_school_code', $school->schoolpay_school_code) }}" placeholder="e.g. 809">
+        <label>SchoolPay API password</label>
+        <input type="password" name="schoolpay_api_password" value="" placeholder="{{ $school->schoolpay_api_password ? '•••••••• (leave blank to keep)' : 'API password from SchoolPay' }}" autocomplete="new-password">
+        <p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">Register these URLs in the SchoolPay portal:</p>
+        <p style="margin:0;font-size:12px;word-break:break-all"><strong>Adhoc callback:</strong> {{ $schoolPayCallbackUrl }}</p>
+        <p style="margin:4px 0 0;font-size:12px;word-break:break-all"><strong>Webhook notify:</strong> {{ $schoolPayNotifyUrl }}</p>
+      </div>
     </div>
 
-    <div class="card">
-      <h3 style="margin-top:0">Card preview</h3>
-      @include('partials.school-badge', ['school' => $school, 'size' => 'lg'])
-      <p style="margin:14px 0 0;color:var(--muted);font-size:13px">{{ $school->motto ?: 'Add a motto to show under the name.' }}</p>
-      <p style="margin:6px 0 0;color:var(--muted);font-size:12px">{{ $school->address ?: $school->district }}</p>
-    </div>
-  </div>
+    @foreach($errors->all() as $e)<div class="err" style="margin-top:12px">{{ $e }}</div>@endforeach
+    <p style="margin-top:14px"><button class="btn" type="submit">Save settings</button></p>
+  </form>
 @endsection

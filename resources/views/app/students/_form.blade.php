@@ -43,6 +43,12 @@
     <input name="nin" value="{{ old('nin', $isEdit ? ($student->nin ?? '') : '') }}" autocomplete="off">
     @error('nin')<div class="err">{{ $message }}</div>@enderror
   </div>
+  <div>
+    <label>SchoolPay payment code</label>
+    <input name="schoolpay_payment_code" value="{{ old('schoolpay_payment_code', $isEdit ? ($student->schoolpay_payment_code ?? '') : '') }}" placeholder="e.g. 1005416321" autocomplete="off">
+    @error('schoolpay_payment_code')<div class="err">{{ $message }}</div>@enderror
+    <p style="margin:4px 0 0;font-size:12px;color:var(--muted)">Required to auto-match fees paid through SchoolPay channels / agents.</p>
+  </div>
 </div>
 @if($isEdit)
   <p style="color:var(--muted);font-size:13px;margin-top:8px">LIN/NIN are encrypted at rest. Opening this form audits a sensitive read.</p>

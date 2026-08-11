@@ -122,21 +122,24 @@ php artisan db:seed --class=PlatformSeeder --force
 php artisan config:cache
 ```
 
-## Uploading the 3D avatar model (manual step, not part of git deploy)
+## SchoolPay fees (production)
 
-`thirg glb.glb` is gitignored (see `.gitignore`) and is never part of a git
-commit, so cPanel's Git Version Control deploy pipeline does not put it on
-the server. The avatar-demo partial expects it at `public/models/avatar.glb`
-on the live site. To deploy it:
+1. Each school enables SchoolPay under **School identity** and enters their
+   SchoolPay school code + API password (encrypted at rest).
+2. Register these public HTTPS URLs in the SchoolPay portal for that school
+   (ids are per `schools.id`):
+   - Adhoc callback: `https://pearledu.voxsign.co.ug/webhooks/schoolpay/{id}/callback`
+   - Webhook notify: `https://pearledu.voxsign.co.ug/webhooks/schoolpay/{id}/notify`
+3. Map each learner’s SchoolPay payment code on the student record so channel
+   / agent payments auto-match open invoices.
+4. Ensure cron runs `schedule:run` — `schoolpay:sync` runs daily as a backup
+   because SchoolPay webhooks are single-attempt.
+5. Optional env on the server:
+   - `SCHOOLPAY_BASE_URL=https://schoolpay.co.ug/paymentapi`
+   - `SCHOOLPAY_ADHOC_ENABLED=true`
 
-1. In cPanel File Manager (or via SFTP), navigate to
-   `/home/voxsignco/pearledu-app/public/`.
-2. Create a `models` directory if it doesn't already exist.
-3. Upload the local file `thirg glb.glb` into that directory, renaming it to
-   `avatar.glb` on upload (the code requests `/models/avatar.glb`).
-4. Verify: `curl -I https://voxsign.co.ug/models/avatar.glb` should return
-   `HTTP/1.1 200` (or `403`/`404` if the upload path or filename is wrong —
-   re-check step 3).
+## Uploading the 3D avatar model
 
-This is a one-time step unless the model file itself changes. Re-run it if
-`thirg glb.glb` is ever replaced with an updated version.
+`public/models/avatar.glb` is tracked in git (with a `.gitignore` exception).
+After deploy it should already be present. If a browser 404s `/models/avatar.glb`,
+re-upload it once to `/home/voxsignco/pearledu-app/public/models/avatar.glb`.
