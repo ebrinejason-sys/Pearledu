@@ -95,7 +95,7 @@
       <form method="post" action="{{ route('app.fees.payments.store') }}">@csrf
         <label>Invoice</label><select name="invoice_id">@foreach($invoices as $inv)<option value="{{ $inv->id }}">{{ $inv->reference }} · {{ $inv->student?->full_name }} · bal {{ number_format($inv->balance) }}</option>@endforeach</select>
         <label>Amount</label><input type="number" step="0.01" name="amount" required>
-        <label>Method</label><select name="method"><option value="cash">Cash</option><option value="mtn_momo">MTN MoMo</option><option value="airtel_money">Airtel Money</option><option value="bank">Bank</option></select>
+        <label>Method</label><select name="method"><option value="cash">Cash</option><option value="mtn_momo">MTN MoMo</option><option value="airtel_money">Airtel Money</option><option value="bank">Bank</option><option value="schoolpay">SchoolPay</option></select>
         <label>Provider ref</label><input name="provider_ref">
         <p><button class="btn" type="submit">Record payment</button></p>
       </form>
@@ -113,15 +113,19 @@
             <td>{{ $p->invoice?->reference ?? '—' }}</td>
             <td>{{ $p->invoice?->student?->full_name ?? '—' }}</td>
             <td>{{ str_replace('_', ' ', $p->method) }}</td>
-            <td>{{ $p->provider_ref ?? '—' }}</td>
+            <td>{{ $p->provider_ref ?? $p->schoolpay_reference ?? $p->external_reference ?? '—' }}</td>
             <td>{{ number_format((float) $p->amount) }}</td>
             <td style="white-space:nowrap">
-              <form method="post" action="{{ route('app.fees.payments.confirm', $p) }}" style="display:inline">@csrf
-                <button class="btn accent" type="submit" style="padding:4px 10px;font-size:12px">Confirm</button>
-              </form>
-              <form method="post" action="{{ route('app.fees.payments.reject', $p) }}" style="display:inline">@csrf
-                <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Reject</button>
-              </form>
+              @if($p->method === 'schoolpay')
+                <span class="pill">awaiting SchoolPay</span>
+              @else
+                <form method="post" action="{{ route('app.fees.payments.confirm', $p) }}" style="display:inline">@csrf
+                  <button class="btn accent" type="submit" style="padding:4px 10px;font-size:12px">Confirm</button>
+                </form>
+                <form method="post" action="{{ route('app.fees.payments.reject', $p) }}" style="display:inline">@csrf
+                  <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Reject</button>
+                </form>
+              @endif
             </td>
           </tr>
         @empty
@@ -130,6 +134,22 @@
       </tbody>
     </table>
   </div>
+
+  @if($school->schoolPayConfigured())
+    <div class="card">
+      <h3 style="margin-top:0">SchoolPay sync</h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px">Pull completed SchoolPay receipts for a day and apply any that are not yet on invoices. Student SchoolPay payment codes must be set on learner records.</p>
+      <form method="post" action="{{ route('app.fees.schoolpay.sync') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+        @csrf
+        <div>
+          <label>Date</label>
+          <input type="date" name="date" value="{{ now()->toDateString() }}" required>
+        </div>
+        <button class="btn" type="submit">Sync SchoolPay</button>
+      </form>
+      @error('schoolpay')<div class="err" style="margin-top:8px">{{ $message }}</div>@enderror
+    </div>
+  @endif
 
   <div class="card">
     <h3 style="margin-top:0">Recent invoices</h3>

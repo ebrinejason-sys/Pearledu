@@ -12,6 +12,7 @@ class FeePayment extends Model
 
     protected $fillable = [
         'school_id', 'invoice_id', 'amount', 'method', 'provider_ref',
+        'external_reference', 'schoolpay_reference', 'provider_txn_id', 'channel_name',
         'status', 'recorded_by', 'verified_by', 'verified_at',
     ];
 

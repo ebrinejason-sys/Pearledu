@@ -52,6 +52,24 @@
       @endphp
 
       @if($canPay && $payable > 0 && !in_array($invoice->status, ['paid','void'], true))
+        @if(!empty($schoolPayEnabled))
+          <form method="post" action="{{ route('app.portal.fees.schoolpay', $invoice) }}" style="margin-top:14px" class="grid g2">
+            @csrf
+            <input type="hidden" name="student_id" value="{{ $student->id }}">
+            <div>
+              <label>Amount (UGX)</label>
+              <input name="amount" type="number" step="0.01" min="0.01" max="{{ $payable }}" value="{{ $payable }}" required>
+            </div>
+            <div>
+              <label>MoMo phone (MTN / Airtel)</label>
+              <input name="phone" type="tel" inputmode="tel" placeholder="0770123456" required>
+            </div>
+            <div style="display:flex;align-items:end"><button class="btn accent" type="submit">Pay with SchoolPay</button></div>
+          </form>
+          <p style="color:var(--muted);font-size:12px;margin:8px 0 0">Approve the debit prompt on your phone. Invoice balance updates automatically when SchoolPay confirms payment.</p>
+          <details style="margin-top:12px">
+            <summary style="cursor:pointer;color:var(--muted);font-size:13px">Or submit a manual payment for school verification</summary>
+        @endif
         <form method="post" action="{{ route('app.portal.fees.pay', $invoice) }}" style="margin-top:14px" class="grid g2">
           @csrf
           <input type="hidden" name="student_id" value="{{ $student->id }}">
@@ -72,11 +90,14 @@
             <label>Transaction reference</label>
             <input name="provider_ref" placeholder="Optional MoMo / bank ref">
           </div>
-          <div style="display:flex;align-items:end"><button class="btn accent" type="submit">Submit for verification</button></div>
+          <div style="display:flex;align-items:end"><button class="btn {{ !empty($schoolPayEnabled) ? 'ghost' : 'accent' }}" type="submit">Submit for verification</button></div>
         </form>
-        <p style="color:var(--muted);font-size:12px;margin:8px 0 0">Submissions stay pending until the school verifies the payment. Balance is not reduced until then.</p>
+        <p style="color:var(--muted);font-size:12px;margin:8px 0 0">Manual submissions stay pending until the school verifies the payment.</p>
+        @if(!empty($schoolPayEnabled))
+          </details>
+        @endif
       @elseif($canPay && $pendingTotal > 0 && $payable <= 0)
-        <p style="color:var(--muted);font-size:13px;margin:12px 0 0">Awaiting school verification of your submitted payment(s).</p>
+        <p style="color:var(--muted);font-size:13px;margin:12px 0 0">Awaiting confirmation of your submitted payment(s).</p>
       @endif
     </div>
   @endforeach

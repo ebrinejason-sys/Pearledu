@@ -1,5 +1,7 @@
 <?php
+
 namespace Tests\Feature;
+
 use App\Http\Middleware\ResolveTenant;
 use App\Models\School;
 use App\Models\User;
@@ -24,6 +26,7 @@ class SidebarNavigationTest extends TestCase
     private function actingAsInSchool(User $user): static
     {
         app(TenantContext::class)->forSchool($this->school->id);
+
         return $this->actingAs($user);
     }
 
@@ -47,11 +50,8 @@ class SidebarNavigationTest extends TestCase
 
         $response = $this->actingAsInSchool($parent)->get(route('app.home'));
 
-        $response->assertOk();
-        $response->assertDontSee('Learners');
-        $response->assertDontSee('Communications');
-        $response->assertDontSee('Send SMS');
-        $response->assertSee('Account settings');
+        // Parents with linked learners are routed to the family portal.
+        $response->assertRedirect(route('app.portal.home'));
     }
 
     public function test_student_does_not_see_communications_section(): void
@@ -60,10 +60,7 @@ class SidebarNavigationTest extends TestCase
 
         $response = $this->actingAsInSchool($student)->get(route('app.home'));
 
-        $response->assertOk();
-        $response->assertDontSee('Learners');
-        $response->assertDontSee('Communications');
-        $response->assertSee('Account settings');
+        $response->assertRedirect(route('app.portal.home'));
     }
 
     public function test_platform_operator_sees_platform_sections_on_platform_console(): void

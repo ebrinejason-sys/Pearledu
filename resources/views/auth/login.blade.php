@@ -48,12 +48,14 @@
         <h1>Sign in</h1>
         <p style="margin:0 0 14px;font-size:14px;color:var(--muted, #5a6b75)">One login for every school — your account opens your school’s dashboard.</p>
         @if(session('status'))<div class="vx-auth-status">{{ session('status') }}</div>@endif
+        <div class="vx-auth-hint" role="note">The password field must be at least 10 characters.</div>
         <form method="post" action="/login">
           @csrf
           <label>Email or phone</label><input name="identifier" type="text" value="{{ old('identifier') }}" required autofocus autocomplete="username" placeholder="you@school.com or 07…">
           @include('partials.password-input', ['name' => 'password', 'label' => 'Password', 'autocomplete' => 'current-password'])
           <label class="vx-auth-remember"><input type="checkbox" name="remember"> Remember me</label>
           @error('identifier')<div class="err">{{ $message }}</div>@enderror
+          @error('password')<div class="err">{{ $message }}</div>@enderror
           <p style="margin:10px 0 0;font-size:13px"><a href="{{ route('password.request') }}" style="color:var(--sidebar-ink,#9FE7F5)">Forgot password?</a></p>
           <button class="btn" type="submit">Sign in</button>
         </form>

@@ -13,6 +13,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -52,7 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Critical: pin school RLS before implicit model binding. Otherwise pearledu.* stays
         // platform-scoped during SubstituteBindings and school users can IDOR other tenants.
         $middleware->prependToPriorityList(
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            SubstituteBindings::class,
             PinAuthenticatedTenant::class,
         );
         $middleware->alias([
@@ -62,6 +63,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform.recent_auth' => RequireRecentPlatformAuth::class,
             'permission' => RequirePermission::class,
             '2fa.pending' => EnsureTwoFactorPending::class,
+        ]);
+
+        // SchoolPay posts JSON callbacks without a CSRF cookie.
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/schoolpay/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {})

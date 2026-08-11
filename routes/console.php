@@ -8,5 +8,11 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 use Illuminate\Support\Facades\Schedule;
+
 Schedule::command('queue:work --stop-when-empty --max-time=50')
     ->everyMinute()->withoutOverlapping();
+
+// SchoolPay webhooks are single-attempt — daily sync covers missed notifications.
+Schedule::command('schoolpay:sync')
+    ->dailyAt('01:15')
+    ->withoutOverlapping();
