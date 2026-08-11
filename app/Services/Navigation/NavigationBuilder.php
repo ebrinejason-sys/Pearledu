@@ -1,7 +1,11 @@
 <?php
+
 namespace App\Services\Navigation;
+
+use App\Models\School;
 use App\Models\User;
 use App\Services\Platform\ImpersonationService;
+use App\Services\Platform\PlatformStaffService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Route;
 
@@ -35,7 +39,7 @@ class NavigationBuilder
         if (! $school && $isPlatformOperator && $onPlatform) {
             $enteredId = session('platform.entered_school_id');
             if ($enteredId) {
-                $school = \App\Models\School::query()->find($enteredId);
+                $school = School::query()->find($enteredId);
                 $schoolId = $school?->id;
             }
         }
@@ -49,7 +53,7 @@ class NavigationBuilder
         if ($isPlatformOperator && $roleLabels === []) {
             $platformRole = $user->platformRoleKey();
             $roleLabels = $platformRole
-                ? [\App\Services\Platform\PlatformStaffService::roleLabels()[$platformRole] ?? $platformRole]
+                ? [PlatformStaffService::roleLabels()[$platformRole] ?? $platformRole]
                 : ['Misconfigured account'];
         }
 
@@ -69,7 +73,7 @@ class NavigationBuilder
             $sections = $this->platformSections($user);
             $zone = 'platform';
         } else {
-            $sections = $this->schoolSections($permissions, $isPlatformOperator);
+            $sections = $this->schoolSections($permissions, $isPlatformOperator, $school);
             $zone = 'school';
         }
 
@@ -91,7 +95,7 @@ class NavigationBuilder
     }
 
     /** @return list<array{key: string, label: string, items: list<array>}> */
-    private function schoolSections(array $permissions, bool $isPlatformOperator): array
+    private function schoolSections(array $permissions, bool $isPlatformOperator, ?School $school = null): array
     {
         $canAssess = $this->hasAny($permissions, ['assessment.enter', 'assessment.manage', 'assessment.view']);
 
@@ -153,7 +157,7 @@ class NavigationBuilder
                     $this->has($permissions, 'admissions.manage')
                         ? $this->item('Admissions', 'app.admissions.index', icon: 'admissions', active: request()->routeIs('app.admissions.*'))
                         : null,
-                    $this->has($permissions, 'emis.manage')
+                    $this->has($permissions, 'emis.manage') && ($school?->emisEnabled() ?? false)
                         ? $this->item('EMIS export', 'app.emis.export', icon: 'emis')
                         : null,
                 ])),

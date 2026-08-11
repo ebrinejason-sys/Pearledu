@@ -14,6 +14,7 @@ use App\Services\Theme\ThemeManager;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -49,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        Password::defaults(static fn () => Password::min(10));
 
         View::composer('*', function ($view) {
             $theme = app(ThemeManager::class);

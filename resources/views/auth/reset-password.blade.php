@@ -9,7 +9,8 @@
       </a>
       <div class="vx-auth-card">
         <h1>Choose a new password</h1>
-        <p class="vx-auth-lead">Use at least 10 characters. After saving, you can sign in right away.</p>
+        <div class="vx-auth-hint" role="note">The password field must be at least 10 characters.</div>
+        <p class="vx-auth-lead">After saving, you can sign in right away.</p>
         <form method="post" action="{{ route('password.update') }}">
           @csrf
           <input type="hidden" name="token" value="{{ $token }}">

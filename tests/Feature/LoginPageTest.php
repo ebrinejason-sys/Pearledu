@@ -61,6 +61,9 @@ class LoginPageTest extends TestCase
         $response->assertSee('name="identifier"', false);
         $response->assertSee('name="password"', false);
         $response->assertSee('name="remember"', false);
+        $response->assertSee('vx-auth-hint', false);
+        $response->assertSee('The password field must be at least 10 characters.', false);
+        $response->assertSee('background:#B8F55A', false);
     }
 
     public function test_invalid_credentials_shows_error_message(): void

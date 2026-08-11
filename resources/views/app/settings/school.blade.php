@@ -5,7 +5,7 @@
     <div>
       <p class="page-header__eyebrow">Setup</p>
       <h1 class="page-header__title">School identity</h1>
-      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Badge, logo, theme, and SchoolPay credentials for fee collection.</p>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Badge, logo, theme, and optional add-ons (EMIS Support, SchoolPay).</p>
     </div>
   </div>
 
@@ -29,7 +29,7 @@
         <input name="address" value="{{ old('address', $school->address) }}">
         <label>District</label>
         <input name="district" value="{{ old('district', $school->district) }}">
-        <label>EMIS number</label>
+        <label>EMIS number (school registry id)</label>
         <input name="emis_number" value="{{ old('emis_number', $school->emis_number) }}">
         <label>School theme</label>
         <select name="theme" required>
@@ -55,34 +55,58 @@
             <input type="checkbox" name="remove_logo" value="1"> Remove current logo
           </label>
         @endif
-      </div>
 
-      <div class="card">
+        <hr style="margin:18px 0;border:0;border-top:1px solid var(--border, #e5e7eb)">
         <h3 style="margin-top:0">Card preview</h3>
         @include('partials.school-badge', ['school' => $school, 'size' => 'lg'])
         <p style="margin:14px 0 0;color:var(--muted);font-size:13px">{{ $school->motto ?: 'Add a motto to show under the name.' }}</p>
         <p style="margin:6px 0 0;color:var(--muted);font-size:12px">{{ $school->address ?: $school->district }}</p>
+      </div>
 
-        <hr style="margin:18px 0;border:0;border-top:1px solid var(--border, #e5e7eb)">
-
-        <h3 style="margin-top:0">SchoolPay fees</h3>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:13px">
-          SchoolPay is a Bank of Uganda–licensed payment service (Fincom / Service Cops).
-          Production school codes and API passwords are issued by Service Cops — they are not self-service.
-          Contact <a href="mailto:support@schoolpay.co.ug">support@schoolpay.co.ug</a> / +256 200 502 140, then enter the credentials below.
+      <div class="card">
+        <h3 style="margin-top:0">Optional features</h3>
+        <p style="margin:0 0 14px;color:var(--muted);font-size:13px">
+          Schools opt in only to what they need. Turn a feature off anytime — menus and integrations hide until you enable it again.
         </p>
-        <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-          <input type="checkbox" name="schoolpay_enabled" value="1" @checked(old('schoolpay_enabled', $school->schoolpay_enabled))>
-          Enable SchoolPay for this school
-        </label>
-        <label>SchoolPay school code</label>
-        <input name="schoolpay_school_code" value="{{ old('schoolpay_school_code', $school->schoolpay_school_code) }}" placeholder="Unique school identifier from Service Cops">
-        <label>SchoolPay API password</label>
-        <input type="password" name="schoolpay_api_password" value="" placeholder="{{ $school->schoolpay_api_password ? '•••••••• (leave blank to keep)' : 'API password from Service Cops' }}" autocomplete="new-password">
-        <p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">Every API call authenticates with <code>strtoupper(md5(schoolCode + date|ref + password))</code>. Register these HTTPS URLs in the SchoolPay portal:</p>
-        <p style="margin:0;font-size:12px;word-break:break-all"><strong>Adhoc callback:</strong> {{ $schoolPayCallbackUrl }}</p>
-        <p style="margin:4px 0 0;font-size:12px;word-break:break-all"><strong>Webhook notify:</strong> {{ $schoolPayNotifyUrl }}</p>
-        <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Also set each learner’s 10-digit SchoolPay payment code so Sync/webhook receipts can be matched.</p>
+
+        <div style="padding:14px;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:14px;background:color-mix(in srgb, var(--surface, #fff) 92%, var(--brand, #053F5C))">
+          <label style="display:flex;align-items:flex-start;gap:10px;margin:0;cursor:pointer">
+            <input type="checkbox" name="emis_enabled" value="1" @checked(old('emis_enabled', $school->emis_enabled)) style="margin-top:3px">
+            <span>
+              <strong style="display:block">EMIS Support</strong>
+              <span style="display:block;font-size:13px;color:var(--muted);margin-top:4px;font-weight:400">
+                MoES EMIS student export and related tools. When off, EMIS export is hidden from the sidebar.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div style="padding:14px;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:14px;background:color-mix(in srgb, var(--surface, #fff) 92%, var(--accent, #F4A261))">
+          <label style="display:flex;align-items:flex-start;gap:10px;margin:0 0 12px;cursor:pointer">
+            <input type="checkbox" name="schoolpay_enabled" value="1" @checked(old('schoolpay_enabled', $school->schoolpay_enabled)) style="margin-top:3px">
+            <span>
+              <strong style="display:block">SchoolPay</strong>
+              <span style="display:block;font-size:13px;color:var(--muted);margin-top:4px;font-weight:400">
+                Live mobile-money fee collection via SchoolPay (Bank of Uganda–licensed). When off, parents keep the manual verification flow only.
+              </span>
+            </span>
+          </label>
+
+          <div style="padding-left:28px">
+            <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">
+              Credentials are issued by Service Cops — contact
+              <a href="mailto:support@schoolpay.co.ug">support@schoolpay.co.ug</a> / 0200 502 140.
+            </p>
+            <label>SchoolPay school code</label>
+            <input name="schoolpay_school_code" value="{{ old('schoolpay_school_code', $school->schoolpay_school_code) }}" placeholder="Unique school identifier from Service Cops">
+            <label>SchoolPay API password</label>
+            <input type="password" name="schoolpay_api_password" value="" placeholder="{{ $school->schoolpay_api_password ? '•••••••• (leave blank to keep)' : 'API password from Service Cops' }}" autocomplete="new-password">
+            <p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">Register these HTTPS URLs in the SchoolPay portal:</p>
+            <p style="margin:0;font-size:12px;word-break:break-all"><strong>Adhoc callback:</strong> {{ $schoolPayCallbackUrl }}</p>
+            <p style="margin:4px 0 0;font-size:12px;word-break:break-all"><strong>Webhook notify:</strong> {{ $schoolPayNotifyUrl }}</p>
+            <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Also set each learner’s 10-digit SchoolPay payment code on student records.</p>
+          </div>
+        </div>
       </div>
     </div>
 

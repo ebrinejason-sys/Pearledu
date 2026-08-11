@@ -13,6 +13,7 @@ class School extends Model
         'name', 'slug', 'emis_number', 'district', 'theme', 'motto', 'badge_text',
         'logo_path', 'address', 'status', 'created_by',
         'schoolpay_enabled', 'schoolpay_school_code', 'schoolpay_api_password',
+        'emis_enabled',
         'deletion_scheduled_at', 'deletion_requested_by', 'deletion_reason',
     ];
 
@@ -25,13 +26,24 @@ class School extends Model
         'deletion_scheduled_at' => 'datetime',
         'schoolpay_enabled' => 'boolean',
         'schoolpay_api_password' => 'encrypted',
+        'emis_enabled' => 'boolean',
     ];
+
+    public function schoolPayEnabled(): bool
+    {
+        return (bool) $this->schoolpay_enabled;
+    }
 
     public function schoolPayConfigured(): bool
     {
-        return $this->schoolpay_enabled
+        return $this->schoolPayEnabled()
             && filled($this->schoolpay_school_code)
             && filled($this->schoolpay_api_password);
+    }
+
+    public function emisEnabled(): bool
+    {
+        return (bool) $this->emis_enabled;
     }
 
     public function offerings(): HasMany

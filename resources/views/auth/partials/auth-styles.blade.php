@@ -28,7 +28,28 @@
   .vx-auth-card .btn-ghost:hover{background:var(--sidebar-hover)}
   .vx-auth-card .btn-link{display:inline;width:auto;margin:0;padding:0;background:none;border:0;box-shadow:none;color:color-mix(in srgb, var(--on-brand) 85%, transparent);font:inherit;font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
   .vx-auth-card .btn-link:hover{color:var(--on-brand)}
-  .vx-auth-card .err{color:#FFD3D3;font-size:13px;margin-top:6px}
+  .vx-auth-card .err{
+    color:#1A1200;
+    background:#FFE566;
+    border:1px solid #FFC107;
+    padding:10px 12px;
+    border-radius:var(--radius);
+    font-size:14px;
+    font-weight:700;
+    margin-top:10px;
+    line-height:1.45;
+  }
+  .vx-auth-hint{
+    color:#102A12;
+    background:#B8F55A;
+    border:1px solid #7BD12A;
+    padding:10px 12px;
+    border-radius:var(--radius);
+    font-size:13px;
+    font-weight:700;
+    margin:0 0 14px;
+    line-height:1.45;
+  }
   .vx-auth-card p{margin:0 0 14px;font-size:14px;line-height:1.55;color:color-mix(in srgb, var(--on-brand) 78%, transparent)}
   .vx-auth-card code{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.25);color:var(--sidebar-ink);font-size:12px;word-break:break-all}
   .vx-auth-qr{display:inline-flex;align-items:center;justify-content:center;margin:4px 0 14px;padding:14px;background:#fff;border-radius:calc(var(--radius) + 4px);box-shadow:0 8px 24px rgba(0,0,0,.18)}

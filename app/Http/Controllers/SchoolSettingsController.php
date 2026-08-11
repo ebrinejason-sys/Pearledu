@@ -36,6 +36,7 @@ class SchoolSettingsController extends Controller
             'theme' => 'required|string|in:'.implode(',', array_keys(config('themes.themes', []))),
             'logo' => 'nullable|image|max:2048',
             'remove_logo' => 'nullable|boolean',
+            'emis_enabled' => 'sometimes|boolean',
             'schoolpay_enabled' => 'sometimes|boolean',
             'schoolpay_school_code' => 'nullable|string|max:32',
             'schoolpay_api_password' => 'nullable|string|max:200',
@@ -61,6 +62,7 @@ class SchoolSettingsController extends Controller
             'district' => $data['district'] ?? null,
             'emis_number' => $data['emis_number'] ?? null,
             'theme' => $data['theme'],
+            'emis_enabled' => (bool) ($data['emis_enabled'] ?? false),
             'schoolpay_enabled' => (bool) ($data['schoolpay_enabled'] ?? false),
             'schoolpay_school_code' => filled($data['schoolpay_school_code'] ?? null)
                 ? trim((string) $data['schoolpay_school_code'])
@@ -74,6 +76,6 @@ class SchoolSettingsController extends Controller
 
         $school->save();
 
-        return back()->with('status', 'School identity and SchoolPay settings saved.');
+        return back()->with('status', 'School identity and optional features saved.');
     }
 }

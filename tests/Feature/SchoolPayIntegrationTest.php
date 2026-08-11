@@ -290,12 +290,35 @@ class SchoolPayIntegrationTest extends TestCase
             'schoolpay_enabled' => '1',
             'schoolpay_school_code' => '9999',
             'schoolpay_api_password' => 'new-secret-password',
+            'emis_enabled' => '1',
         ]);
 
         $response->assertRedirect();
         $this->school->refresh();
         $this->assertTrue($this->school->schoolpay_enabled);
+        $this->assertTrue($this->school->emis_enabled);
         $this->assertSame('9999', $this->school->schoolpay_school_code);
         $this->assertSame('new-secret-password', $this->school->schoolpay_api_password);
+    }
+
+    public function test_emis_export_requires_feature_opt_in(): void
+    {
+        $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
+        app(TenantContext::class)->forSchool($this->school->id);
+        $this->school->forceFill(['emis_enabled' => false])->save();
+
+        $response = $this->actingAs($admin)->withSession([
+            TenantContext::SESSION_SCHOOL_ID => $this->school->id,
+        ])->get(route('app.emis.export'));
+
+        $response->assertNotFound();
+
+        $this->school->forceFill(['emis_enabled' => true])->save();
+
+        $ok = $this->actingAs($admin)->withSession([
+            TenantContext::SESSION_SCHOOL_ID => $this->school->id,
+        ])->get(route('app.emis.export'));
+
+        $ok->assertOk();
     }
 }
