@@ -232,7 +232,7 @@ class StudentController extends Controller
             'schoolpay_payment_code' => [
                 'nullable',
                 'string',
-                'max:32',
+                'regex:/^\d{10}$/',
                 Rule::unique('students', 'schoolpay_payment_code')
                     ->where(fn ($q) => $q->where('school_id', $schoolId)->whereNull('deleted_at'))
                     ->ignore($student?->id),

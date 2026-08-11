@@ -45,9 +45,9 @@
   </div>
   <div>
     <label>SchoolPay payment code</label>
-    <input name="schoolpay_payment_code" value="{{ old('schoolpay_payment_code', $isEdit ? ($student->schoolpay_payment_code ?? '') : '') }}" placeholder="e.g. 1005416321" autocomplete="off">
+    <input name="schoolpay_payment_code" value="{{ old('schoolpay_payment_code', $isEdit ? ($student->schoolpay_payment_code ?? '') : '') }}" placeholder="10 digits, e.g. 1005416321" inputmode="numeric" pattern="\d{10}" maxlength="10" autocomplete="off">
     @error('schoolpay_payment_code')<div class="err">{{ $message }}</div>@enderror
-    <p style="margin:4px 0 0;font-size:12px;color:var(--muted)">Required to auto-match fees paid through SchoolPay channels / agents.</p>
+    <p style="margin:4px 0 0;font-size:12px;color:var(--muted)">SchoolPay’s unique 10-digit student payment code. Required to match channel/agent payments and avoid orphaned receipts.</p>
   </div>
 </div>
 @if($isEdit)

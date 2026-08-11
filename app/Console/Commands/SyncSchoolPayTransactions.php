@@ -11,10 +11,12 @@ class SyncSchoolPayTransactions extends Command
 {
     protected $signature = 'schoolpay:sync
         {--school= : Optional school id}
-        {--date= : Single YYYY-MM-DD (defaults to lookback window ending today)}
-        {--days= : Override lookback days}';
+        {--date= : Single YYYY-MM-DD (uses SyncSchoolTransactions)}
+        {--from= : Range start YYYY-MM-DD (uses SchoolRangeTransactions; hash = fromDate)}
+        {--to= : Range end YYYY-MM-DD (defaults to today)}
+        {--days= : Lookback days ending today (max 31; uses SchoolRangeTransactions)}';
 
-    protected $description = 'Pull SchoolPay transactions and apply missing fee receipts';
+    protected $description = 'Pull SchoolPay transactions (sync/range) and apply missing fee receipts';
 
     public function handle(SchoolPayPaymentService $schoolPay): int
     {
@@ -34,31 +36,32 @@ class SyncSchoolPayTransactions extends Command
             return self::SUCCESS;
         }
 
-        $dates = $this->datesToSync();
+        [$mode, $from, $to] = $this->resolveWindow();
         $totals = ['applied' => 0, 'skipped' => 0, 'unmatched' => 0];
 
         foreach ($schools as $school) {
-            foreach ($dates as $date) {
-                try {
-                    $stats = $schoolPay->syncDay($school, $date);
-                } catch (\Throwable $e) {
-                    $this->error("School {$school->id} {$date}: ".$e->getMessage());
+            try {
+                $stats = $mode === 'day'
+                    ? $schoolPay->syncDay($school, $from)
+                    : $schoolPay->syncRange($school, $from, $to);
+            } catch (\Throwable $e) {
+                $this->error("School {$school->id}: ".$e->getMessage());
 
-                    continue;
-                }
+                continue;
+            }
 
-                $this->line(sprintf(
-                    'School %d %s — applied=%d skipped=%d unmatched=%d',
-                    $school->id,
-                    $date,
-                    $stats['applied'],
-                    $stats['skipped'],
-                    $stats['unmatched'],
-                ));
+            $label = $mode === 'day' ? $from : "{$from}..{$to}";
+            $this->line(sprintf(
+                'School %d %s — applied=%d skipped=%d unmatched=%d',
+                $school->id,
+                $label,
+                $stats['applied'],
+                $stats['skipped'],
+                $stats['unmatched'],
+            ));
 
-                foreach ($totals as $key => $_) {
-                    $totals[$key] += $stats[$key];
-                }
+            foreach ($totals as $key => $_) {
+                $totals[$key] += $stats[$key];
             }
         }
 
@@ -72,19 +75,30 @@ class SyncSchoolPayTransactions extends Command
         return self::SUCCESS;
     }
 
-    /** @return list<string> */
-    private function datesToSync(): array
+    /**
+     * @return array{0:'day'|'range',1:string,2:string}
+     */
+    private function resolveWindow(): array
     {
         if ($single = $this->option('date')) {
-            return [Carbon::parse($single)->toDateString()];
+            $date = Carbon::parse($single)->toDateString();
+
+            return ['day', $date, $date];
+        }
+
+        if ($from = $this->option('from')) {
+            $fromDate = Carbon::parse($from)->toDateString();
+            $toDate = Carbon::parse($this->option('to') ?: now(config('app.timezone')))->toDateString();
+
+            return ['range', $fromDate, $toDate];
         }
 
         $days = max(1, min(31, (int) ($this->option('days') ?: config('schoolpay.sync_lookback_days', 2))));
-        $dates = [];
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $dates[] = now(config('app.timezone'))->subDays($i)->toDateString();
-        }
+        $toDate = now(config('app.timezone'))->toDateString();
+        $fromDate = now(config('app.timezone'))->subDays($days - 1)->toDateString();
 
-        return $dates;
+        return $days === 1
+            ? ['day', $toDate, $toDate]
+            : ['range', $fromDate, $toDate];
     }
 }

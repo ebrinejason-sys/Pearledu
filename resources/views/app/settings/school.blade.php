@@ -67,20 +67,22 @@
 
         <h3 style="margin-top:0">SchoolPay fees</h3>
         <p style="margin:0 0 12px;color:var(--muted);font-size:13px">
-          Connect SchoolPay so parent MoMo requests and channel payments post to PearlEdu invoices automatically.
-          Credentials come from <a href="https://schoolpay.co.ug" target="_blank" rel="noopener">schoolpay.co.ug</a>.
+          SchoolPay is a Bank of Uganda–licensed payment service (Fincom / Service Cops).
+          Production school codes and API passwords are issued by Service Cops — they are not self-service.
+          Contact <a href="mailto:support@schoolpay.co.ug">support@schoolpay.co.ug</a> / +256 200 502 140, then enter the credentials below.
         </p>
         <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
           <input type="checkbox" name="schoolpay_enabled" value="1" @checked(old('schoolpay_enabled', $school->schoolpay_enabled))>
           Enable SchoolPay for this school
         </label>
         <label>SchoolPay school code</label>
-        <input name="schoolpay_school_code" value="{{ old('schoolpay_school_code', $school->schoolpay_school_code) }}" placeholder="e.g. 809">
+        <input name="schoolpay_school_code" value="{{ old('schoolpay_school_code', $school->schoolpay_school_code) }}" placeholder="Unique school identifier from Service Cops">
         <label>SchoolPay API password</label>
-        <input type="password" name="schoolpay_api_password" value="" placeholder="{{ $school->schoolpay_api_password ? '•••••••• (leave blank to keep)' : 'API password from SchoolPay' }}" autocomplete="new-password">
-        <p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">Register these URLs in the SchoolPay portal:</p>
+        <input type="password" name="schoolpay_api_password" value="" placeholder="{{ $school->schoolpay_api_password ? '•••••••• (leave blank to keep)' : 'API password from Service Cops' }}" autocomplete="new-password">
+        <p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">Every API call authenticates with <code>strtoupper(md5(schoolCode + date|ref + password))</code>. Register these HTTPS URLs in the SchoolPay portal:</p>
         <p style="margin:0;font-size:12px;word-break:break-all"><strong>Adhoc callback:</strong> {{ $schoolPayCallbackUrl }}</p>
         <p style="margin:4px 0 0;font-size:12px;word-break:break-all"><strong>Webhook notify:</strong> {{ $schoolPayNotifyUrl }}</p>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Also set each learner’s 10-digit SchoolPay payment code so Sync/webhook receipts can be matched.</p>
       </div>
     </div>
 

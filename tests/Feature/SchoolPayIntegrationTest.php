@@ -229,6 +229,52 @@ class SchoolPayIntegrationTest extends TestCase
         $this->assertSame('40000.00', $this->invoice->fresh()->balance);
     }
 
+    public function test_range_sync_uses_school_range_transactions(): void
+    {
+        Http::fake([
+            '*/AndroidRS/SchoolRangeTransactions/*' => Http::response([
+                'returnCode' => 0,
+                'returnMessage' => '1 transaction(s) found',
+                'transactions' => [[
+                    'amount' => '5000',
+                    'schoolpayReceiptNumber' => '18849999',
+                    'sourcePaymentChannel' => 'MTN MobileMoney',
+                    'studentPaymentCode' => '1005416321',
+                    'transactionCompletionStatus' => 'Completed',
+                ]],
+                'supplementaryFeePayments' => [],
+            ], 200),
+        ]);
+
+        $this->artisan('schoolpay:sync', [
+            '--school' => $this->school->id,
+            '--from' => '2026-08-01',
+            '--to' => '2026-08-10',
+        ])->assertSuccessful();
+
+        $this->assertSame(1, FeePayment::where('provider_txn_id', '18849999')->count());
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/AndroidRS/SchoolRangeTransactions/809/2026-08-01/2026-08-10/');
+        });
+    }
+
+    public function test_student_payment_code_must_be_ten_digits(): void
+    {
+        $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
+        app(TenantContext::class)->forSchool($this->school->id);
+
+        $response = $this->actingAs($admin)->withSession([
+            TenantContext::SESSION_SCHOOL_ID => $this->school->id,
+        ])->put(route('app.students.update', $this->student), [
+            'full_name' => $this->student->full_name,
+            'status' => $this->student->status,
+            'class_id' => $this->student->class_id,
+            'schoolpay_payment_code' => '12345',
+        ]);
+
+        $response->assertSessionHasErrors('schoolpay_payment_code');
+    }
+
     public function test_school_settings_can_enable_schoolpay(): void
     {
         $admin = User::where('email', 'admin@standrews.test')->first()

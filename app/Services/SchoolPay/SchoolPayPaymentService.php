@@ -296,10 +296,33 @@ class SchoolPayPaymentService
         $this->tenancy->forSchool((int) $school->id);
         $payload = $this->client->syncTransactions($school, $date);
 
+        return $this->applySyncPayload($school, $payload, $date);
+    }
+
+    /**
+     * Pull SchoolPay transactions for a date range (max 31 days) via SchoolRangeTransactions.
+     * Hash uses fromDate per SchoolPay docs: MD5(schoolCode + fromDate + password).
+     *
+     * @return array{applied:int,skipped:int,unmatched:int}
+     */
+    public function syncRange(School $school, string $fromDate, string $toDate): array
+    {
+        $this->tenancy->forSchool((int) $school->id);
+        $payload = $this->client->syncRange($school, $fromDate, $toDate);
+
+        return $this->applySyncPayload($school, $payload, $fromDate.'..'.$toDate);
+    }
+
+    /**
+     * @param  array{returnCode:int|null,returnMessage:?string,transactions:array<int,array<string,mixed>>,supplementaryFeePayments:array<int,array<string,mixed>>}  $payload
+     * @return array{applied:int,skipped:int,unmatched:int}
+     */
+    private function applySyncPayload(School $school, array $payload, string $windowLabel): array
+    {
         if (($payload['returnCode'] ?? null) !== null && (int) $payload['returnCode'] !== 0) {
             Log::info('SchoolPay sync returned non-zero', [
                 'school_id' => $school->id,
-                'date' => $date,
+                'window' => $windowLabel,
                 'returnCode' => $payload['returnCode'],
                 'returnMessage' => $payload['returnMessage'] ?? null,
             ]);
@@ -452,8 +475,8 @@ class SchoolPayPaymentService
 
     private function findStudentByPaymentCode(School $school, string $code): ?Student
     {
-        $code = trim($code);
-        if ($code === '') {
+        $code = preg_replace('/\D+/', '', trim($code)) ?? '';
+        if (! preg_match('/^\d{10}$/', $code)) {
             return null;
         }
 
