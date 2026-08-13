@@ -89,6 +89,7 @@
         <label>Class</label><select name="class_id" required>@foreach($classes as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>
         <label>Due</label><input type="date" name="due_on">
         <p><button class="btn accent" type="submit">Invoice whole class</button></p>
+        <p style="font-size:13px;color:var(--muted);margin:8px 0 0">Safe to click twice — existing invoices are skipped, not duplicated.</p>
       </form>
     </div>
     <div class="card"><h3 style="margin-top:0">Record payment</h3>
@@ -102,8 +103,7 @@
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="margin-top:0">Pending parent payments</h3>
+  <div class="card" id="payments">
     <table>
       <thead><tr><th>When</th><th>Invoice</th><th>Student</th><th>Method</th><th>Ref</th><th>Amount</th><th></th></tr></thead>
       <tbody>
@@ -154,7 +154,7 @@
   <div class="card">
     <h3 style="margin-top:0">Recent invoices</h3>
     <table>
-      <thead><tr><th>Ref</th><th>Student</th><th>Amount</th><th>Balance</th><th>Status</th></tr></thead>
+      <thead><tr><th>Ref</th><th>Student</th><th>Amount</th><th>Balance</th><th>Status</th><th></th></tr></thead>
       <tbody>
         @forelse($invoices as $inv)
           <tr>
@@ -163,9 +163,23 @@
             <td>{{ number_format($inv->amount) }}</td>
             <td>{{ number_format($inv->balance) }}</td>
             <td><span class="pill">{{ $inv->status }}</span></td>
+            <td style="white-space:nowrap">
+              @if($inv->status !== 'void')
+                <form method="post" action="{{ route('app.fees.invoices.void', $inv) }}" style="display:inline" onsubmit="return confirm('Void this invoice?')">
+                  @csrf
+                  <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Void</button>
+                </form>
+                <form method="post" action="{{ route('app.fees.invoices.discount', $inv) }}" style="display:inline-flex;gap:4px;align-items:center">
+                  @csrf
+                  <input type="number" step="0.01" name="amount" placeholder="Discount" style="width:90px">
+                  <input name="reason" placeholder="Reason" style="width:110px">
+                  <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Apply</button>
+                </form>
+              @endif
+            </td>
           </tr>
         @empty
-          <tr><td colspan="5">No invoices yet.</td></tr>
+          <tr><td colspan="6">No invoices yet.</td></tr>
         @endforelse
       </tbody>
     </table>

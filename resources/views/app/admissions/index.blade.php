@@ -1,7 +1,9 @@
 @extends('layouts.app')
 @section('title','Admissions · '.$school->name)
 @section('content')
-  <div class="page-header"><div><p class="page-header__eyebrow">Learners</p><h2 class="page-header__title">Admissions</h2></div></div>
+  <div class="page-header"><div><p class="page-header__eyebrow">Learners</p><h2 class="page-header__title">Admissions</h2>
+    <p style="margin:6px 0 0;color:var(--muted);font-size:14px">Admit Student creates the learner, current-year enrollment, parent invite, and default fee invoices in one step.</p>
+  </div></div>
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
   <div class="card">
     <h3 style="margin-top:0">New application</h3>
@@ -23,16 +25,29 @@
       <tbody>
       @forelse($applications as $app)
         <tr>
-          <td>{{ $app->applicant_name }}</td>
+          <td>
+            {{ $app->applicant_name }}
+            @if($app->student)
+              <div style="font-size:12px;color:var(--muted)">Learner #{{ $app->student->id }} · <a href="{{ route('app.students.show', $app->student) }}">Open record</a></div>
+            @endif
+          </td>
           <td>{{ $app->requestedClass?->name ?: '—' }}</td>
           <td><span class="pill">{{ $app->status }}</span></td>
           <td style="display:flex;gap:6px;flex-wrap:wrap">
-            @foreach(['accepted','rejected','enrolled'] as $st)
+            @if($app->status !== 'enrolled')
+              @foreach(['accepted','rejected'] as $st)
+                <form method="post" action="{{ route('app.admissions.decide', $app) }}">@csrf
+                  <input type="hidden" name="decision" value="{{ $st }}">
+                  <button class="btn ghost" type="submit">{{ ucfirst($st) }}</button>
+                </form>
+              @endforeach
               <form method="post" action="{{ route('app.admissions.decide', $app) }}">@csrf
-                <input type="hidden" name="decision" value="{{ $st }}">
-                <button class="btn ghost" type="submit">{{ ucfirst($st) }}</button>
+                <input type="hidden" name="decision" value="enrolled">
+                <button class="btn accent" type="submit">Admit Student</button>
               </form>
-            @endforeach
+            @else
+              <span style="color:var(--muted);font-size:13px">Already admitted</span>
+            @endif
           </td>
         </tr>
       @empty

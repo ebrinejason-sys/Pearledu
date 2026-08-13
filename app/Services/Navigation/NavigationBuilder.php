@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\User;
 use App\Services\Platform\ImpersonationService;
 use App\Services\Platform\PlatformStaffService;
+use App\Services\Schools\SchoolModuleRegistry;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,7 @@ class NavigationBuilder
     public function __construct(
         private TenantContext $context,
         private ImpersonationService $impersonation,
+        private SchoolModuleRegistry $modules,
     ) {}
 
     /**
@@ -100,67 +102,29 @@ class NavigationBuilder
     private function schoolSections(array $permissions, bool $isPlatformOperator, ?School $school = null): array
     {
         $canAssess = $this->hasAny($permissions, ['assessment.enter', 'assessment.manage', 'assessment.view']);
+        $on = fn (string $module) => $school ? $this->modules->enabled($school, $module) : true;
 
         return [
             [
                 'key' => 'general',
-                'label' => 'General',
+                'label' => 'Home',
                 'items' => array_values(array_filter([
                     $this->item('Home', 'app.home', icon: 'home'),
-                    $this->has($permissions, 'school.manage')
-                        ? $this->item('School identity', 'app.settings.school', icon: 'platform', active: request()->routeIs('app.settings.*'))
-                        : null,
                     $this->hasAny($permissions, [
                         'child.results.view', 'self.results.view', 'child.fees.view',
                         'fees.pay', 'self.timetable.view', 'announcements.view',
                     ]) ? $this->item('My portal', 'app.portal.home', icon: 'home', active: request()->routeIs('app.portal.*')) : null,
-                    $this->has($permissions, 'staff.manage')
-                        ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.*'))
-                        : null,
-                    $this->hasAny($permissions, ['helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage'])
-                        ? $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*'))
-                        : null,
-                ])),
-            ],
-            [
-                'key' => 'family',
-                'label' => 'Family & learning',
-                'items' => array_values(array_filter([
-                    $this->hasAny($permissions, ['child.results.view', 'self.results.view'])
-                        ? $this->item('Results', 'app.portal.results', icon: 'assessment', active: request()->routeIs('app.portal.results'))
-                        : null,
-                    $this->hasAny($permissions, ['child.fees.view', 'fees.pay'])
-                        ? $this->item('My fees', 'app.portal.fees', icon: 'fees', active: request()->routeIs('app.portal.fees*'))
-                        : null,
-                    $this->has($permissions, 'self.timetable.view')
-                        ? $this->item('My timetable', 'app.portal.timetable', icon: 'timetable', active: request()->routeIs('app.portal.timetable'))
-                        : null,
-                    $this->has($permissions, 'announcements.view')
-                        ? $this->item('Announcements', 'app.portal.announcements', icon: 'announcements', active: request()->routeIs('app.portal.announcements'))
-                        : null,
-                    $this->has($permissions, 'lms.view')
-                        ? $this->item('LMS', 'app.lms.index', icon: 'lms', active: request()->routeIs('app.lms.*'))
-                        : null,
-                    $this->has($permissions, 'cbt.take')
-                        ? $this->item('CBT exams', 'app.cbt.index', icon: 'cbt', active: request()->routeIs('app.cbt.*'))
-                        : null,
                 ])),
             ],
             [
                 'key' => 'learners',
                 'label' => 'Learners',
                 'items' => array_values(array_filter([
-                    $this->has($permissions, 'learners.manage')
+                    $on('learners') && $this->has($permissions, 'learners.manage')
                         ? $this->item('Students', 'app.students.index', icon: 'students', active: request()->routeIs('app.students.*'))
                         : null,
-                    $this->has($permissions, 'learners.manage')
-                        ? $this->item('Enrollments', 'app.enrollments.index', icon: 'enrollments', active: request()->routeIs('app.enrollments.*'))
-                        : null,
-                    $this->has($permissions, 'admissions.manage')
+                    $on('admissions') && $this->has($permissions, 'admissions.manage')
                         ? $this->item('Admissions', 'app.admissions.index', icon: 'admissions', active: request()->routeIs('app.admissions.*'))
-                        : null,
-                    $this->has($permissions, 'emis.manage') && ($school?->emisEnabled() ?? false)
-                        ? $this->item('EMIS export', 'app.emis.export', icon: 'emis')
                         : null,
                 ])),
             ],
@@ -168,6 +132,65 @@ class NavigationBuilder
                 'key' => 'academics',
                 'label' => 'Academics',
                 'items' => array_values(array_filter([
+                    $on('attendance') && $this->has($permissions, 'attendance.mark')
+                        ? $this->item('Attendance', 'app.attendance.index', icon: 'attendance', active: request()->routeIs('app.attendance.*'))
+                        : null,
+                    $on('assessment') && $this->hasAny($permissions, ['assessment.enter', 'assessment.manage'])
+                        ? $this->item('Marks', 'app.assessment.marks', icon: 'assessment', active: request()->routeIs('app.assessment.marks*') || request()->routeIs('app.assessment.index') || request()->routeIs('app.assessment.periods.*'))
+                        : null,
+                    $on('assessment') && $canAssess
+                        ? $this->item('Reports', 'app.assessment.reports', icon: 'broadsheet', active: request()->routeIs('app.assessment.broadsheet') || request()->routeIs('app.assessment.reports'))
+                        : null,
+                    $on('timetable') && $this->has($permissions, 'timetable.manage')
+                        ? $this->item('Timetable', 'app.timetable.index', icon: 'timetable', active: request()->routeIs('app.timetable.*'))
+                        : null,
+                ])),
+            ],
+            [
+                'key' => 'finance',
+                'label' => 'Finance',
+                'items' => array_values(array_filter([
+                    $on('fees') && $this->has($permissions, 'finance.manage')
+                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.*') && ! str_contains((string) request()->getRequestUri(), '#payments'))
+                        : null,
+                    $on('fees') && $this->has($permissions, 'finance.manage')
+                        ? array_merge($this->item('Payments', 'app.fees.index', icon: 'fees', active: false), [
+                            'url' => Route::has('app.fees.index') ? route('app.fees.index').'#payments' : null,
+                        ])
+                        : null,
+                ])),
+            ],
+            [
+                'key' => 'communications',
+                'label' => 'Communication',
+                'items' => array_values(array_filter([
+                    $on('announcements') && $this->has($permissions, 'announcements.manage')
+                        ? $this->item('Announcements', 'app.announcements.index', icon: 'announcements', active: request()->routeIs('app.announcements.*'))
+                        : null,
+                    $on('sms') && $this->has($permissions, 'sms.send')
+                        ? $this->item('SMS', 'app.sms', icon: 'sms')
+                        : null,
+                    $this->has($permissions, 'announcements.view') && ! $this->has($permissions, 'announcements.manage')
+                        ? $this->item('Announcements', 'app.portal.announcements', icon: 'announcements', active: request()->routeIs('app.portal.announcements'))
+                        : null,
+                ])),
+            ],
+            [
+                'key' => 'more',
+                'label' => 'More',
+                'items' => array_values(array_filter([
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('Setup wizard', 'app.setup.index', icon: 'add', active: request()->routeIs('app.setup.*'))
+                        : null,
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('School identity', 'app.settings.school', icon: 'platform', active: request()->routeIs('app.settings.*'))
+                        : null,
+                    $this->has($permissions, 'staff.manage')
+                        ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.*'))
+                        : null,
+                    $this->has($permissions, 'learners.manage')
+                        ? $this->item('Enrollments', 'app.enrollments.index', icon: 'enrollments', active: request()->routeIs('app.enrollments.*'))
+                        : null,
                     $this->has($permissions, 'school.manage')
                         ? $this->item('Academic years', 'app.years.index', icon: 'years', active: request()->routeIs('app.years.*'))
                         : null,
@@ -177,85 +200,48 @@ class NavigationBuilder
                     $this->has($permissions, 'school.manage')
                         ? $this->item('Teaching', 'app.teaching.index', icon: 'teaching', active: request()->routeIs('app.teaching.*'))
                         : null,
-                    $this->has($permissions, 'attendance.mark')
-                        ? $this->item('Attendance', 'app.attendance.index', icon: 'attendance', active: request()->routeIs('app.attendance.*'))
-                        : null,
-                    $canAssess
-                        ? $this->item('Assessment', 'app.assessment.index', icon: 'assessment', active: request()->routeIs('app.assessment.index') || request()->routeIs('app.assessment.periods.*'))
-                        : null,
-                    $this->hasAny($permissions, ['assessment.enter', 'assessment.manage'])
-                        ? $this->item('Enter marks', 'app.assessment.marks', icon: 'assessment', active: request()->routeIs('app.assessment.marks*'))
-                        : null,
-                    $this->hasAny($permissions, ['assessment.view', 'assessment.manage', 'assessment.enter'])
-                        ? $this->item('Broadsheet', 'app.assessment.broadsheet', icon: 'broadsheet', active: request()->routeIs('app.assessment.broadsheet') || request()->routeIs('app.assessment.reports'))
+                    $on('assessment') && $canAssess
+                        ? $this->item('Assessment periods', 'app.assessment.index', icon: 'assessment', active: request()->routeIs('app.assessment.index'))
                         : null,
                     $this->has($permissions, 'promotions.approve')
                         ? $this->item('Promotions', 'app.promotions.index', icon: 'promotions', active: request()->routeIs('app.promotions.*'))
                         : null,
-                    $this->has($permissions, 'timetable.manage')
-                        ? $this->item('Timetable', 'app.timetable.index', icon: 'timetable', active: request()->routeIs('app.timetable.*'))
+                    $this->hasAny($permissions, ['helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage'])
+                        ? $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*'))
                         : null,
-                ])),
-            ],
-            [
-                'key' => 'finance',
-                'label' => 'Finance',
-                'items' => array_values(array_filter([
-                    $this->has($permissions, 'finance.manage')
-                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.*'))
-                        : null,
-                ])),
-            ],
-            [
-                'key' => 'learning',
-                'label' => 'Learning',
-                'items' => array_values(array_filter([
-                    $this->has($permissions, 'lms.manage')
+                    $on('lms') && $this->has($permissions, 'lms.manage')
                         ? $this->item('LMS', 'app.lms.index', icon: 'lms', active: request()->routeIs('app.lms.*'))
                         : null,
-                    $this->has($permissions, 'cbt.manage')
+                    $on('lms') && $this->has($permissions, 'lms.view') && ! $this->has($permissions, 'lms.manage')
+                        ? $this->item('LMS', 'app.lms.index', icon: 'lms', active: request()->routeIs('app.lms.*'))
+                        : null,
+                    $on('cbt') && $this->has($permissions, 'cbt.manage')
                         ? $this->item('CBT', 'app.cbt.index', icon: 'cbt', active: request()->routeIs('app.cbt.*'))
                         : null,
-                    $this->has($permissions, 'library.manage')
+                    $on('cbt') && $this->has($permissions, 'cbt.take') && ! $this->has($permissions, 'cbt.manage')
+                        ? $this->item('CBT exams', 'app.cbt.index', icon: 'cbt', active: request()->routeIs('app.cbt.*'))
+                        : null,
+                    $on('library') && $this->has($permissions, 'library.manage')
                         ? $this->item('Library', 'app.library.index', icon: 'library', active: request()->routeIs('app.library.*'))
                         : null,
-                ])),
-            ],
-            [
-                'key' => 'operations',
-                'label' => 'Operations',
-                'items' => array_values(array_filter([
-                    $this->has($permissions, 'inventory.manage')
+                    $on('inventory') && $this->has($permissions, 'inventory.manage')
                         ? $this->item('Inventory', 'app.inventory.index', icon: 'inventory', active: request()->routeIs('app.inventory.*'))
                         : null,
-                    $this->has($permissions, 'transport.manage')
+                    $on('transport') && $this->has($permissions, 'transport.manage')
                         ? $this->item('Transport', 'app.transport.index', icon: 'transport', active: request()->routeIs('app.transport.*'))
                         : null,
-                    $this->has($permissions, 'hostel.manage')
+                    $on('hostel') && $this->has($permissions, 'hostel.manage')
                         ? $this->item('Hostel', 'app.hostel.index', icon: 'hostel', active: request()->routeIs('app.hostel.*'))
                         : null,
-                    $this->has($permissions, 'hr.manage')
+                    $on('hr') && $this->has($permissions, 'hr.manage')
                         ? $this->item('HR', 'app.hr.index', icon: 'hr', active: request()->routeIs('app.hr.*'))
                         : null,
-                    $this->has($permissions, 'clinic.manage')
+                    $on('clinic') && $this->has($permissions, 'clinic.manage')
                         ? $this->item('Clinic', 'app.clinic.index', icon: 'clinic', active: request()->routeIs('app.clinic.*'))
                         : null,
-                ])),
-            ],
-            [
-                'key' => 'communications',
-                'label' => 'Communications',
-                'items' => array_values(array_filter([
-                    $this->has($permissions, 'sms.send') ? $this->item('Send SMS', 'app.sms', icon: 'sms') : null,
-                    $this->has($permissions, 'announcements.manage')
-                        ? $this->item('Manage announcements', 'app.announcements.index', icon: 'announcements', active: request()->routeIs('app.announcements.*'))
+                    $on('emis') && $this->has($permissions, 'emis.manage')
+                        ? $this->item('EMIS export', 'app.emis.export', icon: 'emis')
                         : null,
-                ])),
-            ],
-            [
-                'key' => 'platform',
-                'label' => 'Platform',
-                'items' => array_values(array_filter([
                     $isPlatformOperator ? $this->item('Platform console', 'platform.dashboard', icon: 'platform') : null,
                 ])),
             ],

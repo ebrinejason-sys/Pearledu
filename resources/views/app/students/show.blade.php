@@ -136,4 +136,26 @@
         <button class="btn" type="submit">Invite &amp; link</button>
       </form>
   </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-top:0">Statement</h3>
+    @if(empty($statement['lines']))
+      <p style="color:var(--muted);margin:0">No fee activity yet.</p>
+    @else
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th></tr></thead>
+        <tbody>
+          @foreach($statement['lines'] as $line)
+            <tr>
+              <td>{{ $line['date'] }}</td>
+              <td>{{ $line['description'] }}</td>
+              <td>{{ $line['debit'] > 0 ? number_format($line['debit']) : '—' }}</td>
+              <td>{{ $line['credit'] > 0 ? number_format($line['credit']) : '—' }}</td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+      <p style="margin:12px 0 0"><strong>Balance: UGX {{ number_format($statement['balance']) }}</strong></p>
+    @endif
+  </div>
 @endsection

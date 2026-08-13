@@ -4,23 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
 use App\Models\Term;
+use App\Services\Academics\TermCalendar;
 use App\Services\Tenancy\TenantContext;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AcademicYearController extends Controller
 {
-    public function index(TenantContext $context)
+    public function index(TenantContext $context, TermCalendar $calendar)
     {
         $school = $context->school();
         abort_unless($school, 404);
 
         $years = AcademicYear::query()->with('terms')->orderByDesc('starts_on')->get();
+        $defaultStart = now()->month >= 11
+            ? now()->addYear()->startOfYear()->month(2)->day(2)->toDateString()
+            : now()->startOfYear()->month(2)->day(2)->toDateString();
+        $defaultEnd = Carbon::parse($defaultStart)->year.'-12-04';
+        $suggestedTerms = $calendar->suggestThreeTerms(
+            old('starts_on', $defaultStart),
+            old('ends_on', $defaultEnd),
+        );
 
-        return view('app.years.index', compact('school', 'years'));
+        return view('app.years.index', compact('school', 'years', 'suggestedTerms', 'defaultStart', 'defaultEnd'));
     }
 
-    public function store(Request $request, TenantContext $context)
+    public function store(Request $request, TenantContext $context, TermCalendar $calendar)
     {
         $school = $context->school();
         abort_unless($school, 404);
@@ -31,9 +41,13 @@ class AcademicYearController extends Controller
             'ends_on' => 'required|date|after_or_equal:starts_on',
             'is_current' => 'nullable|boolean',
             'with_terms' => 'nullable|boolean',
+            'terms' => 'nullable|array|size:3',
+            'terms.*.name' => 'required_with:terms|string|max:80',
+            'terms.*.starts_on' => 'required_with:terms|date',
+            'terms.*.ends_on' => 'required_with:terms|date|after_or_equal:terms.*.starts_on',
         ]);
 
-        DB::transaction(function () use ($school, $data) {
+        DB::transaction(function () use ($school, $data, $calendar) {
             if (! empty($data['is_current'])) {
                 AcademicYear::query()->where('school_id', $school->id)->update(['is_current' => false]);
             }
@@ -46,28 +60,23 @@ class AcademicYearController extends Controller
                 'is_current' => (bool) ($data['is_current'] ?? false),
             ]);
 
-            if (! empty($data['with_terms'])) {
-                $start = \Carbon\Carbon::parse($data['starts_on']);
-                $end = \Carbon\Carbon::parse($data['ends_on']);
-                $span = max(1, $start->diffInDays($end));
-                $chunk = (int) floor($span / 3);
-                foreach (['Term I', 'Term II', 'Term III'] as $i => $name) {
-                    $tStart = $start->copy()->addDays($i * $chunk);
-                    $tEnd = $i === 2 ? $end->copy() : $start->copy()->addDays(($i + 1) * $chunk - 1);
+            if (! empty($data['with_terms']) || ! empty($data['terms'])) {
+                $terms = $data['terms'] ?? $calendar->suggestThreeTerms($data['starts_on'], $data['ends_on']);
+                foreach ($terms as $i => $term) {
                     Term::create([
                         'school_id' => $school->id,
                         'academic_year_id' => $year->id,
-                        'name' => $name,
-                        'sequence' => $i + 1,
-                        'starts_on' => $tStart->toDateString(),
-                        'ends_on' => $tEnd->toDateString(),
+                        'name' => $term['name'] ?? ('Term '.($i + 1)),
+                        'sequence' => $term['sequence'] ?? ($i + 1),
+                        'starts_on' => $term['starts_on'],
+                        'ends_on' => $term['ends_on'],
                     ]);
                 }
             }
         });
 
-        return back()->with('status', ! empty($data['with_terms'])
-            ? 'Academic year created with Term I–III.'
+        return back()->with('status', (! empty($data['with_terms']) || ! empty($data['terms']))
+            ? 'Academic year created. Confirm Term I–III dates below if you need to adjust them.'
             : 'Academic year created.');
     }
 

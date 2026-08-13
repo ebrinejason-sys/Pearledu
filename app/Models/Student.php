@@ -26,6 +26,39 @@ class Student extends Model
         return $this->hasMany(Guardianship::class);
     }
 
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(FeeInvoice::class);
+    }
+
+    public function currentEnrollment(): ?Enrollment
+    {
+        $yearId = AcademicYear::query()
+            ->where('school_id', $this->school_id)
+            ->where('is_current', true)
+            ->value('id');
+
+        $active = $this->enrollments()->where('status', 'active')->with('schoolClass');
+        if ($yearId) {
+            $match = (clone $active)->where('academic_year_id', $yearId)->first();
+            if ($match) {
+                return $match;
+            }
+        }
+
+        return $active->orderByDesc('id')->first();
+    }
+
+    public function currentClass(): ?SchoolClass
+    {
+        return $this->currentEnrollment()?->schoolClass ?? $this->schoolClass;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

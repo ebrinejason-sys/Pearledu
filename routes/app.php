@@ -20,9 +20,11 @@ use App\Http\Controllers\LmsController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\SchoolSettingsController;
+use App\Http\Controllers\SchoolSetupController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeachingAssignmentController;
 use App\Http\Controllers\TimetableController;
@@ -67,6 +69,10 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
 
     Route::middleware('permission:learners.manage')->group(function () {
         Route::get('/students', [StudentController::class, 'index'])->name('app.students.index');
+        Route::get('/students/import', [StudentImportController::class, 'create'])->name('app.students.import');
+        Route::post('/students/import', [StudentImportController::class, 'storeFile'])->name('app.students.import.store');
+        Route::post('/students/import/preview', [StudentImportController::class, 'preview'])->name('app.students.import.preview');
+        Route::post('/students/import/commit', [StudentImportController::class, 'commit'])->name('app.students.import.commit');
         Route::get('/students/create', [StudentController::class, 'create'])->name('app.students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('app.students.store');
         Route::get('/students/{student}', [StudentController::class, 'show'])->name('app.students.show');
@@ -87,6 +93,8 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     Route::middleware('permission:school.manage')->group(function () {
         Route::get('/settings/school', [SchoolSettingsController::class, 'edit'])->name('app.settings.school');
         Route::put('/settings/school', [SchoolSettingsController::class, 'update'])->name('app.settings.school.update');
+        Route::get('/setup', [SchoolSetupController::class, 'index'])->name('app.setup.index');
+        Route::post('/setup/complete', [SchoolSetupController::class, 'complete'])->name('app.setup.complete');
 
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->name('app.years.index');
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->name('app.years.store');
@@ -115,6 +123,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
 
     Route::middleware('permission:assessment.manage')->group(function () {
         Route::post('/assessment/periods', [AssessmentController::class, 'storePeriod'])->name('app.assessment.periods.store');
+        Route::post('/assessment/periods/{period}/transition', [AssessmentController::class, 'transitionPeriod'])->name('app.assessment.periods.transition');
     });
 
     Route::middleware('permission:assessment.enter')->group(function () {
@@ -141,9 +150,12 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/fees/structures/{structure}/archive', [FeeController::class, 'archiveStructure'])->name('app.fees.structures.archive');
         Route::post('/fees/invoices', [FeeController::class, 'storeInvoice'])->name('app.fees.invoices.store');
         Route::post('/fees/invoices/bulk', [FeeController::class, 'storeBulkInvoices'])->name('app.fees.invoices.bulk');
+        Route::post('/fees/invoices/{invoice}/void', [FeeController::class, 'voidInvoice'])->name('app.fees.invoices.void');
+        Route::post('/fees/invoices/{invoice}/discount', [FeeController::class, 'discountInvoice'])->name('app.fees.invoices.discount');
         Route::post('/fees/payments', [FeeController::class, 'storePayment'])->name('app.fees.payments.store');
         Route::post('/fees/payments/{payment}/confirm', [FeeController::class, 'confirmPayment'])->name('app.fees.payments.confirm');
         Route::post('/fees/payments/{payment}/reject', [FeeController::class, 'rejectPayment'])->name('app.fees.payments.reject');
+        Route::post('/fees/payments/{payment}/reverse', [FeeController::class, 'reversePayment'])->name('app.fees.payments.reverse');
         Route::post('/fees/schoolpay/sync', [FeeController::class, 'syncSchoolPay'])->name('app.fees.schoolpay.sync');
     });
 

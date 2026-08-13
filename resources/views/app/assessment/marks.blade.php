@@ -60,14 +60,20 @@
           @php($m = $existing->get($student->id))
           <tr>
             <td>{{ $student->full_name }}<input type="hidden" name="rows[{{ $i }}][student_id]" value="{{ $student->id }}"></td>
-            <td><input type="number" step="0.01" name="rows[{{ $i }}][score]" value="{{ $m?->score }}"></td>
-            <td><input name="rows[{{ $i }}][grade]" value="{{ $m?->grade }}"></td>
-            <td><input name="rows[{{ $i }}][comment]" value="{{ $m?->comment }}"></td>
+            <td><input type="number" step="0.01" name="rows[{{ $i }}][score]" value="{{ $m?->score }}" @disabled(!($canEnterMarks ?? true))></td>
+            <td>{{ $m?->grade ?: '—' }}@if($m?->remark)<div style="font-size:12px;color:var(--muted)">{{ $m->remark }}</div>@endif</td>
+            <td><input name="rows[{{ $i }}][comment]" value="{{ $m?->comment }}" @disabled(!($canEnterMarks ?? true))></td>
           </tr>
         @endforeach
         </tbody>
       </table>
-      <p style="margin-top:14px"><button class="btn" type="submit">Save marks</button></p>
+      <p style="margin-top:14px">
+        @if($canEnterMarks ?? true)
+          <button class="btn" type="submit">Save marks</button>
+        @else
+          <span style="color:var(--muted)">Mark entry is {{ str_replace('_', ' ', $period?->status ?? 'closed') }}. An administrator must reopen this period to edit scores.</span>
+        @endif
+      </p>
     </form>
   </div>
   @endif

@@ -39,8 +39,8 @@ class SidebarNavigationTest extends TestCase
         $response->assertOk();
         $response->assertSee('Learners');
         $response->assertSee('Students');
-        $response->assertSee('Communications');
-        $response->assertSee('Send SMS');
+        $response->assertSee('Communication');
+        $response->assertSee('SMS');
         $response->assertSee('Account settings');
     }
 

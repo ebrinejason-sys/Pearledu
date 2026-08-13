@@ -6,6 +6,7 @@ use App\Models\AcademicYear;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Services\Learners\StudentLifecycleService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 
@@ -28,7 +29,7 @@ class EnrollmentController extends Controller
         return view('app.enrollments.index', compact('school', 'enrollments', 'students', 'classes', 'years'));
     }
 
-    public function store(Request $request, TenantContext $context)
+    public function store(Request $request, TenantContext $context, StudentLifecycleService $lifecycle)
     {
         $school = $context->school();
         abort_unless($school, 404);
@@ -40,15 +41,8 @@ class EnrollmentController extends Controller
             'status' => 'nullable|in:active,completed,transferred,graduated,repeated',
         ]);
 
-        Enrollment::create([
-            'school_id' => $school->id,
-            'student_id' => $data['student_id'],
-            'class_id' => $data['class_id'],
-            'academic_year_id' => $data['academic_year_id'],
-            'status' => $data['status'] ?? 'active',
-        ]);
-
-        Student::query()->where('id', $data['student_id'])->update(['class_id' => $data['class_id']]);
+        $student = Student::query()->where('school_id', $school->id)->findOrFail($data['student_id']);
+        $lifecycle->enrollStudent($student, (int) $data['class_id'], (int) $data['academic_year_id']);
 
         return back()->with('status', 'Enrollment saved.');
     }

@@ -36,17 +36,28 @@
     <div class="card">
       <h3 style="margin-top:0">Periods</h3>
       <table>
-        <thead><tr><th>Name</th><th>Term</th><th>Max</th><th>Locked</th></tr></thead>
+        <thead><tr><th>Name</th><th>Term</th><th>Max</th><th>Status</th><th></th></tr></thead>
         <tbody>
         @forelse($periods as $p)
           <tr>
             <td>{{ $p->name }}</td>
             <td>{{ $p->term?->name ?: '—' }}</td>
             <td>{{ $p->max_score }}</td>
-            <td>{{ $p->is_locked ? 'Yes' : 'No' }}</td>
+            <td><span class="pill">{{ str_replace('_', ' ', $p->status) }}</span></td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap">
+              @if($canManage)
+                @foreach($periodActions[$p->id] ?? [] as $action)
+                  <form method="post" action="{{ route('app.assessment.periods.transition', $p) }}">
+                    @csrf
+                    <input type="hidden" name="to" value="{{ $action['to'] }}">
+                    <button class="btn ghost" type="submit">{{ $action['label'] }}</button>
+                  </form>
+                @endforeach
+              @endif
+            </td>
           </tr>
         @empty
-          <tr><td colspan="4" style="color:var(--muted)">None yet.</td></tr>
+          <tr><td colspan="5" style="color:var(--muted)">None yet.</td></tr>
         @endforelse
         </tbody>
       </table>
