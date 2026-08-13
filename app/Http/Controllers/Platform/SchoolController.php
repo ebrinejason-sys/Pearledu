@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\OnboardSchoolRequest;
+use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\SchoolInvitation;
 use App\Services\Audit\AuditLogger;
@@ -14,6 +15,7 @@ use App\Support\UgandaDistricts;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use RuntimeException;
+use Throwable;
 
 class SchoolController extends Controller
 {
@@ -73,7 +75,7 @@ class SchoolController extends Controller
                 } else {
                     $status .= ' Invitation delivered by SMS.';
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Transport/config errors must not roll back a completed onboard into a 500.
                 report($e);
                 $status .= ' Invitation created, but delivery failed. Resend from Invitations or share the activation link out-of-band.';
@@ -88,32 +90,40 @@ class SchoolController extends Controller
 
     public function show(School $school)
     {
-        $school->load('offerings');
-        $members = \App\Models\RoleAssignment::query()
-            ->where('school_id', $school->id)
-            ->where('is_active', true)
-            ->with(['user', 'role'])
-            ->get()
-            ->groupBy('user_id')
-            ->map(fn ($assignments) => [
-                'user' => $assignments->first()->user,
-                'roles' => $assignments->pluck('role.label')->filter()->unique()->values()->all(),
-            ])
-            ->filter(fn ($m) => $m['user'] !== null)
-            ->sortBy(fn ($m) => $m['user']->full_name)
-            ->values();
-        $openInvites = SchoolInvitation::query()
-            ->where('school_id', $school->id)
-            ->whereNull('accepted_at')
-            ->orderByDesc('id')
-            ->limit(10)
-            ->get();
+        $members = collect();
+        $openInvites = collect();
+
+        try {
+            $school->load('offerings');
+            $members = RoleAssignment::query()
+                ->where('school_id', $school->id)
+                ->where('is_active', true)
+                ->with(['user', 'role'])
+                ->get()
+                ->groupBy('user_id')
+                ->map(fn ($assignments) => [
+                    'user' => $assignments->first()->user,
+                    'roles' => $assignments->pluck('role.label')->filter()->unique()->values()->all(),
+                ])
+                ->filter(fn ($m) => $m['user'] !== null)
+                ->sortBy(fn ($m) => $m['user']->full_name)
+                ->values();
+            $openInvites = SchoolInvitation::query()
+                ->with('user')
+                ->where('school_id', $school->id)
+                ->whereNull('accepted_at')
+                ->orderByDesc('id')
+                ->limit(10)
+                ->get();
+        } catch (Throwable $e) {
+            report($e);
+        }
 
         return view('platform.schools.show', [
             'school' => $school,
             'members' => $members,
             'openInvites' => $openInvites,
-            'themes' => config('themes.themes'),
+            'themes' => config('themes.themes', []) ?: [],
         ]);
     }
 
@@ -167,6 +177,7 @@ class SchoolController extends Controller
         $request->validate([
             'confirm_name' => ['required', 'string', Rule::in([$school->name])],
             'deletion_reason' => ['nullable', 'string', 'max:500'],
+            'permanent' => ['nullable', 'boolean'],
         ], [
             'confirm_name.in' => 'Type the school name exactly to confirm deletion.',
         ]);
@@ -175,15 +186,35 @@ class SchoolController extends Controller
             $request->session()->forget('platform.entered_school_id');
         }
 
-        $result = $deleter->schedule(
-            $school,
-            $request->user(),
-            $request->input('deletion_reason')
-        );
+        $permanent = $request->boolean('permanent');
 
-        return redirect()->route('platform.schools.index')
-            ->with('status', 'Scheduled deletion of '.$result['name'].' (tenant #'.$result['tenant_id'].').'
-                .' Data will be retained until '.$result['purge_after'].'. Restore from the school page before then if needed.');
+        try {
+            if ($permanent) {
+                $result = $deleter->purge($school, $request->user(), force: true);
+
+                return redirect()->route('platform.schools.index')
+                    ->with('status', 'Permanently deleted '.$result['name']
+                        .' (tenant #'.$result['tenant_id'].').');
+            }
+
+            $result = $deleter->schedule(
+                $school,
+                $request->user(),
+                $request->input('deletion_reason')
+            );
+
+            return redirect()->route('platform.schools.index')
+                ->with('status', 'Scheduled deletion of '.$result['name'].' (tenant #'.$result['tenant_id'].').'
+                    .' Data will be retained until '.$result['purge_after'].'. Restore from the school page before then if needed.');
+        } catch (RuntimeException $e) {
+            return redirect()->route('platform.schools.show', $school)
+                ->withErrors(['school' => $e->getMessage()]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()->route('platform.schools.show', $school)
+                ->withErrors(['school' => 'Could not delete this school: '.$e->getMessage()]);
+        }
     }
 
     public function restore(Request $request, School $school, SchoolDeletionService $deleter)
@@ -192,6 +223,10 @@ class SchoolController extends Controller
             $deleter->restore($school, $request->user());
         } catch (RuntimeException $e) {
             return back()->withErrors(['school' => $e->getMessage()]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['school' => 'Could not restore this school: '.$e->getMessage()]);
         }
 
         return back()->with('status', 'School restored from scheduled deletion (status set to suspended).');

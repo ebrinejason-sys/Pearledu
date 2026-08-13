@@ -13,6 +13,6 @@ Schedule::command('queue:work --stop-when-empty --max-time=50')
     ->everyMinute()->withoutOverlapping();
 
 // SchoolPay webhooks are single-attempt — daily sync covers missed notifications.
-Schedule::command('schoolpay:sync')
-    ->dailyAt('01:15')
+Schedule::command('schools:purge-scheduled')
+    ->dailyAt('02:30')
     ->withoutOverlapping();

@@ -19,6 +19,8 @@
     </div>
   </div>
 
+  @error('school')<div class="err">{{ $message }}</div>@enderror
+
   <div class="grid g2">
     <div class="card">
       <h3 style="margin-top:0">Edit school</h3>
@@ -34,12 +36,12 @@
         <input name="emis_number" value="{{ old('emis_number', $school->emis_number) }}">
         <label>Theme</label>
         <select name="theme" required>
-          @foreach($themes as $key => $theme)
+          @foreach(($themes ?? []) as $key => $theme)
             <option value="{{ $key }}" @selected(old('theme', $school->theme) === $key)>{{ $theme['label'] ?? $key }}</option>
           @endforeach
         </select>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-          @foreach($themes as $key => $theme)
+          @foreach(($themes ?? []) as $key => $theme)
             @php($tok = $theme['tokens'] ?? [])
             <span title="{{ $theme['description'] ?? $key }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
               <i style="width:14px;height:14px;border-radius:3px;background:{{ $tok['brand'] ?? '#ccc' }};display:inline-block"></i>
@@ -65,7 +67,7 @@
       <p style="margin:8px 0 0">
         <strong>Provisioning:</strong>
         <span class="pill @if($provisioning !== 'ready') pill--muted @endif">
-          {{ ['pending_invite' => 'Pending invite', 'invite_accepted' => 'Invite accepted', 'ready' => 'Ready'][$provisioning] }}
+          {{ ['pending_invite' => 'Pending invite', 'invite_accepted' => 'Invite accepted', 'ready' => 'Ready'][$provisioning] ?? $provisioning }}
         </span>
       </p>
 
@@ -83,6 +85,16 @@
             @csrf
             <button type="submit" class="btn">Restore school</button>
           </form>
+          <form method="post" action="{{ route('platform.schools.destroy', $school) }}"
+                style="margin-top:18px"
+                onsubmit="return confirm('Permanently delete this school and ALL of its tenant data? This cannot be undone.')">
+            @csrf
+            @method('DELETE')
+            <input type="hidden" name="permanent" value="1">
+            <label>Confirm school name to delete permanently</label>
+            <input name="confirm_name" placeholder="{{ $school->name }}" required autocomplete="off">
+            <p style="margin-top:12px"><button class="btn" type="submit" style="background:var(--danger, #b42318);border-color:var(--danger, #b42318)">Delete permanently</button></p>
+          </form>
         @else
           <h3 style="margin:0 0 8px;color:var(--danger, #b42318)">Delete school</h3>
           <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">
@@ -99,6 +111,16 @@
             <input name="confirm_name" placeholder="{{ $school->name }}" required autocomplete="off">
             @error('confirm_name')<div class="err">{{ $message }}</div>@enderror
             <p style="margin-top:12px"><button class="btn" type="submit" style="background:var(--danger, #b42318);border-color:var(--danger, #b42318)">Schedule deletion</button></p>
+          </form>
+          <form method="post" action="{{ route('platform.schools.destroy', $school) }}"
+                style="margin-top:18px"
+                onsubmit="return confirm('Permanently delete this school and ALL of its tenant data? This cannot be undone.')">
+            @csrf
+            @method('DELETE')
+            <input type="hidden" name="permanent" value="1">
+            <label>Confirm school name to delete permanently</label>
+            <input name="confirm_name" placeholder="{{ $school->name }}" required autocomplete="off">
+            <p style="margin-top:12px"><button class="btn" type="submit" style="background:var(--danger, #b42318);border-color:var(--danger, #b42318)">Delete permanently</button></p>
           </form>
         @endif
       </div>
