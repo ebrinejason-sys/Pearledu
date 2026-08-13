@@ -1,9 +1,7 @@
 ---
 deployment:
   tasks:
-    # Single task so the whole pipeline shares one shell. The previous
-    # /bin/cp -R * plus chmod -R storage plus composer install on every
-    # click is why cPanel sat on "deployment in progress" for so long.
-    # See scripts/cpanel-deploy.sh (rsync, skip composer when lock is unchanged).
-    - export DEPLOYPATH=/home/voxsignco/pearledu-app
-    - /bin/bash ./scripts/cpanel-deploy.sh
+    # One command: rsync + conditional composer. The old per-line
+    # `cp -R *` / `chmod -R storage` / `composer install` pipeline is why
+    # cPanel sat on "deployment in progress" with no progress bar.
+    - export DEPLOYPATH=/home/voxsignco/pearledu-app; /bin/bash ./scripts/cpanel-deploy.sh
