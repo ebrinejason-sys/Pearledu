@@ -4,6 +4,44 @@
   <div class="page-header"><div><p class="page-header__eyebrow">{{ $school->name }}</p><h2 class="page-header__title">Fees</h2></div></div>
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
 
+  <div class="card" id="ledger">
+    <h3 style="margin-top:0">Fee follow-up</h3>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:13px">Demanded = balance still owed. Cleared = paid in full.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <a class="btn {{ ($statusFilter ?? 'all') === 'demanded' ? 'accent' : 'ghost' }}" href="{{ route('app.fees.index', array_filter(['status'=>'demanded','class_id'=>$classId,'term_id'=>$termId,'q'=>$q])) }}">Demanded ({{ $summary['demanded'] ?? 0 }})</a>
+      <a class="btn {{ ($statusFilter ?? '') === 'cleared' ? 'accent' : 'ghost' }}" href="{{ route('app.fees.index', array_filter(['status'=>'cleared','class_id'=>$classId,'term_id'=>$termId,'q'=>$q])) }}">Cleared ({{ $summary['cleared'] ?? 0 }})</a>
+      <a class="btn {{ ($statusFilter ?? '') === 'overdue' ? 'accent' : 'ghost' }}" href="{{ route('app.fees.index', array_filter(['status'=>'overdue','class_id'=>$classId,'term_id'=>$termId,'q'=>$q])) }}">Overdue ({{ $summary['overdue'] ?? 0 }})</a>
+      <a class="btn {{ ($statusFilter ?? 'all') === 'all' ? 'accent' : 'ghost' }}" href="{{ route('app.fees.index', array_filter(['class_id'=>$classId,'term_id'=>$termId,'q'=>$q])) }}">All open ledgers</a>
+      <span class="pill" style="align-self:center">Outstanding UGX {{ number_format($summary['outstanding'] ?? 0) }}</span>
+    </div>
+    <form method="get" action="{{ route('app.fees.index') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+      <input type="hidden" name="status" value="{{ $statusFilter ?? 'all' }}">
+      <div>
+        <label>Class</label>
+        <select name="class_id">
+          <option value="">All classes</option>
+          @foreach($classes as $c)
+            <option value="{{ $c->id }}" @selected((int)($classId ?? 0) === (int)$c->id)>{{ $c->displayName() }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div>
+        <label>Term (structure)</label>
+        <select name="term_id">
+          <option value="">Any term</option>
+          @foreach($terms as $t)
+            <option value="{{ $t->id }}" @selected((int)($termId ?? 0) === (int)$t->id)>{{ $t->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div>
+        <label>Search student / ref</label>
+        <input name="q" value="{{ $q ?? '' }}" placeholder="Name or invoice ref">
+      </div>
+      <button class="btn" type="submit">Filter</button>
+    </form>
+  </div>
+
   <div class="grid g2">
     <div class="card"><h3 style="margin-top:0">Fee structure</h3>
       <form method="post" action="{{ route('app.fees.structures.store') }}">@csrf
@@ -151,37 +189,48 @@
     </div>
   @endif
 
-  <div class="card">
-    <h3 style="margin-top:0">Recent invoices</h3>
-    <table>
-      <thead><tr><th>Ref</th><th>Student</th><th>Amount</th><th>Balance</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        @forelse($invoices as $inv)
-          <tr>
-            <td>{{ $inv->reference }}</td>
-            <td>{{ $inv->student?->full_name ?? '—' }}</td>
-            <td>{{ number_format($inv->amount) }}</td>
-            <td>{{ number_format($inv->balance) }}</td>
-            <td><span class="pill">{{ $inv->status }}</span></td>
-            <td style="white-space:nowrap">
-              @if($inv->status !== 'void')
-                <form method="post" action="{{ route('app.fees.invoices.void', $inv) }}" style="display:inline" onsubmit="return confirm('Void this invoice?')">
-                  @csrf
-                  <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Void</button>
-                </form>
-                <form method="post" action="{{ route('app.fees.invoices.discount', $inv) }}" style="display:inline-flex;gap:4px;align-items:center">
-                  @csrf
-                  <input type="number" step="0.01" name="amount" placeholder="Discount" style="width:90px">
-                  <input name="reason" placeholder="Reason" style="width:110px">
-                  <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Apply</button>
-                </form>
-              @endif
-            </td>
-          </tr>
-        @empty
-          <tr><td colspan="6">No invoices yet.</td></tr>
-        @endforelse
-      </tbody>
-    </table>
+  <div class="card" id="invoices">
+    <h3 style="margin-top:0">
+      @if(($statusFilter ?? 'all') === 'demanded') Demanded invoices
+      @elseif(($statusFilter ?? '') === 'cleared') Cleared invoices
+      @elseif(($statusFilter ?? '') === 'overdue') Overdue invoices
+      @else Invoices
+      @endif
+      <span style="font-weight:400;color:var(--muted);font-size:13px">({{ $invoices->count() }} shown)</span>
+    </h3>
+    @forelse($groupedInvoices as $classLabel => $rows)
+      <h4 style="margin:16px 0 8px;font-size:14px">{{ $classLabel }} <span style="color:var(--muted);font-weight:400">({{ $rows->count() }})</span></h4>
+      <table>
+        <thead><tr><th>Ref</th><th>Student</th><th>Amount</th><th>Balance</th><th>Due</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          @foreach($rows as $inv)
+            <tr>
+              <td>{{ $inv->reference }}</td>
+              <td>{{ $inv->student?->full_name ?? '—' }}</td>
+              <td>{{ number_format($inv->amount) }}</td>
+              <td>{{ number_format($inv->balance) }}</td>
+              <td>{{ $inv->due_on?->format('d M Y') ?? '—' }}</td>
+              <td><span class="pill">{{ $inv->status }}</span></td>
+              <td style="white-space:nowrap">
+                @if($inv->status !== 'void')
+                  <form method="post" action="{{ route('app.fees.invoices.void', $inv) }}" style="display:inline" onsubmit="return confirm('Void this invoice?')">
+                    @csrf
+                    <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Void</button>
+                  </form>
+                  <form method="post" action="{{ route('app.fees.invoices.discount', $inv) }}" style="display:inline-flex;gap:4px;align-items:center">
+                    @csrf
+                    <input type="number" step="0.01" name="amount" placeholder="Discount" style="width:90px">
+                    <input name="reason" placeholder="Reason" style="width:110px">
+                    <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Apply</button>
+                  </form>
+                @endif
+              </td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    @empty
+      <p style="color:var(--muted);margin:0">No invoices match this filter.</p>
+    @endforelse
   </div>
 @endsection

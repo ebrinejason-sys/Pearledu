@@ -110,6 +110,9 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/subjects', [SubjectController::class, 'store'])->name('app.subjects.store');
         Route::put('/subjects/{subject}', [SubjectController::class, 'update'])->name('app.subjects.update');
         Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('app.subjects.destroy');
+    });
+
+    Route::middleware('permission:school.manage,timetable.manage')->group(function () {
         Route::get('/teaching-assignments', [TeachingAssignmentController::class, 'index'])->name('app.teaching.index');
         Route::post('/teaching-assignments', [TeachingAssignmentController::class, 'store'])->name('app.teaching.store');
         Route::delete('/teaching-assignments/{assignment}', [TeachingAssignmentController::class, 'destroy'])->name('app.teaching.destroy');
@@ -144,6 +147,11 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
 
     Route::middleware('permission:timetable.manage')->group(function () {
         Route::get('/timetable', [TimetableController::class, 'index'])->name('app.timetable.index');
+        Route::post('/timetable/days', [TimetableController::class, 'updateScheduleDays'])->name('app.timetable.days.update');
+        Route::post('/timetable/periods', [TimetableController::class, 'storePeriod'])->name('app.timetable.periods.store');
+        Route::put('/timetable/periods/{period}', [TimetableController::class, 'updatePeriod'])->name('app.timetable.periods.update');
+        Route::delete('/timetable/periods/{period}', [TimetableController::class, 'destroyPeriod'])->name('app.timetable.periods.destroy');
+        Route::post('/timetable/generate', [TimetableController::class, 'generate'])->name('app.timetable.generate');
         Route::post('/timetable/slots', [TimetableController::class, 'storeSlot'])->name('app.timetable.slots.store');
         Route::delete('/timetable/slots/{slot}', [TimetableController::class, 'destroySlot'])->name('app.timetable.slots.destroy');
     });

@@ -30,7 +30,7 @@ class AppHomeController extends Controller
         }
 
         $school = $context->school();
-        $board = $school ? $dashboard->build($school, $permissions) : null;
+        $board = $school ? $dashboard->build($school, $permissions, $user) : null;
 
         return view('app.home', [
             'school' => $school,

@@ -10,6 +10,8 @@ use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\TeachingAssignment;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 class SchoolDashboardService
@@ -24,7 +26,7 @@ class SchoolDashboardService
      *   permissionLabels: list<string>
      * }
      */
-    public function build(School $school, array $permissions): array
+    public function build(School $school, array $permissions, ?User $user = null): array
     {
         $schoolId = (int) $school->id;
 
@@ -45,6 +47,20 @@ class SchoolDashboardService
             ->whereIn('status', ['open', 'partial'])
             ->sum('balance');
 
+        $demandedCount = FeeInvoice::query()
+            ->where('school_id', $schoolId)
+            ->whereIn('status', ['open', 'partial'])
+            ->where('balance', '>', 0)
+            ->count();
+
+        $clearedCount = FeeInvoice::query()
+            ->where('school_id', $schoolId)
+            ->where(function ($q) {
+                $q->where('status', 'paid')
+                    ->orWhere(fn ($x) => $x->where('balance', '<=', 0)->where('status', '!=', 'void'));
+            })
+            ->count();
+
         $pendingPayments = FeePayment::query()
             ->where('school_id', $schoolId)
             ->where('status', 'pending')
@@ -62,12 +78,27 @@ class SchoolDashboardService
 
         $smsBalance = $school->smsBalance();
 
+        $myLoad = 0;
+        if ($user && $this->hasAny($permissions, ['assessment.enter', 'timetable.manage'])) {
+            $myLoad = TeachingAssignment::query()
+                ->where('school_id', $schoolId)
+                ->where('user_id', $user->id)
+                ->effective()
+                ->count();
+        }
+
         $stats = array_values(array_filter([
             $this->has($permissions, 'learners.manage')
                 ? ['label' => 'Active students', 'value' => number_format($students), 'hint' => 'On roll', 'tone' => 'brand']
                 : null,
             $this->has($permissions, 'staff.manage')
                 ? ['label' => 'Staff accounts', 'value' => number_format($staff), 'hint' => 'Active roles', 'tone' => 'brand']
+                : null,
+            $this->has($permissions, 'finance.manage')
+                ? ['label' => 'Demanded', 'value' => number_format($demandedCount), 'hint' => 'Invoices with balance', 'tone' => $demandedCount > 0 ? 'warning' : 'brand']
+                : null,
+            $this->has($permissions, 'finance.manage')
+                ? ['label' => 'Cleared', 'value' => number_format($clearedCount), 'hint' => 'Paid / zero balance', 'tone' => 'brand']
                 : null,
             $this->has($permissions, 'finance.manage')
                 ? ['label' => 'Fees outstanding', 'value' => 'UGX '.number_format($openFees, 0), 'hint' => 'Open invoices', 'tone' => 'accent']
@@ -81,8 +112,11 @@ class SchoolDashboardService
             $this->has($permissions, 'attendance.mark')
                 ? ['label' => 'Attendance today', 'value' => number_format($todayAttendance), 'hint' => 'Records marked', 'tone' => 'brand']
                 : null,
-            $this->has($permissions, 'sms.send')
+            $this->has($permissions, 'sms.send') && $this->hasAny($permissions, ['finance.manage', 'school.manage', 'staff.manage'])
                 ? ['label' => 'SMS credits', 'value' => number_format($smsBalance), 'hint' => 'Available balance', 'tone' => $smsBalance < 20 ? 'warning' : 'brand']
+                : null,
+            $myLoad > 0
+                ? ['label' => 'My teaching load', 'value' => number_format($myLoad), 'hint' => 'Active assignments', 'tone' => 'brand']
                 : null,
         ]));
 
@@ -92,8 +126,12 @@ class SchoolDashboardService
 
         return [
             'stats' => $stats,
-            'classChart' => $this->classEnrollmentChart($schoolId),
-            'feeChart' => $this->feeCollectionChart($schoolId),
+            'classChart' => $this->hasAny($permissions, ['learners.manage', 'school.manage', 'finance.manage'])
+                ? $this->classEnrollmentChart($schoolId)
+                : [],
+            'feeChart' => $this->has($permissions, 'finance.manage')
+                ? $this->feeCollectionChart($schoolId)
+                : [],
             'shortcuts' => $this->shortcuts($permissions, $school),
             'permissionLabels' => $this->permissionLabels($permissions),
         ];
@@ -168,11 +206,14 @@ class SchoolDashboardService
             ['perm' => 'learners.manage', 'route' => 'app.students.index', 'label' => 'Students', 'desc' => 'Records & guardians', 'icon' => 'students'],
             ['perm' => 'learners.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
             ['perm' => 'admissions.manage', 'route' => 'app.admissions.index', 'label' => 'Admissions', 'desc' => 'Applications queue', 'icon' => 'admissions'],
-            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'label' => 'Fees', 'desc' => 'Invoices & payments', 'icon' => 'fees'],
+            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'params' => ['status' => 'demanded'], 'label' => 'Demanded fees', 'desc' => 'Students still owing', 'icon' => 'fees'],
+            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'params' => ['status' => 'cleared'], 'label' => 'Cleared fees', 'desc' => 'Paid in full', 'icon' => 'fees'],
+            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'label' => 'Fees desk', 'desc' => 'Invoices & payments', 'icon' => 'fees'],
             ['perm' => 'attendance.mark', 'route' => 'app.attendance.index', 'label' => 'Attendance', 'desc' => 'Daily register', 'icon' => 'attendance'],
             ['perm' => 'assessment.enter', 'route' => 'app.assessment.marks', 'label' => 'Enter marks', 'desc' => 'Assessment entry', 'icon' => 'assessment'],
             ['perm' => 'assessment.manage', 'route' => 'app.assessment.index', 'label' => 'Assessment', 'desc' => 'Periods & reports', 'icon' => 'assessment'],
-            ['perm' => 'timetable.manage', 'route' => 'app.timetable.index', 'label' => 'Timetable', 'desc' => 'Weekly grid', 'icon' => 'timetable'],
+            ['perm' => 'timetable.manage', 'route' => 'app.timetable.index', 'label' => 'Timetable', 'desc' => 'Days, periods, generate', 'icon' => 'timetable'],
+            ['perm' => 'timetable.manage', 'route' => 'app.teaching.index', 'label' => 'Teaching load', 'desc' => 'Who teaches what', 'icon' => 'teaching'],
             ['perm' => 'staff.manage', 'route' => 'app.staff.index', 'label' => 'Staff', 'desc' => 'Roles & invites', 'icon' => 'staff'],
             ['perm' => 'sms.send', 'route' => 'app.sms', 'label' => 'Send SMS', 'desc' => 'Parent messages', 'icon' => 'sms'],
             ['perm' => 'announcements.manage', 'route' => 'app.announcements.index', 'label' => 'Announcements', 'desc' => 'School notices', 'icon' => 'announcements'],
@@ -197,13 +238,14 @@ class SchoolDashboardService
             if (! Route::has($item['route'])) {
                 continue;
             }
-            if (isset($seen[$item['route']])) {
+            $key = $item['route'].'|'.json_encode($item['params'] ?? []);
+            if (isset($seen[$key])) {
                 continue;
             }
-            $seen[$item['route']] = true;
+            $seen[$key] = true;
             $out[] = [
                 'label' => $item['label'],
-                'url' => route($item['route']),
+                'url' => route($item['route'], $item['params'] ?? []),
                 'desc' => $item['desc'],
                 'icon' => $item['icon'],
             ];
@@ -261,5 +303,17 @@ class SchoolDashboardService
     private function has(array $permissions, string $perm): bool
     {
         return in_array($perm, $permissions, true);
+    }
+
+    /** @param list<string> $permissions @param list<string> $perms */
+    private function hasAny(array $permissions, array $perms): bool
+    {
+        foreach ($perms as $perm) {
+            if ($this->has($permissions, $perm)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

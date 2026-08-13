@@ -48,7 +48,7 @@ class TeachingAssignmentController extends Controller
             ->get(['id', 'full_name']);
 
         $subjects = Subject::query()->orderBy('name')->get();
-        $classes = SchoolClass::query()->orderBy('name')->get();
+        $classes = SchoolClass::query()->orderBy('name')->orderBy('stream')->get();
         $years = AcademicYear::query()->orderByDesc('starts_on')->get();
         $terms = Term::query()->orderBy('sequence')->get();
         $currentYearId = $years->firstWhere('is_current')?->id ?? $years->first()?->id;
@@ -79,6 +79,7 @@ class TeachingAssignmentController extends Controller
             ],
             'starts_on' => 'nullable|date',
             'ends_on' => 'nullable|date|after_or_equal:starts_on',
+            'periods_per_week' => 'nullable|integer|min:1|max:20',
         ]);
 
         $this->assertTeachingCapable((int) $data['user_id'], $school->id);
@@ -121,6 +122,7 @@ class TeachingAssignmentController extends Controller
             'starts_on' => $data['starts_on'] ?? null,
             'ends_on' => $data['ends_on'] ?? null,
             'status' => 'active',
+            'periods_per_week' => (int) ($data['periods_per_week'] ?? 3),
         ]);
 
         return back()->with('status', 'Teaching assignment saved.');

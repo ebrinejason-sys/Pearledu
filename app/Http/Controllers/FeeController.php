@@ -18,23 +18,84 @@ use Illuminate\Validation\ValidationException;
 
 class FeeController extends Controller
 {
-    public function index(TenantContext $ctx)
+    public function index(Request $request, TenantContext $ctx)
     {
         $school = $ctx->school();
         abort_unless($school, 404);
+
+        $statusFilter = (string) $request->query('status', 'all');
+        if (! in_array($statusFilter, ['all', 'demanded', 'cleared', 'overdue', 'void'], true)) {
+            $statusFilter = 'all';
+        }
+        $classId = $request->integer('class_id') ?: null;
+        $termId = $request->integer('term_id') ?: null;
+        $q = trim((string) $request->query('q', ''));
+
         $structures = FeeStructure::where('school_id', $school->id)->with(['schoolClass', 'term'])->orderByDesc('id')->get();
-        $invoices = FeeInvoice::where('school_id', $school->id)->with('student')->orderByDesc('id')->limit(100)->get();
+
+        $invoiceQuery = FeeInvoice::query()
+            ->where('school_id', $school->id)
+            ->with(['student.schoolClass', 'structure'])
+            ->when($classId, fn ($query) => $query->whereHas('student', fn ($s) => $s->where('class_id', $classId)))
+            ->when($termId, fn ($query) => $query->whereHas('structure', fn ($s) => $s->where('term_id', $termId)))
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($inner) use ($q) {
+                    $inner->where('reference', 'like', '%'.$q.'%')
+                        ->orWhereHas('student', fn ($s) => $s->where('full_name', 'like', '%'.$q.'%'));
+                });
+            });
+
+        $countsBase = FeeInvoice::query()->where('school_id', $school->id)->where('status', '!=', 'void');
+        $summary = [
+            'demanded' => (clone $countsBase)->whereIn('status', ['open', 'partial'])->where('balance', '>', 0)->count(),
+            'cleared' => (clone $countsBase)->where(function ($q) {
+                $q->where('status', 'paid')->orWhere(fn ($x) => $x->where('balance', '<=', 0)->where('status', '!=', 'void'));
+            })->count(),
+            'overdue' => (clone $countsBase)->whereIn('status', ['open', 'partial'])
+                ->where('balance', '>', 0)
+                ->whereNotNull('due_on')
+                ->whereDate('due_on', '<', now()->toDateString())
+                ->count(),
+            'outstanding' => (float) (clone $countsBase)->whereIn('status', ['open', 'partial'])->sum('balance'),
+        ];
+
+        if ($statusFilter === 'demanded') {
+            $invoiceQuery->whereIn('status', ['open', 'partial'])->where('balance', '>', 0);
+        } elseif ($statusFilter === 'cleared') {
+            $invoiceQuery->where(function ($q) {
+                $q->where('status', 'paid')
+                    ->orWhere(fn ($x) => $x->where('balance', '<=', 0)->where('status', '!=', 'void'));
+            });
+        } elseif ($statusFilter === 'overdue') {
+            $invoiceQuery->whereIn('status', ['open', 'partial'])
+                ->where('balance', '>', 0)
+                ->whereNotNull('due_on')
+                ->whereDate('due_on', '<', now()->toDateString());
+        } elseif ($statusFilter === 'void') {
+            $invoiceQuery->where('status', 'void');
+        } else {
+            $invoiceQuery->where('status', '!=', 'void');
+        }
+
+        $invoices = $invoiceQuery->orderByDesc('id')->limit(200)->get();
+
         $pendingPayments = FeePayment::where('school_id', $school->id)
             ->where('status', 'pending')
             ->with(['invoice.student'])
             ->orderByDesc('id')
             ->limit(50)
             ->get();
-        $classes = SchoolClass::where('school_id', $school->id)->orderBy('name')->get();
+        $classes = SchoolClass::where('school_id', $school->id)->orderBy('name')->orderBy('stream')->get();
         $terms = Term::where('school_id', $school->id)->orderBy('sequence')->get();
         $students = Student::where('school_id', $school->id)->orderBy('full_name')->get();
 
-        return view('app.fees.index', compact('school', 'structures', 'invoices', 'pendingPayments', 'classes', 'terms', 'students'));
+        // Group demanded/cleared lists by class for bursar follow-up.
+        $groupedInvoices = $invoices->groupBy(fn (FeeInvoice $inv) => $inv->student?->schoolClass?->displayName() ?? 'Unassigned');
+
+        return view('app.fees.index', compact(
+            'school', 'structures', 'invoices', 'groupedInvoices', 'pendingPayments',
+            'classes', 'terms', 'students', 'statusFilter', 'classId', 'termId', 'q', 'summary'
+        ));
     }
 
     public function storeStructure(Request $request, TenantContext $ctx)

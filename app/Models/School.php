@@ -9,12 +9,23 @@ use Illuminate\Support\Carbon;
 
 class School extends Model
 {
+    /** ISO weekdays: 1 = Monday … 7 = Sunday */
+    public const WEEK_DAYS = [
+        1 => 'Monday',
+        2 => 'Tuesday',
+        3 => 'Wednesday',
+        4 => 'Thursday',
+        5 => 'Friday',
+        6 => 'Saturday',
+        7 => 'Sunday',
+    ];
+
     protected $fillable = [
         'name', 'slug', 'emis_number', 'district', 'theme', 'motto', 'badge_text',
         'logo_path', 'address', 'status', 'created_by',
         'schoolpay_enabled', 'schoolpay_school_code', 'schoolpay_api_password',
         'emis_enabled',
-        'enabled_modules', 'report_settings', 'setup_completed_at',
+        'enabled_modules', 'report_settings', 'schedule_settings', 'setup_completed_at',
         'deletion_scheduled_at', 'deletion_requested_by', 'deletion_reason',
     ];
 
@@ -30,8 +41,20 @@ class School extends Model
         'emis_enabled' => 'boolean',
         'enabled_modules' => 'array',
         'report_settings' => 'array',
+        'schedule_settings' => 'array',
         'setup_completed_at' => 'datetime',
     ];
+
+    /** @return list<int> ISO weekdays 1=Mon … 7=Sun */
+    public function teachingDays(): array
+    {
+        $days = $this->schedule_settings['teaching_days'] ?? [1, 2, 3, 4, 5];
+        if (! is_array($days) || $days === []) {
+            return [1, 2, 3, 4, 5];
+        }
+
+        return array_values(array_unique(array_map('intval', $days)));
+    }
 
     public function schoolPayEnabled(): bool
     {

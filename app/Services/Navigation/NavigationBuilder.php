@@ -151,7 +151,17 @@ class NavigationBuilder
                 'label' => 'Finance',
                 'items' => array_values(array_filter([
                     $on('fees') && $this->has($permissions, 'finance.manage')
-                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.*') && ! str_contains((string) request()->getRequestUri(), '#payments'))
+                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.*') && ! request()->filled('status'))
+                        : null,
+                    $on('fees') && $this->has($permissions, 'finance.manage')
+                        ? array_merge($this->item('Demanded', 'app.fees.index', icon: 'fees', active: request()->query('status') === 'demanded'), [
+                            'url' => Route::has('app.fees.index') ? route('app.fees.index', ['status' => 'demanded']) : null,
+                        ])
+                        : null,
+                    $on('fees') && $this->has($permissions, 'finance.manage')
+                        ? array_merge($this->item('Cleared', 'app.fees.index', icon: 'fees', active: request()->query('status') === 'cleared'), [
+                            'url' => Route::has('app.fees.index') ? route('app.fees.index', ['status' => 'cleared']) : null,
+                        ])
                         : null,
                     $on('fees') && $this->has($permissions, 'finance.manage')
                         ? array_merge($this->item('Payments', 'app.fees.index', icon: 'fees', active: false), [
@@ -200,7 +210,7 @@ class NavigationBuilder
                     $this->has($permissions, 'school.manage')
                         ? $this->item('Subjects', 'app.subjects.index', icon: 'subjects', active: request()->routeIs('app.subjects.*'))
                         : null,
-                    $this->has($permissions, 'school.manage')
+                    $this->hasAny($permissions, ['school.manage', 'timetable.manage'])
                         ? $this->item('Teaching', 'app.teaching.index', icon: 'teaching', active: request()->routeIs('app.teaching.*'))
                         : null,
                     $on('assessment') && $canAssess
