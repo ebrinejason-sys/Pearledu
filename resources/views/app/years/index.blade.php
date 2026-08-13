@@ -18,15 +18,32 @@
         <input name="name" value="{{ old('name') }}" required>
         @error('name')<div class="err">{{ $message }}</div>@enderror
         <label>Starts</label>
-        <input type="date" name="starts_on" value="{{ old('starts_on') }}" required>
+        <input type="date" name="starts_on" value="{{ old('starts_on', $defaultStart) }}" required>
         <label>Ends</label>
-        <input type="date" name="ends_on" value="{{ old('ends_on') }}" required>
+        <input type="date" name="ends_on" value="{{ old('ends_on', $defaultEnd) }}" required>
         <label style="display:flex;align-items:center;gap:8px;margin-top:10px">
-          <input type="checkbox" name="is_current" value="1" @checked(old('is_current'))> Current year
+          <input type="checkbox" name="is_current" value="1" @checked(old('is_current', true))> Current year
         </label>
         <label style="display:flex;align-items:center;gap:8px;margin-top:10px">
-          <input type="checkbox" name="with_terms" value="1" @checked(old('with_terms'))> Also create Term I–III
+          <input type="checkbox" name="with_terms" value="1" @checked(old('with_terms', true))> Create Term I–III
         </label>
+        <p style="margin:10px 0 6px;font-size:13px;color:var(--muted)">Suggested teaching blocks with holiday gaps — adjust before saving. Terms are not equal thirds of the calendar.</p>
+        @foreach($suggestedTerms as $i => $term)
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px">
+            <div>
+              <label>Term</label>
+              <input name="terms[{{ $i }}][name]" value="{{ old('terms.'.$i.'.name', $term['name']) }}">
+            </div>
+            <div>
+              <label>Starts</label>
+              <input type="date" name="terms[{{ $i }}][starts_on]" value="{{ old('terms.'.$i.'.starts_on', $term['starts_on']) }}">
+            </div>
+            <div>
+              <label>Ends</label>
+              <input type="date" name="terms[{{ $i }}][ends_on]" value="{{ old('terms.'.$i.'.ends_on', $term['ends_on']) }}">
+            </div>
+          </div>
+        @endforeach
         <p style="margin-top:14px"><button class="btn" type="submit">Save year</button></p>
       </form>
     </div>

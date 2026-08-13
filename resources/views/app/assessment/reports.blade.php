@@ -48,8 +48,15 @@
           Class: {{ $klass?->name ?? '—' }} · Period: {{ $period?->name ?? '—' }}
         </div>
         <div style="text-align:right">
-          Position: <strong>{{ $row['position'] ?? '—' }}</strong><br>
-          Average: <strong>{{ $row['average'] ?? '—' }}</strong>
+          @if($reportSettings['show_position'] ?? true)
+            Position: <strong>{{ $row['position'] ?? '—' }}</strong><br>
+          @endif
+          @if($reportSettings['show_average'] ?? true)
+            Average: <strong>{{ $row['average'] ?? '—' }}</strong>
+          @endif
+          @if($reportSettings['show_total'] ?? true)
+            <br>Total: <strong>{{ $row['total'] ?? '—' }}</strong>
+          @endif
         </div>
       </div>
       <table>
@@ -59,7 +66,7 @@
             <tr>
               <td>{{ $subj['name'] }}@if($subj['code']) <span style="color:var(--muted)">({{ $subj['code'] }})</span>@endif</td>
               <td>{{ $subj['score'] }}</td>
-              <td>{{ $subj['grade'] ?? '—' }}</td>
+              <td>{{ $subj['grade'] ?? '—' }}@if(!empty($subj['remark'])) <span style="color:var(--muted)">({{ $subj['remark'] }})</span>@endif</td>
               <td>{{ $subj['comment'] ?? '—' }}</td>
             </tr>
           @empty

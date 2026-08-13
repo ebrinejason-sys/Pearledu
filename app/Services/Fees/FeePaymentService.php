@@ -127,6 +127,59 @@ class FeePaymentService
         });
     }
 
+    public function reverse(FeePayment $payment, int $verifiedBy, ?string $reason = null): FeePayment
+    {
+        return DB::transaction(function () use ($payment, $verifiedBy, $reason) {
+            /** @var FeePayment $payment */
+            $payment = FeePayment::query()->lockForUpdate()->findOrFail($payment->id);
+
+            if ($payment->status !== 'confirmed') {
+                throw ValidationException::withMessages(['payment' => 'Only confirmed payments can be reversed.']);
+            }
+
+            if ($payment->reverses_payment_id) {
+                throw ValidationException::withMessages(['payment' => 'This row is already a reversal.']);
+            }
+
+            $already = FeePayment::query()
+                ->where('reverses_payment_id', $payment->id)
+                ->where('status', 'confirmed')
+                ->exists();
+            if ($already) {
+                throw ValidationException::withMessages(['payment' => 'This payment has already been reversed.']);
+            }
+
+            /** @var FeeInvoice $invoice */
+            $invoice = FeeInvoice::query()->lockForUpdate()->findOrFail($payment->invoice_id);
+            $amount = round((float) $payment->amount, 2);
+
+            $reversal = FeePayment::create([
+                'school_id' => $payment->school_id,
+                'invoice_id' => $invoice->id,
+                'amount' => $amount,
+                'method' => 'reversal',
+                'provider_ref' => $reason,
+                'status' => 'confirmed',
+                'reverses_payment_id' => $payment->id,
+                'recorded_by' => $verifiedBy,
+                'verified_by' => $verifiedBy,
+                'verified_at' => now(),
+            ]);
+
+            $payment->status = 'reversed';
+            $payment->save();
+
+            $newBalance = round((float) $invoice->balance + $amount, 2);
+            $invoice->balance = min((float) $invoice->amount, $newBalance);
+            $invoice->status = $invoice->balance <= 0.0001
+                ? 'paid'
+                : ($invoice->balance + 0.0001 >= (float) $invoice->amount ? 'open' : 'partial');
+            $invoice->save();
+
+            return $reversal;
+        });
+    }
+
     /** Balance not yet claimed by confirmed or pending payments. */
     public function availableBalance(FeeInvoice $invoice): float
     {

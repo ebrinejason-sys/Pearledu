@@ -14,6 +14,7 @@ class School extends Model
         'logo_path', 'address', 'status', 'created_by',
         'schoolpay_enabled', 'schoolpay_school_code', 'schoolpay_api_password',
         'emis_enabled',
+        'enabled_modules', 'report_settings', 'setup_completed_at',
         'deletion_scheduled_at', 'deletion_requested_by', 'deletion_reason',
     ];
 
@@ -27,6 +28,9 @@ class School extends Model
         'schoolpay_enabled' => 'boolean',
         'schoolpay_api_password' => 'encrypted',
         'emis_enabled' => 'boolean',
+        'enabled_modules' => 'array',
+        'report_settings' => 'array',
+        'setup_completed_at' => 'datetime',
     ];
 
     public function schoolPayEnabled(): bool
@@ -59,6 +63,11 @@ class School extends Model
     public function students(): HasMany
     {
         return $this->hasMany(Student::class);
+    }
+
+    public function academicYears(): HasMany
+    {
+        return $this->hasMany(AcademicYear::class);
     }
 
     public function smsLedger(): HasMany

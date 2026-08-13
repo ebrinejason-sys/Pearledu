@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Schools\SchoolModuleRegistry;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class SchoolSettingsController extends Controller
 {
-    public function edit(TenantContext $ctx)
+    public function edit(TenantContext $ctx, SchoolModuleRegistry $modules)
     {
         $school = $ctx->school();
         abort_unless($school, 404);
@@ -18,6 +19,14 @@ class SchoolSettingsController extends Controller
             'themes' => config('themes.themes', []),
             'schoolPayCallbackUrl' => route('webhooks.schoolpay.callback', $school),
             'schoolPayNotifyUrl' => route('webhooks.schoolpay.notify', $school),
+            'moduleCatalog' => config('modules.optional', []),
+            'moduleSnapshot' => $modules->snapshot($school),
+            'reportSettings' => $school->report_settings ?? [
+                'show_position' => true,
+                'show_total' => true,
+                'show_average' => true,
+                'require_class_teacher_comment' => false,
+            ],
         ]);
     }
 
@@ -40,6 +49,12 @@ class SchoolSettingsController extends Controller
             'schoolpay_enabled' => 'sometimes|boolean',
             'schoolpay_school_code' => 'nullable|string|max:32',
             'schoolpay_api_password' => 'nullable|string|max:200',
+            'modules' => 'nullable|array',
+            'modules.*' => 'sometimes|boolean',
+            'report_show_position' => 'sometimes|boolean',
+            'report_show_total' => 'sometimes|boolean',
+            'report_show_average' => 'sometimes|boolean',
+            'report_require_class_teacher_comment' => 'sometimes|boolean',
         ]);
 
         if (! empty($data['remove_logo']) && $school->logo_path) {
@@ -67,7 +82,23 @@ class SchoolSettingsController extends Controller
             'schoolpay_school_code' => filled($data['schoolpay_school_code'] ?? null)
                 ? trim((string) $data['schoolpay_school_code'])
                 : null,
+            'report_settings' => [
+                'show_position' => (bool) ($data['report_show_position'] ?? false),
+                'show_total' => (bool) ($data['report_show_total'] ?? false),
+                'show_average' => (bool) ($data['report_show_average'] ?? false),
+                'require_class_teacher_comment' => (bool) ($data['report_require_class_teacher_comment'] ?? false),
+            ],
         ]);
+
+        $optional = array_keys(config('modules.optional', []));
+        $modules = is_array($school->enabled_modules) ? $school->enabled_modules : [];
+        foreach ($optional as $key) {
+            if (in_array($key, ['emis', 'schoolpay'], true)) {
+                continue;
+            }
+            $modules[$key] = (bool) ($data['modules'][$key] ?? false);
+        }
+        $school->enabled_modules = $modules;
 
         // Only overwrite the encrypted password when a new value is submitted.
         if (filled($data['schoolpay_api_password'] ?? null)) {

@@ -60,6 +60,7 @@ class PortalService
         if ($studentId) {
             $student = $learners->firstWhere('id', $studentId);
             abort_unless($student, 403, 'You cannot view this learner.');
+
             return $student;
         }
 
@@ -71,6 +72,7 @@ class PortalService
     {
         return Mark::query()
             ->where('student_id', $student->id)
+            ->whereHas('period', fn ($q) => $q->whereIn('status', ['published', 'locked']))
             ->with(['subject', 'period'])
             ->orderByDesc('id')
             ->limit(200)

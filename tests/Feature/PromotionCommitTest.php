@@ -46,8 +46,8 @@ class PromotionCommitTest extends TestCase
             'is_current' => true,
         ]);
 
-        $fromClass = SchoolClass::create(['school_id' => $school->id, 'level' => 'primary', 'name' => 'P6', 'code' => 'P6']);
-        $toClass = SchoolClass::create(['school_id' => $school->id, 'level' => 'primary', 'name' => 'P7', 'code' => 'P7']);
+        $fromClass = SchoolClass::create(['school_id' => $school->id, 'level' => 'primary', 'name' => 'P6 Promo', 'code' => 'P6-PROM']);
+        $toClass = SchoolClass::create(['school_id' => $school->id, 'level' => 'primary', 'name' => 'P7 Promo', 'code' => 'P7-PROM']);
 
         $student = Student::factory()->create([
             'school_id' => $school->id,

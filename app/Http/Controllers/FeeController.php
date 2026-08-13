@@ -8,11 +8,12 @@ use App\Models\FeeStructure;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Term;
+use App\Services\Academics\CurrentAcademicContext;
+use App\Services\Fees\FeeInvoiceService;
 use App\Services\Fees\FeePaymentService;
 use App\Services\SchoolPay\SchoolPayPaymentService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FeeController extends Controller
@@ -70,7 +71,7 @@ class FeeController extends Controller
         return back()->with('status', $structure->is_active ? 'Structure reactivated.' : 'Structure archived.');
     }
 
-    public function storeInvoice(Request $request, TenantContext $ctx)
+    public function storeInvoice(Request $request, TenantContext $ctx, FeeInvoiceService $invoices)
     {
         $school = $ctx->school();
         abort_unless($school, 404);
@@ -80,17 +81,18 @@ class FeeController extends Controller
             'amount' => 'required|numeric|min:0',
             'due_on' => 'nullable|date',
         ]);
-        FeeInvoice::create($data + [
-            'school_id' => $school->id,
-            'balance' => $data['amount'],
-            'status' => 'open',
-            'reference' => 'INV-'.now()->format('YmdHis').'-'.$data['student_id'],
-        ]);
+        $invoice = $invoices->createSingle(
+            $school->id,
+            (int) $data['student_id'],
+            (float) $data['amount'],
+            isset($data['fee_structure_id']) ? (int) $data['fee_structure_id'] : null,
+            $data['due_on'] ?? null,
+        );
 
-        return back()->with('status', 'Invoice created.');
+        return back()->with('status', 'Invoice '.$invoice->reference.' ready.');
     }
 
-    public function storeBulkInvoices(Request $request, TenantContext $ctx)
+    public function storeBulkInvoices(Request $request, TenantContext $ctx, FeeInvoiceService $invoices, CurrentAcademicContext $academic)
     {
         $school = $ctx->school();
         abort_unless($school, 404);
@@ -100,28 +102,40 @@ class FeeController extends Controller
             'due_on' => 'nullable|date',
         ]);
 
-        $structure = FeeStructure::where('school_id', $school->id)->findOrFail($data['fee_structure_id']);
-        $students = Student::where('school_id', $school->id)->where('class_id', $data['class_id'])->get();
-        abort_if($students->isEmpty(), 422, 'No students in that class.');
+        $stats = $invoices->generateClassInvoices(
+            $school->id,
+            (int) $data['fee_structure_id'],
+            (int) $data['class_id'],
+            $data['due_on'] ?? null,
+            $academic->year()?->id,
+        );
 
-        $count = 0;
-        DB::transaction(function () use ($school, $structure, $students, $data, &$count) {
-            foreach ($students as $student) {
-                FeeInvoice::create([
-                    'school_id' => $school->id,
-                    'student_id' => $student->id,
-                    'fee_structure_id' => $structure->id,
-                    'amount' => $structure->amount,
-                    'balance' => $structure->amount,
-                    'status' => 'open',
-                    'due_on' => $data['due_on'] ?? null,
-                    'reference' => 'INV-'.now()->format('YmdHis').'-'.$student->id,
-                ]);
-                $count++;
-            }
-        });
+        return back()->with(
+            'status',
+            "Created {$stats['created']}. Already existed: {$stats['already_existed']}. Skipped: {$stats['skipped']}."
+        );
+    }
 
-        return back()->with('status', "Created {$count} invoices for the class.");
+    public function voidInvoice(FeeInvoice $invoice, TenantContext $ctx, FeeInvoiceService $invoices)
+    {
+        $school = $ctx->school();
+        abort_unless($school && (int) $invoice->school_id === (int) $school->id, 404);
+        $invoices->void($invoice);
+
+        return back()->with('status', 'Invoice voided.');
+    }
+
+    public function discountInvoice(Request $request, FeeInvoice $invoice, TenantContext $ctx, FeeInvoiceService $invoices)
+    {
+        $school = $ctx->school();
+        abort_unless($school && (int) $invoice->school_id === (int) $school->id, 404);
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|max:190',
+        ]);
+        $invoices->applyDiscount($invoice, (float) $data['amount'], $data['reason'], $request->user()?->id);
+
+        return back()->with('status', 'Discount applied.');
     }
 
     public function storePayment(Request $request, TenantContext $ctx, FeePaymentService $svc)
@@ -188,5 +202,14 @@ class FeeController extends Controller
         $svc->reject($payment, (int) $request->user()->id);
 
         return back()->with('status', 'Payment rejected. Invoice balance unchanged.');
+    }
+
+    public function reversePayment(FeePayment $payment, TenantContext $ctx, FeePaymentService $svc, Request $request)
+    {
+        $school = $ctx->school();
+        abort_unless($school && (int) $payment->school_id === (int) $school->id, 404);
+        $svc->reverse($payment, (int) $request->user()->id, $request->input('reason'));
+
+        return back()->with('status', 'Payment reversed. Invoice balance restored.');
     }
 }

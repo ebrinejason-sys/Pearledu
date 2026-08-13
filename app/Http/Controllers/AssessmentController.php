@@ -8,15 +8,22 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Term;
+use App\Services\Academics\CurrentAcademicContext;
+use App\Services\Assessment\AssessmentPeriodWorkflow;
 use App\Services\Assessment\MarksheetService;
 use App\Services\Authorization\AssessmentScope;
 use App\Services\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class AssessmentController extends Controller
 {
-    public function __construct(private AssessmentScope $scope) {}
+    public function __construct(
+        private AssessmentScope $scope,
+        private AssessmentPeriodWorkflow $workflow,
+        private CurrentAcademicContext $academic,
+    ) {}
 
     public function index(TenantContext $context)
     {
@@ -30,8 +37,12 @@ class AssessmentController extends Controller
         $terms = Term::query()->orderBy('sequence')->get();
         $canManage = $this->scope->canManage($user, $school->id);
         $canEnter = $this->scope->canEnterAnywhere($user, $school->id);
+        $periodActions = [];
+        foreach ($periods as $period) {
+            $periodActions[$period->id] = $this->workflow->nextActions($period);
+        }
 
-        return view('app.assessment.index', compact('school', 'periods', 'terms', 'canManage', 'canEnter'));
+        return view('app.assessment.index', compact('school', 'periods', 'terms', 'canManage', 'canEnter', 'periodActions'));
     }
 
     public function storePeriod(Request $request, TenantContext $context)
@@ -49,11 +60,27 @@ class AssessmentController extends Controller
         AssessmentPeriod::create([
             'school_id' => $school->id,
             'name' => $data['name'],
-            'term_id' => $data['term_id'] ?? null,
+            'term_id' => $data['term_id'] ?? $this->academic->term()?->id,
             'max_score' => $data['max_score'] ?? 100,
+            'status' => 'draft',
         ]);
 
-        return back()->with('status', 'Assessment period created.');
+        return back()->with('status', 'Assessment period created as a draft. Open mark entry when teachers should begin.');
+    }
+
+    public function transitionPeriod(Request $request, AssessmentPeriod $period, TenantContext $context)
+    {
+        $school = $context->school();
+        abort_unless($school && (int) $period->school_id === (int) $school->id, 404);
+        abort_unless($request->user() && $this->scope->canManage($request->user(), $school->id), 403);
+
+        $data = $request->validate([
+            'to' => 'required|in:'.implode(',', AssessmentPeriodWorkflow::STATUSES),
+        ]);
+
+        $this->workflow->advance($period, $data['to']);
+
+        return back()->with('status', 'Period is now '.str_replace('_', ' ', $period->fresh()->status).'.');
     }
 
     public function marks(Request $request, TenantContext $context)
@@ -67,8 +94,8 @@ class AssessmentController extends Controller
         $periods = AssessmentPeriod::query()->orderByDesc('id')->get();
         $classes = $this->scopedClasses($this->scope->enterableClassIds($user, $school->id));
 
-        $periodId = (int) $request->query('period_id', $periods->first()?->id ?? 0);
-        $classId = (int) $request->query('class_id', $classes->first()?->id ?? 0);
+        $periodId = (int) $request->query('period_id', $this->academic->assessmentPeriod()?->id ?? $periods->first()?->id ?? 0);
+        $classId = (int) $request->query('class_id', $this->academic->classesFor($user)->first()?->id ?? $classes->first()?->id ?? 0);
 
         if ($classId && ! $classes->contains('id', $classId)) {
             abort(403);
@@ -89,7 +116,13 @@ class AssessmentController extends Controller
         }
 
         $students = $classId
-            ? Student::query()->where('class_id', $classId)->orderBy('full_name')->get()
+            ? Student::query()
+                ->where(function ($q) use ($classId) {
+                    $q->where('class_id', $classId)
+                        ->orWhereHas('enrollments', fn ($e) => $e->where('class_id', $classId)->where('status', 'active'));
+                })
+                ->orderBy('full_name')
+                ->get()
             : collect();
 
         $existing = Mark::query()
@@ -100,10 +133,13 @@ class AssessmentController extends Controller
             ->keyBy('student_id');
 
         $hasAssignments = $this->scope->canManage($user, $school->id) || $classes->isNotEmpty();
+        $period = $periods->firstWhere('id', $periodId);
+        $canEnterMarks = $period ? $this->workflow->canEnterMarks($period) : false;
 
         return view('app.assessment.marks', compact(
             'school', 'periods', 'classes', 'subjects',
-            'periodId', 'classId', 'subjectId', 'students', 'existing', 'hasAssignments'
+            'periodId', 'classId', 'subjectId', 'students', 'existing', 'hasAssignments',
+            'period', 'canEnterMarks'
         ));
     }
 
@@ -133,7 +169,10 @@ class AssessmentController extends Controller
 
         $studentIds = collect($data['rows'])->pluck('student_id')->map(fn ($id) => (int) $id)->all();
         $validCount = Student::query()
-            ->where('class_id', $classId)
+            ->where(function ($q) use ($classId) {
+                $q->where('class_id', $classId)
+                    ->orWhereHas('enrollments', fn ($e) => $e->where('class_id', $classId)->where('status', 'active'));
+            })
             ->whereIn('id', $studentIds)
             ->count();
 
@@ -204,19 +243,24 @@ class AssessmentController extends Controller
         }
 
         $reports = ($periodId && $classId)
-            ? $marks->reportCards($periodId, $classId)
+            ? $marks->reportCards($periodId, $classId, $school->report_settings ?? [])
             : [];
         $period = $periods->firstWhere('id', $periodId);
         $klass = $classes->firstWhere('id', $classId);
+        $reportSettings = $school->report_settings ?? [
+            'show_position' => true,
+            'show_total' => true,
+            'show_average' => true,
+        ];
 
         return view('app.assessment.reports', compact(
-            'school', 'periods', 'classes', 'periodId', 'classId', 'reports', 'period', 'klass'
+            'school', 'periods', 'classes', 'periodId', 'classId', 'reports', 'period', 'klass', 'reportSettings'
         ));
     }
 
     /**
      * @param  list<int>|null  $classIds
-     * @return \Illuminate\Database\Eloquent\Collection<int, SchoolClass>
+     * @return Collection<int, SchoolClass>
      */
     private function scopedClasses(?array $classIds)
     {
@@ -234,7 +278,7 @@ class AssessmentController extends Controller
 
     /**
      * @param  list<int>|null  $subjectIds
-     * @return \Illuminate\Database\Eloquent\Collection<int, Subject>
+     * @return Collection<int, Subject>
      */
     private function scopedSubjects(?array $subjectIds)
     {

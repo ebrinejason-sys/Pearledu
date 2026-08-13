@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Models;
+
 use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -7,7 +9,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Enrollment extends Model
 {
     use BelongsToSchool;
-    protected $fillable = ['school_id', 'student_id', 'class_id', 'academic_year_id', 'status'];
+
+    protected $fillable = [
+        'school_id', 'student_id', 'class_id', 'academic_year_id',
+        'status', 'enrolled_on', 'exited_on',
+    ];
+
+    protected $casts = [
+        'enrolled_on' => 'date',
+        'exited_on' => 'date',
+    ];
 
     public function student(): BelongsTo
     {

@@ -23,6 +23,45 @@
       </div>
     </div>
 
+    @if(empty($setupComplete) && isset($setupPercent) && in_array('school.manage', $permissions, true))
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+          <div>
+            <strong>Welcome to PearlEdu</strong>
+            <p style="margin:4px 0 0;color:var(--muted);font-size:14px">
+              Setup is {{ $setupPercent }}% complete.
+              @if($setupNext)
+                Next: {{ $setupNext['label'] }}.
+              @endif
+            </p>
+          </div>
+          <a class="btn accent" href="{{ route('app.setup.index') }}">Continue setup</a>
+        </div>
+      </div>
+    @endif
+
+    <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-top:0">Needs your attention</h3>
+        <ul style="list-style:none;padding:0;margin:0">
+        @forelse($actionItems ?? [] as $item)
+            <li style="padding:10px 0;border-top:1px solid var(--border,#e5e7eb)">
+              <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+                <div>
+                  <span class="pill">{{ $item['priority'] }}</span>
+                  <strong style="margin-left:6px">{{ $item['title'] }}</strong>
+                  <div style="color:var(--muted);font-size:13px;margin-top:4px">{{ $item['description'] }}</div>
+                </div>
+                @if($item['action_url'])
+                  <a class="btn ghost" href="{{ $item['action_url'] }}">Open</a>
+                @endif
+              </div>
+            </li>
+          @empty
+            <li style="padding:10px 0;color:var(--muted)">You're caught up for now.</li>
+          @endforelse
+        </ul>
+      </div>
+
     @if(!empty($stats))
       <div class="dash-stats">
         @foreach($stats as $stat)

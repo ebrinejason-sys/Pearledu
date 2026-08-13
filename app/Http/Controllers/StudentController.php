@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Guardianship;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Services\Fees\StudentLedgerService;
+use App\Services\Learners\StudentLifecycleService;
 use App\Services\Students\GuardianLinkService;
 use App\Services\Students\StudentAccountLinkService;
 use App\Services\Tenancy\TenantContext;
@@ -17,6 +19,8 @@ class StudentController extends Controller
         private TenantContext $context,
         private GuardianLinkService $guardians,
         private StudentAccountLinkService $studentAccounts,
+        private StudentLifecycleService $lifecycle,
+        private StudentLedgerService $ledger,
     ) {}
 
     public function index(Request $request)
@@ -49,7 +53,12 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $classId = $data['class_id'] ?? null;
+        unset($data['class_id']);
         $student = Student::create($data);
+        if ($classId) {
+            $this->lifecycle->enrollStudent($student, (int) $classId);
+        }
 
         return redirect()
             ->route('app.students.show', $student)
@@ -59,9 +68,10 @@ class StudentController extends Controller
     public function show(Student $student)
     {
         $this->assertTenantOwned($student);
-        $student->load(['schoolClass', 'guardianships.guardian', 'user']);
+        $student->load(['schoolClass', 'guardianships.guardian', 'user', 'enrollments.academicYear', 'enrollments.schoolClass']);
+        $statement = $this->ledger->statement($student);
 
-        return view('app.students.show', compact('student'));
+        return view('app.students.show', compact('student', 'statement'));
     }
 
     public function edit(Student $student)
@@ -78,7 +88,13 @@ class StudentController extends Controller
     public function update(Request $request, Student $student)
     {
         $this->assertTenantOwned($student);
-        $student->update($this->validated($request, $student));
+        $data = $this->validated($request, $student);
+        $classId = $data['class_id'] ?? null;
+        unset($data['class_id']);
+        $student->update($data);
+        if ($classId && (int) $student->fresh()->class_id !== (int) $classId) {
+            $this->lifecycle->enrollStudent($student->fresh(), (int) $classId);
+        }
 
         return redirect()
             ->route('app.students.show', $student)

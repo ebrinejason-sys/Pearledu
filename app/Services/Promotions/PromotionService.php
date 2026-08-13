@@ -2,15 +2,17 @@
 
 namespace App\Services\Promotions;
 
-use App\Models\Enrollment;
 use App\Models\PromotionBatch;
 use App\Models\PromotionItem;
 use App\Models\Student;
+use App\Services\Learners\StudentLifecycleService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PromotionService
 {
+    public function __construct(private StudentLifecycleService $lifecycle) {}
+
     /**
      * @param  array{
      *   school_id:int,
@@ -56,17 +58,6 @@ class PromotionService
             $batch->load('items');
 
             foreach ($batch->items as $item) {
-                $old = Enrollment::query()
-                    ->where('school_id', $batch->school_id)
-                    ->where('student_id', $item->student_id)
-                    ->where('academic_year_id', $batch->from_year_id)
-                    ->where('status', 'active')
-                    ->first();
-
-                if ($old) {
-                    $old->update(['status' => 'completed']);
-                }
-
                 $student = Student::query()->findOrFail($item->student_id);
 
                 if ($item->outcome === 'promote' || $item->outcome === 'repeat') {
@@ -76,19 +67,16 @@ class PromotionService
                         ]);
                     }
 
-                    Enrollment::create([
-                        'school_id' => $batch->school_id,
-                        'student_id' => $item->student_id,
-                        'class_id' => $item->to_class_id,
-                        'academic_year_id' => $batch->to_year_id,
-                        'status' => 'active',
-                    ]);
-
-                    $student->update(['class_id' => $item->to_class_id]);
+                    $this->lifecycle->promoteStudent(
+                        $student,
+                        (int) $item->to_class_id,
+                        (int) $batch->from_year_id,
+                        (int) $batch->to_year_id,
+                    );
                 } elseif ($item->outcome === 'graduate') {
-                    $student->update(['status' => 'graduated', 'class_id' => null]);
+                    $this->lifecycle->graduateStudent($student);
                 } elseif ($item->outcome === 'transfer') {
-                    $student->update(['status' => 'transferred']);
+                    $this->lifecycle->withdrawStudent($student, 'transferred');
                 }
             }
 

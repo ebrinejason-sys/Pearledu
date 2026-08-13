@@ -6,7 +6,8 @@
       <h2 style="margin:0">Students</h2>
       <p style="color:var(--muted);margin:6px 0 0">Learner records for this school</p>
     </div>
-    <a class="btn" href="{{ route('app.students.create') }}">Add student</a>
+      <a class="btn" href="{{ route('app.students.create') }}">Add student</a>
+      <a class="btn ghost" href="{{ route('app.students.import') }}">Import CSV</a>
   </div>
 
   <div class="card" style="margin-bottom:16px">
