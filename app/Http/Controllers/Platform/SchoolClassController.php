@@ -38,6 +38,7 @@ class SchoolClassController extends Controller
         $data = $request->validate([
             'level' => ['required', 'string', Rule::in($levels ?: ['primary', 'secondary', 'a_level'])],
             'name' => 'required|string|max:80',
+            'stream' => 'nullable|string|max:40',
             'code' => [
                 'required',
                 'string',
@@ -46,10 +47,16 @@ class SchoolClassController extends Controller
             ],
         ]);
 
-        $class = SchoolClass::create($data + ['school_id' => $school->id]);
+        $class = SchoolClass::create([
+            'school_id' => $school->id,
+            'level' => $data['level'],
+            'name' => trim($data['name']),
+            'stream' => filled($data['stream'] ?? null) ? trim((string) $data['stream']) : null,
+            'code' => $data['code'],
+        ]);
         $this->audit->record('platform.class.created', $class, ['school_id' => $school->id]);
 
-        return back()->with('status', 'Class “'.$class->name.'” created.');
+        return back()->with('status', 'Class “'.$class->displayName().'” created.');
     }
 
     public function destroy(Request $request, SchoolClass $schoolClass)

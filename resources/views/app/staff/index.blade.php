@@ -31,9 +31,9 @@
         <label>Roles (select one or more)</label>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
           @foreach($roles as $role)
-            <label style="display:flex;align-items:center;gap:6px;font-weight:500">
+            <label class="check" style="margin:0;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm)">
               <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" @checked(collect(old('role_keys', []))->contains($role->key))>
-              {{ $role->label }}
+              <span>{{ $role->label }}</span>
             </label>
           @endforeach
         </div>
@@ -96,9 +96,9 @@
                 @csrf @method('PUT')
                 <div style="display:flex;flex-wrap:wrap;gap:8px">
                   @foreach($roles as $role)
-                    <label style="display:flex;align-items:center;gap:6px;font-weight:500;font-size:13px">
+                    <label class="check" style="margin:0;font-size:13px">
                       <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" @checked(collect($member['role_keys'])->contains($role->key))>
-                      {{ $role->label }}
+                      <span>{{ $role->label }}</span>
                     </label>
                   @endforeach
                 </div>

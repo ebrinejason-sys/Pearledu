@@ -185,6 +185,9 @@ class NavigationBuilder
                     $this->has($permissions, 'school.manage')
                         ? $this->item('School identity', 'app.settings.school', icon: 'platform', active: request()->routeIs('app.settings.*'))
                         : null,
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('Classes & streams', 'app.classes.index', icon: 'classes', active: request()->routeIs('app.classes.*'))
+                        : null,
                     $this->has($permissions, 'staff.manage')
                         ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.*'))
                         : null,

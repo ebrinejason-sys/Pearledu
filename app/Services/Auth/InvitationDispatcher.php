@@ -6,9 +6,10 @@ use App\Mail\Auth\SchoolInvitationMail;
 use App\Models\School;
 use App\Models\SchoolInvitation;
 use App\Services\Sms\Gateway\SmsGateway;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
 use RuntimeException;
+use Throwable;
 
 /** Deliver activation invites by email and/or SMS (transactional — no SMS credit charge). */
 class InvitationDispatcher
@@ -17,45 +18,69 @@ class InvitationDispatcher
         private SmsGateway $sms,
     ) {}
 
-    public function send(SchoolInvitation $invitation, string $rawToken, School $school): void
+    /**
+     * @return array{email: bool, sms: bool, warnings: list<string>}
+     */
+    public function send(SchoolInvitation $invitation, string $rawToken, School $school): array
     {
         $user = $invitation->user;
         if (! $user) {
             throw new RuntimeException('This invitation has no user account.');
         }
 
-        $acceptUrl = URL::route('invitations.accept', [
-            'invitation' => $invitation->id,
-            'token' => $rawToken,
-        ]);
+        // Prefer the school's portal host so invite links never depend on a wrong APP_URL.
+        $acceptUrl = rtrim($school->portalUrl(), '/').'/invitations/'.$invitation->id.'/accept?token='.urlencode($rawToken);
 
-        $sent = false;
+        $emailed = false;
+        $texted = false;
+        $warnings = [];
 
-        if ($user->email || $invitation->email) {
+        $toEmail = $user->email ?: $invitation->email;
+        if ($toEmail) {
             $from = (string) config('mail.from.address');
-            if ($from === '') {
-                throw new RuntimeException('MAIL_FROM_ADDRESS is not configured; cannot send invitation email.');
+            if ($from === '' || str_contains($from, 'example.com')) {
+                $warnings[] = 'MAIL_FROM_ADDRESS is not configured, so the invitation email was not sent.';
+            } else {
+                try {
+                    Mail::to($toEmail)->send(new SchoolInvitationMail(
+                        $user,
+                        $school->name,
+                        $acceptUrl,
+                        $school->portalUrl(),
+                        $invitation->expires_at,
+                    ));
+                    $emailed = true;
+                } catch (Throwable $e) {
+                    report($e);
+                    $warnings[] = 'Invitation email failed: '.$e->getMessage();
+                }
             }
-            $to = $user->email ?: $invitation->email;
-            Mail::to($to)->send(new SchoolInvitationMail(
-                $user,
-                $school->name,
-                $acceptUrl,
-                $school->portalUrl(),
-                $invitation->expires_at,
-            ));
-            $sent = true;
         }
 
         $phone = $invitation->phone ?: $user->phone;
         if ($phone) {
-            $body = "PearlEdu: You are invited to {$school->name}. Set your password: {$acceptUrl}";
-            $this->sms->send($phone, $body, null);
-            $sent = true;
+            try {
+                $body = "PearlEdu: You are invited to {$school->name}. Set your password: {$acceptUrl}";
+                $this->sms->send($phone, $body, null);
+                $texted = true;
+            } catch (Throwable $e) {
+                report($e);
+                Log::warning('Invitation SMS failed', [
+                    'invitation_id' => $invitation->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $warnings[] = 'Invitation SMS could not be sent ('.$e->getMessage().').';
+            }
         }
 
-        if (! $sent) {
-            throw new RuntimeException('Invitation needs an email or phone number to deliver.');
+        if (! $emailed && ! $texted) {
+            $detail = $warnings !== [] ? ' '.implode(' ', $warnings) : '';
+            throw new RuntimeException(
+                'Invitation was created but could not be delivered by email or SMS.'.$detail
+                .' Share this activation link out-of-band: '.$acceptUrl
+            );
         }
+
+        return ['email' => $emailed, 'sms' => $texted, 'warnings' => $warnings, 'accept_url' => $acceptUrl];
     }
 }

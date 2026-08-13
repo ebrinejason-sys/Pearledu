@@ -13,6 +13,7 @@ use App\Services\Provisioning\StaffRoleService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class StaffController extends Controller
@@ -74,16 +75,31 @@ class StaffController extends Controller
             $result = $inviter->invite($school, $data, $request->user(), false);
         } catch (RuntimeException $e) {
             return back()->withInput()->withErrors(['email' => $e->getMessage()]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return back()->withInput()->withErrors($e->errors());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors([
+                'email' => 'Invitation could not be completed: '.$e->getMessage(),
+            ]);
         }
 
+        $delivery = $result['delivery'] ?? ['email' => false, 'sms' => false, 'warnings' => []];
         $via = collect([
-            $data['email'] ?? null ? 'email' : null,
-            $data['phone'] ?? null ? 'SMS' : null,
+            ! empty($delivery['email']) ? 'email' : null,
+            ! empty($delivery['sms']) ? 'SMS' : null,
         ])->filter()->implode(' and ');
 
-        return back()->with('status', 'Invitation sent via '.$via.' to '.$result['user']->full_name.'.');
+        $status = $via !== ''
+            ? 'Invitation sent via '.$via.' to '.$result['user']->full_name.'.'
+            : 'Invitation created for '.$result['user']->full_name.'.';
+
+        if (! empty($delivery['warnings'])) {
+            $status .= ' Note: '.implode(' ', $delivery['warnings']);
+        }
+
+        return back()->with('status', $status);
     }
 
     public function updateRoles(Request $request, User $user, TenantContext $context, StaffRoleService $roles, InvitePolicy $policy)

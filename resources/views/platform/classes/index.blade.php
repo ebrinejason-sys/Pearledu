@@ -28,10 +28,13 @@
           </select>
           @error('level')<div class="err">{{ $message }}</div>@enderror
           <label>Name</label>
-          <input name="name" value="{{ old('name') }}" required placeholder="e.g. P.5 Blue">
+          <input name="name" value="{{ old('name') }}" required placeholder="e.g. P.5 or Senior 1">
           @error('name')<div class="err">{{ $message }}</div>@enderror
+          <label>Stream <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <input name="stream" value="{{ old('stream') }}" placeholder="e.g. East, West, A">
+          @error('stream')<div class="err">{{ $message }}</div>@enderror
           <label>Code</label>
-          <input name="code" value="{{ old('code') }}" required placeholder="e.g. P5-B">
+          <input name="code" value="{{ old('code') }}" required placeholder="e.g. P5-EAST">
           @error('code')<div class="err">{{ $message }}</div>@enderror
           <p style="margin-top:14px"><button class="btn" type="submit">Create class</button></p>
         </form>
@@ -48,12 +51,13 @@
       @else
         <table>
           <thead>
-            <tr><th>Name</th><th>Level</th><th>Code</th><th>Students</th><th></th></tr>
+            <tr><th>Name</th><th>Stream</th><th>Level</th><th>Code</th><th>Students</th><th></th></tr>
           </thead>
           <tbody>
           @foreach($classes as $class)
             <tr>
               <td><strong>{{ $class->name }}</strong></td>
+              <td>{{ $class->stream ?: '—' }}</td>
               <td>{{ $class->level }}</td>
               <td>{{ $class->code }}</td>
               <td>{{ $class->students_count }}</td>

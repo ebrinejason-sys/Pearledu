@@ -40,7 +40,7 @@ class SchoolSetupService
                 'key' => 'classes',
                 'label' => 'Classes & streams',
                 'done' => $school->classes()->exists(),
-                'route' => 'app.settings.school',
+                'route' => 'app.classes.index',
             ],
             [
                 'key' => 'subjects',
