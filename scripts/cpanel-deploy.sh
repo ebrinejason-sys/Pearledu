@@ -106,7 +106,7 @@ BRIDGE_SRC="$REPO_ROOT/deploy/cpanel/public_html/index.php"
 if [ ! -f "$BRIDGE_SRC" ]; then
     BRIDGE_SRC="$DEPLOYPATH/deploy/cpanel/public_html/index.php"
 fi
-sed "s|___APP_ROOT___|${DEPLOYPATH}|g" "$BRIDGE_SRC" > "$MAIN_DOCROOT/index.php"
+sed "s|@@VOXSIGN_APP_ROOT@@|${DEPLOYPATH}|g" "$BRIDGE_SRC" > "$MAIN_DOCROOT/index.php"
 
 # Uploaded files / public disk for the main domain
 ln -sfn "$DEPLOYPATH/storage/app/public" "$MAIN_DOCROOT/storage"

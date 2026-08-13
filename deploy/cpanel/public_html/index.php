@@ -9,7 +9,7 @@
  * ~/pearledu-app, so marketing (voxsign.co.ug) and the school app
  * (pearledu.voxsign.co.ug) share one codebase while using different document roots.
  *
- * Deploy replaces ___APP_ROOT___ via scripts/cpanel-deploy.sh.
+ * Deploy replaces the APP_ROOT token via scripts/cpanel-deploy.sh.
  */
 
 use Illuminate\Foundation\Application;
@@ -17,9 +17,10 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-$appRoot = getenv('VOXSIGN_APP_ROOT') ?: '___APP_ROOT___';
+// Token is unique and appears only here so sed cannot rewrite the fallback checks.
+$appRoot = getenv('VOXSIGN_APP_ROOT') ?: '@@VOXSIGN_APP_ROOT@@';
 
-if ($appRoot === '' || $appRoot === '___APP_ROOT___' || ! is_dir($appRoot)) {
+if (! is_dir($appRoot)) {
     $guess = dirname(__DIR__).'/pearledu-app';
     if (is_dir($guess)) {
         $appRoot = $guess;
