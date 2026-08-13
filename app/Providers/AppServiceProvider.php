@@ -54,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
     {
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
+            config(['session.secure' => true]);
 
             if (config('app.debug')) {
                 report(new \RuntimeException('APP_DEBUG=true in production — disable immediately.'));

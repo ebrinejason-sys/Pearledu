@@ -82,9 +82,16 @@ After pushing to `main` on GitHub:
 
 - cPanel → Git Version Control → your repo → **Update from Remote**, then
   **Deploy HEAD Commit**
-- This re-runs `.cpanel.yml`: copies files, `composer install`,
-  `db:verify-security` (deploy aborts here if RLS/role checks fail),
-  `migrate --force`, then cache rebuilds.
+- This runs `scripts/cpanel-deploy.sh`: rsync (not a full `cp -R` of `.git`),
+  `composer install` **only when `composer.lock` changed**, migrate, then caches.
+- First deploy after a lockfile change still takes a few minutes (Composer on
+  shared hosting). Later deploys should finish in under a minute.
+- Do **not** click Deploy again while the blue “in progress” banner is showing —
+  you will stack two Composer runs. Watch Terminal with
+  `ps aux | grep -E 'composer|cpanel-deploy'` if you need to confirm it is working.
+- `db:verify-security` still aborts the deploy if RLS is misconfigured.
+  `app:production-check` is logged but no longer blocks the copy.
+
 - Optionally wire a GitHub webhook to cPanel's Git Version Control "Pull &
   Deploy" endpoint so pushing to `main` deploys automatically — set this up
   once the manual flow is verified.

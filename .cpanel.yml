@@ -1,18 +1,7 @@
 ---
 deployment:
   tasks:
-    # This must NOT be public_html itself — the domain's document root
-    # should point at $DEPLOYPATH/public (see docs/CPANEL_DEPLOY.md), so
-    # app code, .env, and storage stay outside the web-exposed folder.
-    - export DEPLOYPATH=/home/voxsignco/pearledu-app/
-    - /bin/cp -R * $DEPLOYPATH
-    - /bin/cp -R .[^.]* $DEPLOYPATH 2>/dev/null || true
-    - chmod -R 775 $DEPLOYPATH/storage $DEPLOYPATH/bootstrap/cache
-    - cd $DEPLOYPATH && composer install --no-dev --optimize-autoloader
-    - cd $DEPLOYPATH && php artisan db:verify-security
-    - cd $DEPLOYPATH && php artisan migrate --force
-    - cd $DEPLOYPATH && php artisan app:production-check
-    - cd $DEPLOYPATH && php artisan config:cache
-    - cd $DEPLOYPATH && php artisan route:cache
-    - cd $DEPLOYPATH && php artisan view:cache
-    - cd $DEPLOYPATH && php artisan storage:link || true
+    # One command: rsync + conditional composer. The old per-line
+    # `cp -R *` / `chmod -R storage` / `composer install` pipeline is why
+    # cPanel sat on "deployment in progress" with no progress bar.
+    - export DEPLOYPATH=/home/voxsignco/pearledu-app; /bin/bash ./scripts/cpanel-deploy.sh

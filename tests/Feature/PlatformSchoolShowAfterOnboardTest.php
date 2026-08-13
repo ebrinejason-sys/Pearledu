@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\RequireRecentPlatformAuth;
 use App\Models\School;
 use App\Models\User;
+use App\Services\Auth\InvitationMailer;
 use App\Services\Provisioning\SchoolProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -51,7 +53,7 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
 
     public function test_onboard_succeeds_when_invitation_delivery_throws(): void
     {
-        $this->mock(\App\Services\Auth\InvitationMailer::class, function ($mock) {
+        $this->mock(InvitationMailer::class, function ($mock) {
             $mock->shouldReceive('send')->once()->andThrow(new \ErrorException('mailer transport failed'));
         });
 
@@ -123,7 +125,7 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
         $id = $school->id;
 
         $this->actingAs($operator)
-            ->withSession([\App\Http\Middleware\RequireRecentPlatformAuth::SESSION_KEY => time()])
+            ->withSession([RequireRecentPlatformAuth::SESSION_KEY => time()])
             ->delete($host.'/admin/schools/'.$id, ['confirm_name' => 'Delete Me Academy'])
             ->assertRedirect(route('platform.schools.index'));
 
@@ -131,6 +133,69 @@ class PlatformSchoolShowAfterOnboardTest extends TestCase
         $this->assertSame('deletion_scheduled', $school->status);
         $this->assertNotNull($school->deletion_scheduled_at);
         $this->assertNotNull(School::find($id));
+    }
+
+    public function test_scheduling_deletion_twice_does_not_500(): void
+    {
+        $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
+        $school = app(SchoolProvisioner::class)->onboard(
+            school: ['name' => 'Already Scheduled Academy', 'district' => 'Jinja', 'theme' => 'pearledu'],
+            levels: ['primary'],
+            admin: ['full_name' => 'Sched Admin', 'email' => 'sched@delete.test'],
+            operatorId: $operator->id,
+        )['school'];
+
+        $host = 'http://pearledu.voxsign.test';
+        $session = [RequireRecentPlatformAuth::SESSION_KEY => time()];
+
+        $this->actingAs($operator)
+            ->withSession($session)
+            ->delete($host.'/admin/schools/'.$school->id, ['confirm_name' => 'Already Scheduled Academy'])
+            ->assertRedirect(route('platform.schools.index'));
+
+        $this->actingAs($operator)
+            ->withSession($session)
+            ->delete($host.'/admin/schools/'.$school->id, ['confirm_name' => 'Already Scheduled Academy'])
+            ->assertRedirect(route('platform.schools.show', $school))
+            ->assertSessionHasErrors('school');
+
+        $this->assertSame('deletion_scheduled', $school->fresh()->status);
+    }
+
+    public function test_operator_can_permanently_delete_school(): void
+    {
+        $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
+        $school = app(SchoolProvisioner::class)->onboard(
+            school: ['name' => 'Wipe Me Academy', 'district' => 'Gulu', 'theme' => 'pearledu'],
+            levels: ['primary'],
+            admin: ['full_name' => 'Wipe Admin', 'email' => 'wipe@delete.test'],
+            operatorId: $operator->id,
+        )['school'];
+
+        $host = 'http://pearledu.voxsign.test';
+        $id = $school->id;
+
+        $this->actingAs($operator)
+            ->withSession([RequireRecentPlatformAuth::SESSION_KEY => time()])
+            ->delete($host.'/admin/schools/'.$id, [
+                'confirm_name' => 'Wipe Me Academy',
+                'permanent' => '1',
+            ])
+            ->assertRedirect(route('platform.schools.index'));
+
+        $this->assertNull(School::find($id));
+    }
+
+    public function test_school_show_is_ok_after_failed_delete_redirect(): void
+    {
+        $operator = User::where('email', 'admin@voxsign.co.ug')->firstOrFail();
+        $school = School::query()->where('slug', 'like', 'pearledu%')->firstOrFail();
+        $host = 'http://pearledu.voxsign.test';
+
+        $this->actingAs($operator)
+            ->get($host.'/admin/schools/'.$school->id)
+            ->assertOk()
+            ->assertSee('Delete permanently', false);
     }
 
     public function test_school_show_is_reachable_when_another_school_is_entered(): void

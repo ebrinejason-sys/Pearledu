@@ -6,7 +6,7 @@
       <p class="page-header__eyebrow">Organisation</p>
       <h2 class="page-header__title">Schools</h2>
       <p style="margin:8px 0 0;color:var(--muted);font-size:14px">
-        <strong>Edit</strong> school details, <strong>Delete</strong> a tenant (cascades its database rows), or
+        <strong>Edit</strong> school details, <strong>Delete</strong> to permanently remove a tenant and its data, or
         <strong>Enter workspace</strong> for data entry. School users sign in at <code>/login</code>.
       </p>
     </div>
@@ -63,20 +63,29 @@
           <td><span class="pill">{{ $s->status }}</span></td>
           <td style="white-space:nowrap">
             <a href="{{ route('platform.schools.show', $s) }}">Edit</a>
-            @if(auth()->user()->hasPlatformPermission('platform.schools.enter'))
+            @if(auth()->user()->hasPlatformPermission('platform.schools.enter') && in_array($s->status, ['active', 'suspended'], true))
             ·
             <form method="post" action="{{ route('platform.schools.enter', $s) }}" style="display:inline">
               @csrf
               <button type="submit" class="btn-link-action">Enter workspace</button>
             </form>
             @endif
+            @if($s->status === 'deletion_scheduled')
+            ·
+            <form method="post" action="{{ route('platform.schools.restore', $s) }}" style="display:inline">
+              @csrf
+              <button type="submit" class="btn-link-action">Restore</button>
+            </form>
+            @elseif(auth()->user()->hasPlatformPermission('platform.schools.delete'))
             ·
             <form method="post" action="{{ route('platform.schools.destroy', $s) }}" style="display:inline" class="js-school-delete" data-school-name="{{ e($s->name) }}">
               @csrf
               @method('DELETE')
               <input type="hidden" name="confirm_name" value="">
+              <input type="hidden" name="permanent" value="1">
               <button type="submit" class="btn-link-action btn-link-danger">Delete</button>
             </form>
+            @endif
           </td>
         </tr>
       @empty

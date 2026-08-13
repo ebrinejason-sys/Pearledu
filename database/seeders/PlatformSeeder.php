@@ -29,19 +29,32 @@ class PlatformSeeder extends Seeder
             );
         }
 
-        // One platform operator: update the existing row if present, else create.
-        // is_platform is not mass-assignable — always set via forceFill.
-        $user = User::where('is_platform', true)->first()
-            ?? User::whereRaw('lower(email) = lower(?)', [$email])->first();
+        // Prefer the configured email so a second seed never steals that address
+        // from an existing school user onto a different platform row.
+        $emailUser = User::withTrashed()->whereRaw('lower(email) = lower(?)', [$email])->first();
+        $platformUser = User::where('is_platform', true)->orderBy('id')->first();
 
-        if ($user) {
-            $user->forceFill([
+        if ($emailUser) {
+            if ($emailUser->trashed()) {
+                $emailUser->restore();
+            }
+            $emailUser->forceFill([
                 'full_name' => $name,
                 'email' => $email,
                 'status' => 'active',
                 'is_platform' => true,
                 'password' => $password,
             ])->save();
+            $user = $emailUser;
+        } elseif ($platformUser) {
+            $platformUser->forceFill([
+                'full_name' => $name,
+                'email' => $email,
+                'status' => 'active',
+                'is_platform' => true,
+                'password' => $password,
+            ])->save();
+            $user = $platformUser;
         } else {
             $user = new User([
                 'full_name' => $name,
