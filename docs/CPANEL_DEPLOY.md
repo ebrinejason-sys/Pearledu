@@ -144,6 +144,15 @@ export MAIN_DOCROOT=/home/voxsignco/public_html
 /bin/bash ./scripts/cpanel-deploy.sh
 ```
 
+If `pearledu.voxsign.co.ug` LiteSpeed-404s while `voxsign.co.ug` works and
+`pearledu-app/public/index.php` exists, check that the app root is traversable:
+```bash
+# Must NOT be drwx------ (700) — LiteSpeed cannot enter public/
+ls -ld /home/voxsignco/pearledu-app
+chmod 755 /home/voxsignco/pearledu-app /home/voxsignco/pearledu-app/public
+curl -sI https://pearledu.voxsign.co.ug/ | head -10
+```
+
 To seed the platform admin after a failed `PlatformSeeder` (config was
 cached, so `env()` looked empty):
 

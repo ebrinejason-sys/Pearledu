@@ -68,6 +68,10 @@ mkdir -p \
     "$DEPLOYPATH/storage/logs" \
     "$DEPLOYPATH/bootstrap/cache"
 
+# LiteSpeed must be able to traverse into public/. Mode 700 on pearledu-app
+# causes a bare LiteSpeed 404 even when index.php exists.
+chmod 755 "$DEPLOYPATH" "$DEPLOYPATH/public" || true
+
 chmod 775 \
     "$DEPLOYPATH/storage" \
     "$DEPLOYPATH/storage/logs" \
