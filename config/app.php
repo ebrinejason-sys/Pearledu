@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Demo tenant seeder (local only)
+    |--------------------------------------------------------------------------
+    |
+    | When true AND APP_ENV is not production, DatabaseSeeder also runs
+    | DemoTenantSeeder. Always false in production.
+    |
+    */
+
+    'seed_demo_tenant' => (bool) env('SEED_DEMO_TENANT', false),
+
 ];

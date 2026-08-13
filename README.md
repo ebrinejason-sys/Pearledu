@@ -67,7 +67,9 @@ Core MIS surfaces are implemented end-to-end (migrations, RLS, services, school 
 - **Public admissions** — `/apply` on school tenant hosts (Turnstile + honeypot + tenant-scoped class validation)
 - **Ops polish** — library return, hostel vacate/capacity, HR leave approve/reject, helpdesk close
 
-**Still planned for deeper polish:** UGSMS provider driver, parent phone OTP (deferred), live video classes, and broader school-user 2FA. Run migrations + `db:verify-security` + tests on real Postgres before production trust.
+**Still planned for deeper polish:** UGSMS provider driver, parent phone OTP (deferred), live video classes, and broader school-user 2FA. Run migrations + `db:verify-security` + `app:production-check` + tests on real Postgres before production trust.
+
+**Production go-live:** see `docs/PRODUCTION_CHECKLIST.md` (server `.env`, cron, Resend, Twilio, SchoolPay credentials). Deploy runs `app:production-check` after migrate.
 
 **Fees / SchoolPay:** Parent portal can initiate SchoolPay MoMo debit requests when a school enables SchoolPay under School identity. Channel payments (student 10-digit payment codes) arrive via webhook or `php artisan schoolpay:sync`. Manual cash/MoMo “submit for verification” remains available as a fallback. See `docs/SCHOOLPAY.md` for MD5 auth, Service Cops credentials, and go-live checklist.
 
