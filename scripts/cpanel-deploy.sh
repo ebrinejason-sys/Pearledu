@@ -1,15 +1,23 @@
 #!/bin/bash
 # cPanel Git Version Control runs this from the repository root.
-# Keep it fast: rsync (not cp -R), never copy .git/vendor, skip composer when
-# composer.lock is unchanged, and do not chmod -R the live storage tree.
+#
+# Two document roots, one codebase:
+#   pearledu.voxsign.co.ug  →  $DEPLOYPATH/public   (editable in Domains)
+#   voxsign.co.ug (main)    →  $MAIN_DOCROOT        (locked to public_html)
+#
+# Main domain gets a REAL directory (not a symlink to public/) because LiteSpeed
+# often returns 404 when public_html is a symlink. index.php there bootstraps
+# the Laravel app in $DEPLOYPATH.
 set -euo pipefail
 
 DEPLOYPATH="${DEPLOYPATH:-/home/voxsignco/pearledu-app}"
+MAIN_DOCROOT="${MAIN_DOCROOT:-/home/voxsignco/public_html}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "==> PearlEdu deploy $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+echo "==> PearlEdu / VoxSign deploy $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 echo "    source: $REPO_ROOT"
-echo "    target: $DEPLOYPATH"
+echo "    app:    $DEPLOYPATH"
+echo "    main:   $MAIN_DOCROOT  (voxsign.co.ug)"
 if git -C "$REPO_ROOT" rev-parse --short HEAD >/dev/null 2>&1; then
     echo "    commit: $(git -C "$REPO_ROOT" rev-parse --short HEAD) ($(git -C "$REPO_ROOT" log -1 --pretty=%s))"
 fi
@@ -35,7 +43,7 @@ RSYNC_EXCLUDES=(
 )
 
 if command -v rsync >/dev/null 2>&1; then
-    echo "==> rsync application files"
+    echo "==> rsync application files → $DEPLOYPATH"
     rsync -a --delete "${RSYNC_EXCLUDES[@]}" "$REPO_ROOT"/ "$DEPLOYPATH"/
 else
     echo "==> rsync missing; tar fallback (will not delete stale files)"
@@ -60,7 +68,6 @@ mkdir -p \
     "$DEPLOYPATH/storage/logs" \
     "$DEPLOYPATH/bootstrap/cache"
 
-# Directories only — never chmod -R live logs/sessions (that alone can take minutes).
 chmod 775 \
     "$DEPLOYPATH/storage" \
     "$DEPLOYPATH/storage/logs" \
@@ -69,6 +76,40 @@ chmod 775 \
     "$DEPLOYPATH/storage/framework/sessions" \
     "$DEPLOYPATH/storage/framework/views" \
     "$DEPLOYPATH/bootstrap/cache" || true
+
+# --- Main domain (voxsign.co.ug): real public_html, not a symlink ---
+echo "==> publish main-domain docroot → $MAIN_DOCROOT"
+if [ -L "$MAIN_DOCROOT" ]; then
+    echo "    removing symlink $MAIN_DOCROOT (LiteSpeed cannot use it as docroot)"
+    rm -f "$MAIN_DOCROOT"
+fi
+mkdir -p "$MAIN_DOCROOT"
+
+if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete \
+        --exclude 'index.php' \
+        --exclude 'storage' \
+        --exclude 'hot' \
+        --exclude 'build/' \
+        "$DEPLOYPATH/public"/ "$MAIN_DOCROOT"/
+else
+    # Copy assets; index.php is written below.
+    tar -C "$DEPLOYPATH/public" \
+        --exclude='index.php' \
+        --exclude='storage' \
+        --exclude='hot' \
+        --exclude='build' \
+        -cf - . | tar -C "$MAIN_DOCROOT" -xf -
+fi
+
+BRIDGE_SRC="$REPO_ROOT/deploy/cpanel/public_html/index.php"
+if [ ! -f "$BRIDGE_SRC" ]; then
+    BRIDGE_SRC="$DEPLOYPATH/deploy/cpanel/public_html/index.php"
+fi
+sed "s|___APP_ROOT___|${DEPLOYPATH}|g" "$BRIDGE_SRC" > "$MAIN_DOCROOT/index.php"
+
+# Uploaded files / public disk for the main domain
+ln -sfn "$DEPLOYPATH/storage/app/public" "$MAIN_DOCROOT/storage"
 
 cd "$DEPLOYPATH"
 
@@ -96,4 +137,7 @@ php artisan route:cache
 php artisan view:cache
 php artisan storage:link || true
 
+echo "==> domain map"
+echo "    voxsign.co.ug          → $MAIN_DOCROOT  (bridge → $DEPLOYPATH)"
+echo "    pearledu.voxsign.co.ug → $DEPLOYPATH/public"
 echo "==> deploy finished $(date -u '+%Y-%m-%dT%H:%M:%SZ')"

@@ -17,19 +17,21 @@ in `.cpanel.yml` on every deploy.
 2. `$DEPLOYPATH` (`/home/voxsignco/pearledu-app/`) is where the *application
    code* lands — outside `public_html`, not inside it.
 
-3. **Point every app-facing domain at `public/`**, not the app root:
-   - cPanel → Domains → `voxsign.co.ug` (apex, VoxSign landing) — Document
-     Root: `/home/voxsignco/pearledu-app/public`
-   - cPanel → Domains → `pearledu.voxsign.co.ug` (platform app) — same
-     Document Root: `/home/voxsignco/pearledu-app/public`
-   - The wildcard `*.voxsign.co.ug` subdomain (for auto-provisioned tenant
-     subdomains like `pearledu1.voxsign.co.ug`) also needs to resolve to
-     the same Document Root — the app resolves which tenant/host it's
-     serving internally via `ResolveTenant` middleware, so one codebase +
-     one document root serves all of them.
-   - This keeps `.env`, `app/`, `storage/`, etc. unreachable from the web —
-     required, since `.env` holds DB credentials and this app handles
-     DPPA-protected data (NIN/LIN).
+3. **Two document roots, one codebase** (required on this host because the
+   main domain Document Root cannot be changed away from `public_html`, and
+   LiteSpeed 404s when `public_html` is a symlink):
+
+   | Domain | Document Root | Notes |
+   |--------|---------------|--------|
+   | `voxsign.co.ug` (main) | `/home/voxsignco/public_html` | Locked. Deploy publishes a **real** directory here whose `index.php` bootstraps `~/pearledu-app`. |
+   | `pearledu.voxsign.co.ug` | `/home/voxsignco/pearledu-app/public` | Set in Domains UI (relative path: `pearledu-app/public`). |
+   | `www.voxsign.co.ug` | same as main / parked as needed | Keep as alias of the apex. |
+
+   Do **not** symlink `public_html` → `pearledu-app/public`. Deploy replaces that
+   symlink with a real folder automatically.
+
+   Host routing is unchanged: `TENANCY_LANDING_HOSTS` → VoxSign marketing,
+   `TENANCY_PEARLEDU_LANDING_HOST` → PearlEdu app / school portal.
 
 4. **Create `.env` directly on the server** (never via git):
    - SSH or File Manager into `$DEPLOYPATH/.env`
@@ -82,8 +84,11 @@ After pushing to `main` on GitHub:
 
 - cPanel → Git Version Control → your repo → **Update from Remote**, then
   **Deploy HEAD Commit**
-- This runs `scripts/cpanel-deploy.sh`: rsync (not a full `cp -R` of `.git`),
-  `composer install` **only when `composer.lock` changed**, migrate, then caches.
+- This runs `scripts/cpanel-deploy.sh`:
+  - rsync app → `/home/voxsignco/pearledu-app`
+  - publish main-domain bridge → `/home/voxsignco/public_html` (real dir, not symlink)
+  - `composer install` **only when `composer.lock` changed**
+  - migrate + caches
 - First deploy after a lockfile change still takes a few minutes (Composer on
   shared hosting). Later deploys should finish in under a minute.
 - Do **not** click Deploy again while the blue “in progress” banner is showing —
@@ -121,9 +126,23 @@ ls -la storage/logs bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 ```
 
-Also confirm in **cPanel → Domains** that `pearledu.voxsign.co.ug` (and the
-apex) use document root `/home/voxsignco/pearledu-app/public`, and in
-**MultiPHP Manager** that the domain is on **PHP 8.3+** (same as CLI).
+Also confirm in **cPanel → Domains**:
+- `pearledu.voxsign.co.ug` → `/home/voxsignco/pearledu-app/public`
+- `voxsign.co.ug` → `/home/voxsignco/public_html` (locked; must be a real dir, not a symlink)
+and in **MultiPHP Manager** that the domain is on **PHP 8.3+** (same as CLI).
+
+If the main site still LiteSpeed-404s after deploy:
+```bash
+ls -la /home/voxsignco/public_html   # must NOT say "->" symlink
+head -5 /home/voxsignco/public_html/index.php   # must reference pearledu-app
+```
+Re-run deploy, or manually:
+```bash
+cd /home/voxsignco/repositories/Pearledu   # or wherever the git clone lives
+export DEPLOYPATH=/home/voxsignco/pearledu-app
+export MAIN_DOCROOT=/home/voxsignco/public_html
+/bin/bash ./scripts/cpanel-deploy.sh
+```
 
 To seed the platform admin after a failed `PlatformSeeder` (config was
 cached, so `env()` looked empty):
