@@ -6,6 +6,7 @@ use App\Services\Navigation\NavigationBuilder;
 use App\Services\Platform\ImpersonationService;
 use App\Services\Sms\Gateway\FakeGateway;
 use App\Services\Sms\Gateway\LogGateway;
+use App\Services\Sms\Gateway\ProductionBlockedGateway;
 use App\Services\Sms\Gateway\SmsGateway;
 use App\Services\Sms\Gateway\TwilioGateway;
 use App\Services\Sms\Gateway\UnconfiguredGateway;
@@ -24,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ImpersonationService::class);
         $this->app->bind(SmsGateway::class, function () {
             $driver = (string) config('sms.driver', 'fake');
+
+            if ($this->app->environment('production') && in_array($driver, ['fake', 'log'], true)) {
+                return new ProductionBlockedGateway($driver);
+            }
 
             return match ($driver) {
                 'fake' => new FakeGateway,
@@ -49,6 +54,10 @@ class AppServiceProvider extends ServiceProvider
     {
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
+
+            if (config('app.debug')) {
+                report(new \RuntimeException('APP_DEBUG=true in production — disable immediately.'));
+            }
         }
 
         Password::defaults(static fn () => Password::min(10));

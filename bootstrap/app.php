@@ -9,6 +9,7 @@ use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\RequirePlatformPermission;
 use App\Http\Middleware\RequireRecentPlatformAuth;
 use App\Http\Middleware\ResolveTenant;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -49,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             PinAuthenticatedTenant::class,
             BlockImpersonationWrites::class,
+            SecurityHeaders::class,
         ]);
         // Critical: pin school RLS before implicit model binding. Otherwise pearledu.* stays
         // platform-scoped during SubstituteBindings and school users can IDOR other tenants.

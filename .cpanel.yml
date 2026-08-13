@@ -11,6 +11,7 @@ deployment:
     - cd $DEPLOYPATH && composer install --no-dev --optimize-autoloader
     - cd $DEPLOYPATH && php artisan db:verify-security
     - cd $DEPLOYPATH && php artisan migrate --force
+    - cd $DEPLOYPATH && php artisan app:production-check
     - cd $DEPLOYPATH && php artisan config:cache
     - cd $DEPLOYPATH && php artisan route:cache
     - cd $DEPLOYPATH && php artisan view:cache

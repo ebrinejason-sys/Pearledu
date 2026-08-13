@@ -62,10 +62,16 @@ in `.cpanel.yml` on every deploy.
 
 7. **Cron / queue** — with `QUEUE_CONNECTION=database`, add a cPanel cron:
    `* * * * * cd /home/voxsignco/pearledu-app && php artisan schedule:run >> /dev/null 2>&1`
-   (invitations, mail, and scheduled `queue:work --stop-when-empty` depend on this).
+   (invitations, mail, `queue:work --stop-when-empty`, and `schoolpay:sync` depend on this).
    Until cron is live, use `QUEUE_CONNECTION=sync`.
 
-8. **Subdomains are optional** — wildcard `*.voxsign.co.ug` may still point at
+8. **Production gate** — after migrate, run:
+   `php artisan app:production-check`
+   Deploy (`.cpanel.yml`) runs this automatically and aborts if the server `.env` is unsafe
+   (debug on, insecure cookies, missing mail password, demo seed, etc.).
+   Full list: `docs/PRODUCTION_CHECKLIST.md`.
+
+9. **Subdomains are optional** — wildcard `*.voxsign.co.ug` may still point at
    the same Document Root for legacy tenant hosts, but onboarding no longer
    requires creating a subdomain first. Isolation is by `schools.id` (tenant id)
    via role assignments + RLS.
