@@ -19,6 +19,7 @@ use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolSettingsController;
 use App\Http\Controllers\SchoolSetupController;
 use App\Http\Controllers\SmsController;
@@ -95,6 +96,10 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::put('/settings/school', [SchoolSettingsController::class, 'update'])->name('app.settings.school.update');
         Route::get('/setup', [SchoolSetupController::class, 'index'])->name('app.setup.index');
         Route::post('/setup/complete', [SchoolSetupController::class, 'complete'])->name('app.setup.complete');
+
+        Route::get('/classes', [SchoolClassController::class, 'index'])->name('app.classes.index');
+        Route::post('/classes', [SchoolClassController::class, 'store'])->name('app.classes.store');
+        Route::delete('/classes/{schoolClass}', [SchoolClassController::class, 'destroy'])->name('app.classes.destroy');
 
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->name('app.years.index');
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->name('app.years.store');

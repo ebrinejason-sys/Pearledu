@@ -112,29 +112,29 @@
         <p style="margin:0 0 12px;color:var(--muted);font-size:13px">Turn off what this school does not use. Hostel, library, CBT and the rest stay hidden until you enable them.</p>
         @foreach($moduleCatalog ?? [] as $key => $label)
           @if(! in_array($key, ['emis', 'schoolpay'], true))
-            <label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;cursor:pointer">
+            <label class="check">
               <input type="checkbox" name="modules[{{ $key }}]" value="1" @checked(old('modules.'.$key, $moduleSnapshot[$key] ?? false))>
-              {{ $label }}
+              <span>{{ $label }}</span>
             </label>
           @endif
         @endforeach
 
         <h3 style="margin-top:18px">Results settings</h3>
-        <label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;cursor:pointer">
+        <label class="check">
           <input type="checkbox" name="report_show_position" value="1" @checked(old('report_show_position', $reportSettings['show_position'] ?? true))>
-          Show class position
+          <span>Show class position</span>
         </label>
-        <label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;cursor:pointer">
+        <label class="check">
           <input type="checkbox" name="report_show_total" value="1" @checked(old('report_show_total', $reportSettings['show_total'] ?? true))>
-          Show total
+          <span>Show total</span>
         </label>
-        <label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;cursor:pointer">
+        <label class="check">
           <input type="checkbox" name="report_show_average" value="1" @checked(old('report_show_average', $reportSettings['show_average'] ?? true))>
-          Show average
+          <span>Show average</span>
         </label>
-        <label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;cursor:pointer">
+        <label class="check">
           <input type="checkbox" name="report_require_class_teacher_comment" value="1" @checked(old('report_require_class_teacher_comment', $reportSettings['require_class_teacher_comment'] ?? false))>
-          Require class-teacher comment
+          <span>Require class-teacher comment</span>
         </label>
       </div>
     </div>

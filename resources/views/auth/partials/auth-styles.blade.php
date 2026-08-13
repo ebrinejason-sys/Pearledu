@@ -14,8 +14,9 @@
   .vx-auth-status{background:color-mix(in srgb, var(--focus) 18%, transparent);border:1px solid color-mix(in srgb, var(--sidebar-ink) 35%, transparent);color:var(--on-brand);padding:10px 12px;border-radius:var(--radius);font-size:14px;margin-bottom:14px}
   .vx-auth-card label{display:block;color:var(--sidebar-ink);font-size:13px;margin:12px 0 4px}
   .vx-auth-card input{display:block;box-sizing:border-box;width:100%;padding:12px;border-radius:var(--radius);font:inherit;font-size:16px;background:var(--sidebar-hover);border:1px solid color-mix(in srgb, var(--on-brand) 18%, transparent);color:var(--on-brand)}
+  .vx-auth-card input[type=checkbox]{width:auto;min-width:1rem;height:auto;padding:0;margin:0;flex-shrink:0;accent-color:var(--accent)}
   .vx-auth-card input::placeholder{color:color-mix(in srgb, var(--on-brand) 50%, transparent)}
-  .vx-auth-remember{display:flex;align-items:center;gap:8px;font-size:13px}
+  .vx-auth-remember{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:color-mix(in srgb, var(--on-brand) 80%, transparent);cursor:pointer}
   .vx-auth-remember input{width:auto}
   .vx-auth-links{margin:16px 0 0;font-size:13px}
   .vx-auth-links a{color:var(--on-brand);text-decoration:underline;text-underline-offset:3px}

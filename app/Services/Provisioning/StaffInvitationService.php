@@ -42,7 +42,12 @@ class StaffInvitationService
      *   role_keys?: list<string>,
      *   class_id?: ?int
      * }  $data
-     * @return array{user: User, invitations: list<SchoolInvitation>, tokens: list<string>}
+     * @return array{
+     *   user: User,
+     *   invitations: list<SchoolInvitation>,
+     *   tokens: list<string>,
+     *   delivery: array{email: bool, sms: bool, warnings: list<string>, accept_url?: string}
+     * }
      */
     public function invite(School $school, array $data, User $inviter, bool $asPlatform = false): array
     {
@@ -158,11 +163,17 @@ class StaffInvitationService
             }
 
             // One activation link covers every role in this invite batch.
+            $delivery = ['email' => false, 'sms' => false, 'warnings' => []];
             if ($invitations !== []) {
-                $this->dispatcher->send($invitations[0], $tokens[0], $school);
+                $delivery = $this->dispatcher->send($invitations[0], $tokens[0], $school);
             }
 
-            return ['user' => $user, 'invitations' => $invitations, 'tokens' => $tokens];
+            return [
+                'user' => $user,
+                'invitations' => $invitations,
+                'tokens' => $tokens,
+                'delivery' => $delivery,
+            ];
         });
     }
 

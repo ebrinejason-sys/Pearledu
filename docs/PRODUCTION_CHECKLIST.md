@@ -36,6 +36,7 @@ Fill these and keep them **only on the server `.env`** (never commit):
 | `APP_URL` | `https://pearledu.voxsign.co.ug` |
 | `SESSION_SECURE_COOKIE` | `true` |
 | `SESSION_DOMAIN` | `.voxsign.co.ug` |
+| `SESSION_LIFETIME` | `30` (idle logout minutes) |
 | `SEED_DEMO_TENANT` | `false` |
 | Postgres | Non-superuser, non-`BYPASSRLS` role + password |
 | Tenancy hosts | `TENANCY_BASE_DOMAIN=voxsign.co.ug` |

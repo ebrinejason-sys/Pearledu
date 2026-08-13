@@ -113,7 +113,22 @@
   th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
   input,select,textarea{width:100%;padding:9px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--ink);font:inherit}
   input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent)}
+  /* Checkboxes/radios must not inherit width:100% or they blow out flex labels. */
+  input[type=checkbox],input[type=radio]{
+    width:auto;min-width:1.05rem;height:auto;min-height:1.05rem;padding:0;margin:0;
+    flex-shrink:0;accent-color:var(--brand);vertical-align:middle;
+  }
   label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  label.check,
+  label:has(> input[type=checkbox]),
+  label:has(> input[type=radio]){
+    display:flex;align-items:flex-start;gap:10px;margin:0 0 10px;cursor:pointer;
+    color:var(--ink);font-weight:500;line-height:1.35;
+  }
+  label.check input[type=checkbox],
+  label.check input[type=radio],
+  label:has(> input[type=checkbox]) > input[type=checkbox],
+  label:has(> input[type=radio]) > input[type=radio]{margin-top:.15em}
   .status{background:var(--brand-soft);border:1px solid color-mix(in srgb, var(--brand) 28%, var(--line));border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:14px}
   .err{color:var(--danger);font-size:13px;margin-top:4px}
   .pill{display:inline-block;background:var(--brand-soft);color:var(--brand);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
