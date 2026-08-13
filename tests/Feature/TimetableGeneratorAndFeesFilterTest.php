@@ -65,9 +65,9 @@ class TimetableGeneratorAndFeesFilterTest extends TestCase
             'level' => 'primary',
             'name' => 'P6',
             'stream' => 'East',
-            'code' => 'P6E',
+            'code' => 'P6E-'.uniqid(),
         ]);
-        $subject = Subject::create(['school_id' => $this->school->id, 'name' => 'Science', 'code' => 'SCI']);
+        $subject = Subject::create(['school_id' => $this->school->id, 'name' => 'Science', 'code' => 'SCI-'.uniqid()]);
         $teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
 
         $this->school->forceFill([
@@ -127,7 +127,7 @@ class TimetableGeneratorAndFeesFilterTest extends TestCase
             'school_id' => $this->school->id,
             'level' => 'primary',
             'name' => 'P4',
-            'code' => 'P4',
+            'code' => 'FEE-P4-'.uniqid(),
         ]);
         $owing = Student::factory()->create([
             'school_id' => $this->school->id,
@@ -161,14 +161,14 @@ class TimetableGeneratorAndFeesFilterTest extends TestCase
 
         $demanded = $this->sessionFor($this->bursar)->get(route('app.fees.index', ['status' => 'demanded']));
         $demanded->assertOk();
-        $demanded->assertSee('Owing Learner', false);
-        $demanded->assertDontSee('Cleared Learner', false);
+        $demanded->assertSee('INV-DEM-1', false);
+        $demanded->assertDontSee('INV-CLR-1', false);
         $demanded->assertSee('Demanded', false);
 
         $clearedResp = $this->sessionFor($this->bursar)->get(route('app.fees.index', ['status' => 'cleared']));
         $clearedResp->assertOk();
-        $clearedResp->assertSee('Cleared Learner', false);
-        $clearedResp->assertDontSee('Owing Learner', false);
+        $clearedResp->assertSee('INV-CLR-1', false);
+        $clearedResp->assertDontSee('INV-DEM-1', false);
     }
 
     public function test_timetable_page_shows_schedule_setup_steps(): void
