@@ -20,11 +20,17 @@ class TimetableCollisionTest extends TestCase
     use RefreshDatabase;
 
     private School $school;
+
     private User $teacher;
+
     private SchoolClass $classA;
+
     private SchoolClass $classB;
+
     private Subject $subject;
+
     private TimetablePeriod $period;
+
     private Room $room;
 
     protected function setUp(): void
@@ -37,17 +43,18 @@ class TimetableCollisionTest extends TestCase
         app(TenantContext::class)->forSchool($this->school->id);
 
         $this->teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
-        $this->classA = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5A', 'code' => 'P5A']);
-        $this->classB = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5B', 'code' => 'P5B']);
-        $this->subject = Subject::create(['school_id' => $this->school->id, 'name' => 'Math', 'code' => 'MTH']);
+        $this->classA = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5A', 'code' => 'TT-P5A-'.uniqid()]);
+        $this->classB = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5B', 'code' => 'TT-P5B-'.uniqid()]);
+        $this->subject = Subject::create(['school_id' => $this->school->id, 'name' => 'Math', 'code' => 'MTH-'.uniqid()]);
         $this->period = TimetablePeriod::create([
             'school_id' => $this->school->id,
             'name' => 'P1',
+            'kind' => 'class',
             'starts_at' => '08:00',
             'ends_at' => '08:40',
             'sequence' => 1,
         ]);
-        $this->room = Room::create(['school_id' => $this->school->id, 'name' => 'Lab 1', 'capacity' => 40]);
+        $this->room = Room::create(['school_id' => $this->school->id, 'name' => 'Lab '.uniqid(), 'capacity' => 40]);
     }
 
     public function test_rejects_teacher_collision(): void

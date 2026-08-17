@@ -71,7 +71,24 @@ class ActionCenterService
                     $overdue > 0 ? 'high' : 'medium',
                     'UGX '.number_format($outstanding, 0).' outstanding',
                     $overdue > 0 ? "{$overdue} invoices are overdue." : 'Open learner balances.',
-                    Route::has('app.fees.index') ? route('app.fees.index') : null,
+                    Route::has('app.fees.index') ? route('app.fees.index', ['status' => 'demanded']) : null,
+                );
+            }
+
+            $cleared = FeeInvoice::query()
+                ->where('school_id', $schoolId)
+                ->where(function ($q) {
+                    $q->where('status', 'paid')
+                        ->orWhere(fn ($x) => $x->where('balance', '<=', 0)->where('status', '!=', 'void'));
+                })
+                ->count();
+            if ($cleared > 0) {
+                $items[] = $this->item(
+                    'fees_cleared',
+                    'low',
+                    $cleared === 1 ? '1 learner has cleared fees' : "{$cleared} invoices cleared",
+                    'Quick view of paid / zero-balance invoices.',
+                    Route::has('app.fees.index') ? route('app.fees.index', ['status' => 'cleared']) : null,
                 );
             }
         }

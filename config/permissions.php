@@ -39,11 +39,13 @@ return [
         'class_teacher' => [
             // View class broadsheet / reports for assigned class — not unrestricted mark entry.
             'attendance.mark', 'assessment.view', 'class.view', 'sms.send', 'learners.manage',
+            'self.timetable.view',
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'subject_teacher' => [
             // Enter is further scoped to teaching_assignments (class + subject).
             'assessment.enter', 'assessment.view', 'marksheet.submit', 'lms.manage',
+            'self.timetable.view',
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'parent' => [

@@ -50,8 +50,11 @@
       </select>
       <label>Class</label>
       <select name="class_id" required>
-        @foreach($classes as $c)<option value="{{ $c->id }}" @selected((string) old('class_id') === (string) $c->id)>{{ $c->name }}</option>@endforeach
+        @foreach($classes as $c)<option value="{{ $c->id }}" @selected((string) old('class_id') === (string) $c->id)>{{ $c->displayName() }}</option>@endforeach
       </select>
+      <label>Periods per week</label>
+      <input type="number" name="periods_per_week" min="1" max="20" value="{{ old('periods_per_week', 3) }}" required>
+      <p style="margin:4px 0 0;font-size:12px;color:var(--muted)">Used when generating the timetable.</p>
       <label>Starts on (optional)</label>
       <input type="date" name="starts_on" value="{{ old('starts_on') }}">
       <label>Ends on (optional)</label>
@@ -62,8 +65,9 @@
 
   <div class="card">
     <h3 style="margin-top:0">Current assignments</h3>
+    <p style="margin:0 0 12px"><a class="btn ghost" href="{{ route('app.timetable.index') }}">Open timetable generator</a></p>
     <table>
-      <thead><tr><th>Teacher</th><th>Year</th><th>Term</th><th>Subject</th><th>Class</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Teacher</th><th>Year</th><th>Term</th><th>Subject</th><th>Class</th><th>/wk</th><th>Status</th><th></th></tr></thead>
       <tbody>
       @forelse($assignments as $a)
         <tr>
@@ -71,7 +75,8 @@
           <td>{{ $a->academicYear?->name }}</td>
           <td>{{ $a->term?->name ?: 'Whole year' }}</td>
           <td>{{ $a->subject?->name }}</td>
-          <td>{{ $a->schoolClass?->name }}</td>
+          <td>{{ $a->schoolClass?->displayName() }}</td>
+          <td>{{ (int) $a->periods_per_week }}</td>
           <td>{{ $a->status }}</td>
           <td>
             <form method="post" action="{{ route('app.teaching.destroy', $a) }}">@csrf @method('DELETE')
@@ -80,7 +85,7 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="7" style="color:var(--muted)">None yet.</td></tr>
+        <tr><td colspan="8" style="color:var(--muted)">None yet.</td></tr>
       @endforelse
       </tbody>
     </table>

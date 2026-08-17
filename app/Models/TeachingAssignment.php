@@ -22,11 +22,13 @@ class TeachingAssignment extends Model
         'starts_on',
         'ends_on',
         'status',
+        'periods_per_week',
     ];
 
     protected $casts = [
         'starts_on' => 'date',
         'ends_on' => 'date',
+        'periods_per_week' => 'integer',
     ];
 
     public function teacher(): BelongsTo
