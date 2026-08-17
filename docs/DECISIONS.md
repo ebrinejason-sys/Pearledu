@@ -37,3 +37,17 @@
 **Consequences:** Day-to-day fee posting is bursar/school admin. Day-to-day grading is subject teachers and DOS.
 
 **Rollback/revisit:** If a small school has no DOS, school admin remains the academic break-glass, not the Head Teacher.
+
+## 2026-08-17 — Platform admin sends password-reset links, not temporary passwords
+
+**Problem:** The PearlEdu staff "Reset password" action set an unknown random password and emailed `/forgot-password` (no token). Staff were locked out and still had to request a reset themselves.
+
+**Decision:** Platform admins send `ResetPasswordMail` with a broker token. The existing password stays valid until the link is used. Support agents and other operator roles cannot send staff resets (`platform.staff.manage` + `canManage`).
+
+**Alternatives considered:** (1) Email a temporary password. (2) Invalidate the current password immediately.
+
+**Reason:** Least surprise and recoverability if mail delivery fails. Matches the public forgot-password flow.
+
+**Consequences:** Compromised accounts can still sign in with the old password until the staff member completes the reset (admins can Force logout separately).
+
+**Rollback/revisit:** If recovery must lock the account immediately, invalidate sessions and rotate the password in the same action.
