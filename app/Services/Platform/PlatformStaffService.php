@@ -278,28 +278,36 @@ class PlatformStaffService
     }
 
     /**
-     * @return array{temporary_password: string, emailed: bool, mail_error: ?string}
+     * Send a password-reset email. Does not change the current password until the staff member completes the link.
+     *
+     * @return array{emailed: bool, mail_error: ?string}
      */
     public function resetPassword(User $target, User $actor): array
     {
         $this->assertCanManage($actor, $target);
+        $this->context->forPlatform();
 
-        $temp = Str::password(14);
-        $target->forceFill(['password' => $temp])->save();
+        try {
+            $this->passwordResets->sendResetLinkTo($target);
+        } catch (RuntimeException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            report($e);
+            $this->audit->record('platform.staff.password_reset', $target, [
+                'by' => $actor->id,
+                'emailed' => false,
+            ]);
 
-        $this->sessions->invalidate($target);
-        $this->revokePendingTwoFactorCodes($target);
+            return ['emailed' => false, 'mail_error' => $e->getMessage()];
+        }
 
-        $this->audit->record('platform.staff.password_reset', $target, ['by' => $actor->id]);
+        $this->audit->record('platform.staff.password_reset', $target, [
+            'by' => $actor->id,
+            'emailed' => true,
+        ]);
+        $this->audit->record('platform.staff.password_emailed', $target, ['by' => $actor->id]);
 
-        $roleKey = $this->resolvedRoleKey($target) ?? 'support_agent';
-        $mail = $this->sendWelcomeEmail($target, $roleKey, $temp, isPasswordReset: true);
-
-        return [
-            'temporary_password' => $temp,
-            'emailed' => $mail['ok'],
-            'mail_error' => $mail['error'],
-        ];
+        return ['emailed' => true, 'mail_error' => null];
     }
 
     public function forceLogout(User $target, User $actor): void

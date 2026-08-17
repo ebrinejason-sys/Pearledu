@@ -141,12 +141,12 @@ class OperatorController extends Controller
         }
 
         if ($result['emailed']) {
-            return back()->with('status', 'New temporary password emailed to '.$operator->email.'.');
+            return back()->with('status', 'Password reset email sent to '.$operator->email.'.');
         }
 
         return back()->with(
             'status',
-            'Password reset, but the email could not be sent. Ask the user to use password reset.'
+            'Could not send the password reset email. Ask the staff member to use Forgot password on the login page.'
         );
     }
 

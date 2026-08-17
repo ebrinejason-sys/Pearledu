@@ -62,7 +62,7 @@
               ·
               <form method="post" action="{{ route('platform.operators.reset-password', $op) }}" style="display:inline" class="js-confirm-reset" data-label="{{ e($op->full_name) }}">
                 @csrf
-                <button type="submit" class="btn-link-action">Reset password</button>
+                <button type="submit" class="btn-link-action">Send password reset</button>
               </form>
               ·
               <form method="post" action="{{ route('platform.operators.force-logout', $op) }}" style="display:inline" onsubmit="return confirm('End every active session for this staff account?')">
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('form.js-confirm-reset').forEach(function (form) {
     form.addEventListener('submit', function (e) {
       var label = form.getAttribute('data-label') || 'this staff member';
-      if (!window.confirm('Reset password for ' + label + '? A temporary password will be emailed.')) {
+      if (!window.confirm('Send a password reset email to ' + label + '? They will choose a new password from the link. Their current password stays valid until they complete the reset.')) {
         e.preventDefault();
       }
     });

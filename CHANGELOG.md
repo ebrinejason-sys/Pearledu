@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Platform staff password reset
+
+- Platform admins can send a real password-reset email to PearlEdu staff from `/admin/operators`. The current password is not overwritten until the staff member completes the link.
+
 ### School roles
 
 - Added `director_of_studies` (Director of Studies / DOS) for school-wide academics without finance or HR.
