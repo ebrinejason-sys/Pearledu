@@ -23,6 +23,9 @@ class FeeController extends Controller
         $school = $ctx->school();
         abort_unless($school, 404);
 
+        $user = $request->user();
+        $canManageFinance = $user && in_array('finance.manage', $user->permissionsForSchool($school->id), true);
+
         $statusFilter = (string) $request->query('status', 'all');
         if (! in_array($statusFilter, ['all', 'demanded', 'cleared', 'overdue', 'void'], true)) {
             $statusFilter = 'all';
@@ -94,8 +97,10 @@ class FeeController extends Controller
 
         return view('app.fees.index', compact(
             'school', 'structures', 'invoices', 'groupedInvoices', 'pendingPayments',
-            'classes', 'terms', 'students', 'statusFilter', 'classId', 'termId', 'q', 'summary'
+            'classes', 'terms', 'students', 'statusFilter', 'classId', 'termId', 'q', 'summary',
+            'canManageFinance'
         ));
+
     }
 
     public function storeStructure(Request $request, TenantContext $ctx)

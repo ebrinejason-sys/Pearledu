@@ -12,6 +12,8 @@ use Illuminate\Support\Collection;
  */
 class AssessmentScope
 {
+    public function __construct(private AssignedClassResolver $assigned) {}
+
     public function canManage(User $user, int $schoolId): bool
     {
         return $this->hasPermission($user, $schoolId, 'assessment.manage');
@@ -114,6 +116,11 @@ class AssessmentScope
             return null;
         }
 
+        if ($this->assigned->isSchoolWide($user, $schoolId)
+            && $this->hasPermission($user, $schoolId, 'assessment.view')) {
+            return null;
+        }
+
         if (! $this->canViewAnywhere($user, $schoolId)) {
             return [];
         }
@@ -125,7 +132,7 @@ class AssessmentScope
         }
 
         if ($this->hasPermission($user, $schoolId, 'assessment.view')) {
-            foreach ($this->classTeacherClassIds($user, $schoolId) as $classId) {
+            foreach ($this->assigned->classTeacherClassIds($user, $schoolId) as $classId) {
                 $ids[$classId] = true;
             }
         }
@@ -140,33 +147,7 @@ class AssessmentScope
      */
     public function teachingAssignments(User $user, int $schoolId): Collection
     {
-        return TeachingAssignment::query()
-            ->where('school_id', $schoolId)
-            ->where('user_id', $user->id)
-            ->forCurrentYear($schoolId)
-            ->effective()
-            ->where(function ($q) {
-                $q->whereNull('term_id')
-                    ->orWhereHas('term', function ($tq) {
-                        $tq->where(fn ($inner) => $inner->whereNull('starts_on')->orWhereDate('starts_on', '<=', now()))
-                            ->where(fn ($inner) => $inner->whereNull('ends_on')->orWhereDate('ends_on', '>=', now()));
-                    });
-            })
-            ->get(['id', 'user_id', 'school_id', 'subject_id', 'class_id', 'academic_year_id', 'term_id']);
-    }
-
-    /** @return list<int> */
-    private function classTeacherClassIds(User $user, int $schoolId): array
-    {
-        return $user->activeAssignments()
-            ->where('school_id', $schoolId)
-            ->whereNotNull('class_id')
-            ->whereHas('role', fn ($q) => $q->where('key', 'class_teacher'))
-            ->pluck('class_id')
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+        return $this->assigned->teachingAssignments($user, $schoolId);
     }
 
     private function hasPermission(User $user, int $schoolId, string $permission): bool

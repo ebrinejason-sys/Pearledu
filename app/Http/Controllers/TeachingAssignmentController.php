@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
+use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\SchoolClass;
 use App\Models\Subject;
@@ -17,13 +18,7 @@ use Illuminate\Validation\ValidationException;
 class TeachingAssignmentController extends Controller
 {
     /** Roles that may receive a teaching assignment. */
-    private const TEACHING_CAPABLE = [
-        'subject_teacher',
-        'class_teacher',
-        'head_teacher',
-        'deputy_head_teacher',
-        'school_admin',
-    ];
+    private const TEACHING_CAPABLE = Role::TEACHING_CAPABLE;
 
     public function index(TenantContext $context)
     {

@@ -38,6 +38,7 @@ class PortalService
         }
 
         if (in_array('self.results.view', $permissions, true)
+            || in_array('self.fees.view', $permissions, true)
             || in_array('self.timetable.view', $permissions, true)
             || in_array('lms.view', $permissions, true)
             || in_array('cbt.take', $permissions, true)) {

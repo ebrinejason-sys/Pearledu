@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Guardianship;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Services\Authorization\LearnerScope;
 use App\Services\Fees\StudentLedgerService;
 use App\Services\Learners\StudentLifecycleService;
 use App\Services\Students\GuardianLinkService;
@@ -21,14 +22,21 @@ class StudentController extends Controller
         private StudentAccountLinkService $studentAccounts,
         private StudentLifecycleService $lifecycle,
         private StudentLedgerService $ledger,
+        private LearnerScope $learners,
     ) {}
 
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
+        $schoolId = $this->context->schoolId();
+        abort_unless($schoolId && $request->user(), 403);
+
+        $classIds = $this->learners->viewableClassIds($request->user(), $schoolId);
+        abort_if($classIds === [], 403);
 
         $students = Student::query()
             ->with('schoolClass')
+            ->when(is_array($classIds), fn ($query) => $query->whereIn('class_id', $classIds))
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('full_name', 'ilike', '%'.$q.'%')
@@ -39,7 +47,9 @@ class StudentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('app.students.index', compact('students', 'q'));
+        $canManageLearners = $this->learners->canMutateAnywhere($request->user(), $schoolId);
+
+        return view('app.students.index', compact('students', 'q', 'canManageLearners'));
     }
 
     public function create()
@@ -68,15 +78,23 @@ class StudentController extends Controller
     public function show(Student $student)
     {
         $this->assertTenantOwned($student);
-        $student->load(['schoolClass', 'guardianships.guardian', 'user', 'enrollments.academicYear', 'enrollments.schoolClass']);
-        $statement = $this->ledger->statement($student);
+        $user = request()->user();
+        $schoolId = $this->context->schoolId();
+        abort_unless($user && $schoolId && $this->learners->canViewStudent($user, $schoolId, $student), 403);
 
-        return view('app.students.show', compact('student', 'statement'));
+        $student->load(['schoolClass', 'guardianships.guardian', 'user', 'enrollments.academicYear', 'enrollments.schoolClass']);
+        $canManageLearners = $this->learners->canMutateStudent($user, $schoolId, $student);
+        $canViewFinance = in_array('finance.view', $user->permissionsForSchool($schoolId), true)
+            || in_array('finance.manage', $user->permissionsForSchool($schoolId), true);
+        $statement = $canViewFinance ? $this->ledger->statement($student) : ['lines' => [], 'balance' => 0];
+
+        return view('app.students.show', compact('student', 'statement', 'canManageLearners', 'canViewFinance'));
     }
 
     public function edit(Student $student)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
 
         return view('app.students.edit', [
             'student' => $student,
@@ -88,6 +106,7 @@ class StudentController extends Controller
     public function update(Request $request, Student $student)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
         $data = $this->validated($request, $student);
         $classId = $data['class_id'] ?? null;
         unset($data['class_id']);
@@ -104,6 +123,7 @@ class StudentController extends Controller
     public function destroy(Student $student)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
         $student->delete();
 
         return redirect()
@@ -114,6 +134,7 @@ class StudentController extends Controller
     public function storeGuardian(Request $request, Student $student)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
         $mode = $request->input('mode', 'attach');
 
         if ($mode === 'invite') {
@@ -158,6 +179,7 @@ class StudentController extends Controller
     public function makePrimary(Student $student, Guardianship $guardianship)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
         abort_unless($guardianship->student_id === $student->id, 404);
         $this->guardians->makePrimary($guardianship);
 
@@ -167,6 +189,7 @@ class StudentController extends Controller
     public function destroyGuardian(Student $student, Guardianship $guardianship)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
         abort_unless($guardianship->student_id === $student->id, 404);
         $this->guardians->detach($guardianship);
 
@@ -176,6 +199,7 @@ class StudentController extends Controller
     public function storeAccount(Request $request, Student $student)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
         $mode = $request->input('mode', 'attach');
 
         if ($mode === 'invite') {
@@ -212,6 +236,7 @@ class StudentController extends Controller
     public function destroyAccount(Student $student)
     {
         $this->assertTenantOwned($student);
+        $this->assertCanMutate($student);
         $this->studentAccounts->unlink($student);
 
         return back()->with('status', 'Student login unlinked from this learner.');
@@ -221,6 +246,13 @@ class StudentController extends Controller
     {
         $schoolId = $this->context->schoolId();
         abort_unless($schoolId !== null && (int) $student->school_id === (int) $schoolId, 404);
+    }
+
+    private function assertCanMutate(Student $student): void
+    {
+        $user = request()->user();
+        $schoolId = $this->context->schoolId();
+        abort_unless($user && $schoolId && $this->learners->canMutateStudent($user, $schoolId, $student), 403);
     }
 
     private function validated(Request $request, ?Student $student = null): array

@@ -3,49 +3,66 @@
 /**
  * School role permissions (tenant) + platform role permissions (operator console).
  * Route middleware must enforce these; navigation hiding is not authorization.
+ * Role meaning and data scope: docs/ROLES.md
  */
 return [
     'roles' => [
         'school_admin' => [
-            'school.manage', 'accounts.manage', 'learners.manage', 'staff.manage',
+            'school.manage', 'school.view', 'accounts.manage', 'curriculum.manage',
+            'learners.view', 'learners.manage', 'staff.manage',
             'finance.view', 'finance.manage', 'assessment.view', 'assessment.manage', 'assessment.enter',
-            'attendance.view', 'attendance.mark', 'promotions.approve', 'timetable.manage',
+            'attendance.view', 'attendance.mark', 'attendance.manage', 'promotions.approve', 'timetable.manage',
             'emis.manage', 'sms.send', 'sms.manage', 'announcements.manage',
             'admissions.manage', 'library.manage', 'inventory.manage', 'transport.manage',
-            'hostel.manage', 'hr.manage', 'clinic.manage', 'cbt.manage', 'lms.manage',
+            'hostel.manage', 'hr.view', 'hr.manage', 'clinic.manage', 'cbt.manage', 'lms.manage',
+            'reports.view',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'director' => [
-            'school.view', 'finance.view', 'finance.manage', 'assessment.view', 'reports.view', 'sms.send',
-            'staff.manage', 'learners.manage', 'attendance.view', 'attendance.mark', 'promotions.approve',
-            'announcements.manage',
+            // Governance: full visibility, staff appointments, no grade/finance/attendance writes.
+            'school.view', 'staff.manage', 'learners.view',
+            'finance.view', 'assessment.view', 'reports.view',
+            'attendance.view', 'hr.view', 'announcements.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'head_teacher' => [
-            'school.view', 'staff.manage', 'assessment.manage', 'assessment.enter', 'promotions.approve',
-            'attendance.view', 'attendance.mark', 'timetable.manage', 'sms.send',
-            'learners.manage', 'announcements.manage',
+            // Operational lead: staff/learners/ops; cannot write grades or fees.
+            'school.view', 'staff.manage', 'learners.view', 'learners.manage',
+            'finance.view', 'assessment.view', 'reports.view',
+            'attendance.view', 'attendance.manage', 'promotions.approve',
+            'timetable.manage', 'sms.send', 'announcements.manage', 'hr.view', 'hr.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
         'deputy_head_teacher' => [
-            'school.view', 'staff.manage', 'assessment.manage', 'assessment.enter', 'attendance.view',
-            'attendance.mark', 'timetable.manage', 'sms.send', 'learners.manage',
+            'school.view', 'staff.manage', 'learners.view', 'learners.manage',
+            'finance.view', 'assessment.view', 'reports.view',
+            'attendance.view', 'attendance.manage',
+            'timetable.manage', 'sms.send', 'announcements.manage',
+            'hr.view', 'hr.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
         ],
+        'director_of_studies' => [
+            // Academic lead: curriculum + assessment school-wide; no finance or HR.
+            'school.view', 'curriculum.manage', 'learners.view', 'learners.manage',
+            'assessment.view', 'assessment.manage', 'assessment.enter', 'reports.view',
+            'attendance.view', 'attendance.manage', 'timetable.manage',
+            'announcements.manage', 'lms.manage', 'cbt.manage', 'sms.send',
+            'helpdesk.create', 'helpdesk.view_own',
+        ],
         'bursar' => [
-            'finance.manage', 'fees.record', 'fees.report', 'sms.send',
+            'finance.view', 'finance.manage', 'fees.record', 'fees.report', 'sms.send',
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'class_teacher' => [
-            // View class broadsheet / reports for assigned class — not unrestricted mark entry.
-            'attendance.mark', 'assessment.view', 'class.view', 'sms.send', 'learners.manage',
-            'self.timetable.view',
+            // Homeroom: view class reports — not unrestricted mark entry.
+            'attendance.view', 'attendance.mark', 'assessment.view', 'class.view',
+            'learners.view', 'sms.send', 'self.timetable.view',
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'subject_teacher' => [
             // Enter is further scoped to teaching_assignments (class + subject).
             'assessment.enter', 'assessment.view', 'marksheet.submit', 'lms.manage',
-            'self.timetable.view',
+            'attendance.view', 'attendance.mark', 'learners.view', 'self.timetable.view',
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'parent' => [
@@ -54,7 +71,7 @@ return [
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'student' => [
-            'self.results.view', 'self.timetable.view', 'lms.view', 'cbt.take',
+            'self.results.view', 'self.fees.view', 'self.timetable.view', 'lms.view', 'cbt.take',
             'announcements.view',
             'helpdesk.create', 'helpdesk.view_own',
         ],

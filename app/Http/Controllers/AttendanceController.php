@@ -6,19 +6,32 @@ use App\Models\AttendanceRecord;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Services\Attendance\AttendanceService;
+use App\Services\Authorization\AttendanceScope;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
-    public function index(Request $request, TenantContext $context)
+    public function index(Request $request, TenantContext $context, AttendanceScope $scope)
     {
         $school = $context->school();
         abort_unless($school, 404);
+        $user = $request->user();
+        abort_unless($user, 403);
 
-        $classes = SchoolClass::query()->orderBy('name')->get();
+        $allowedIds = $scope->viewableClassIds($user, $school->id);
+        $classes = SchoolClass::query()
+            ->orderBy('name')
+            ->when(is_array($allowedIds), fn ($q) => $q->whereIn('id', $allowedIds ?: [0]))
+            ->get();
+
         $classId = (int) $request->query('class_id', $classes->first()?->id ?? 0);
+        if ($classId && ! $scope->canViewClass($user, $school->id, $classId)) {
+            abort(403);
+        }
+
         $date = $request->query('date', now()->toDateString());
+        $canMark = $classId && $scope->canMarkClass($user, $school->id, $classId);
 
         $students = $classId
             ? Student::query()->where('class_id', $classId)->orderBy('full_name')->get()
@@ -30,13 +43,17 @@ class AttendanceController extends Controller
             ->get()
             ->keyBy('student_id');
 
-        return view('app.attendance.index', compact('school', 'classes', 'classId', 'date', 'students', 'existing'));
+        return view('app.attendance.index', compact(
+            'school', 'classes', 'classId', 'date', 'students', 'existing', 'canMark'
+        ));
     }
 
-    public function store(Request $request, TenantContext $context, AttendanceService $service)
+    public function store(Request $request, TenantContext $context, AttendanceService $service, AttendanceScope $scope)
     {
         $school = $context->school();
         abort_unless($school, 404);
+        $user = $request->user();
+        abort_unless($user, 403);
 
         $data = $request->validate([
             'class_id' => 'required|integer|exists:school_classes,id',
@@ -48,12 +65,14 @@ class AttendanceController extends Controller
             'notify_absent' => 'nullable|boolean',
         ]);
 
+        abort_unless($scope->canMarkClass($user, $school->id, (int) $data['class_id']), 403);
+
         $service->bulkUpsert(
             $school->id,
             (int) $data['class_id'],
             $data['attended_on'],
             $data['records'],
-            $request->user()?->id,
+            $user->id,
             (bool) ($data['notify_absent'] ?? true),
         );
 

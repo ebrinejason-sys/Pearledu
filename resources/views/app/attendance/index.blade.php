@@ -26,7 +26,7 @@
     </form>
   </div>
 
-  @if($students->isNotEmpty())
+  @if($students->isNotEmpty() && !empty($canMark))
   <div class="card">
     <form method="post" action="{{ route('app.attendance.store') }}">
       @csrf
@@ -59,6 +59,23 @@
       </table>
       <p style="margin-top:14px"><button class="btn" type="submit">Save attendance</button></p>
     </form>
+  </div>
+  @elseif($students->isNotEmpty())
+  <div class="card">
+    <p style="margin:0 0 12px;color:var(--muted)">Read-only register for this class.</p>
+    <table>
+      <thead><tr><th>Student</th><th>Status</th><th>Reason</th></tr></thead>
+      <tbody>
+      @foreach($students as $student)
+        @php($rec = $existing->get($student->id))
+        <tr>
+          <td>{{ $student->full_name }}</td>
+          <td>{{ ucfirst($rec?->status ?? '—') }}</td>
+          <td>{{ $rec?->reason ?: '—' }}</td>
+        </tr>
+      @endforeach
+      </tbody>
+    </table>
   </div>
   @endif
 @endsection

@@ -11,10 +11,10 @@
         <p style="margin:6px 0 0;color:var(--muted);font-size:14px">{{ now()->timezone(config('app.timezone'))->format('l, j F Y') }}</p>
       </div>
       <div class="page-header__actions">
-        @if(in_array('learners.manage', $permissions, true))
+        @if(in_array('learners.manage', $permissions, true) || in_array('learners.view', $permissions, true))
           <a class="btn" href="{{ route('app.students.index') }}">Students</a>
         @endif
-        @if(in_array('finance.manage', $permissions, true))
+        @if(in_array('finance.manage', $permissions, true) || in_array('finance.view', $permissions, true))
           <a class="btn accent" href="{{ route('app.fees.index') }}">Fees</a>
         @endif
         @if(in_array('sms.send', $permissions, true))

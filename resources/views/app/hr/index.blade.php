@@ -6,12 +6,16 @@
   <div class="grid g2">
     <div class="card">
       <h3 style="margin-top:0">Request leave</h3>
+      @if(!empty($canManageHr))
       <form method="post" action="{{ route('app.hr.leave.store') }}">@csrf
         <label>Starts</label><input type="date" name="starts_on" required>
         <label>Ends</label><input type="date" name="ends_on" required>
         <label>Reason</label><input name="reason">
         <p style="margin-top:14px"><button class="btn" type="submit">Submit</button></p>
       </form>
+      @else
+        <p style="color:var(--muted);margin:0">Read-only HR view.</p>
+      @endif
     </div>
     <div class="card">
       <h3 style="margin-top:0">Requests</h3>
@@ -24,7 +28,7 @@
             <td>{{ $leave->starts_on?->format('Y-m-d') }} → {{ $leave->ends_on?->format('Y-m-d') }}</td>
             <td>
               <span class="pill">{{ $leave->status }}</span>
-              @if($leave->status === 'pending')
+              @if(!empty($canManageHr) && $leave->status === 'pending')
                 <form method="post" action="{{ route('app.hr.leave.decide', $leave) }}" style="display:inline">@csrf
                   <input type="hidden" name="decision" value="approved">
                   <button class="btn ghost" type="submit">Approve</button>

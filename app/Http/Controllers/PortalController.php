@@ -32,6 +32,9 @@ class PortalController extends Controller
             'invoices' => $student ? $this->portal->invoices($student)->take(5) : collect(),
             'announcements' => $student ? $this->portal->announcements($student, $user)->take(5) : collect(),
             'resultsPreview' => $student ? $this->portal->results($student)->take(5) : collect(),
+            'canViewFees' => in_array('child.fees.view', $user->permissionsForSchool($this->context->schoolId()), true)
+                || in_array('self.fees.view', $user->permissionsForSchool($this->context->schoolId()), true)
+                || in_array('fees.pay', $user->permissionsForSchool($this->context->schoolId()), true),
         ]);
     }
 

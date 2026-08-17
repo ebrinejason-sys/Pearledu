@@ -6,8 +6,10 @@
       <h2 style="margin:0">Students</h2>
       <p style="color:var(--muted);margin:6px 0 0">Learner records for this school</p>
     </div>
+    @if(!empty($canManageLearners))
       <a class="btn" href="{{ route('app.students.create') }}">Add student</a>
       <a class="btn ghost" href="{{ route('app.students.import') }}">Import CSV</a>
+    @endif
   </div>
 
   <div class="card" style="margin-bottom:16px">
@@ -45,7 +47,9 @@
               <td style="padding:10px 4px">{{ $student->schoolClass?->name ?: '—' }}</td>
               <td style="padding:10px 4px"><span class="pill">{{ $student->status }}</span></td>
               <td style="padding:10px 4px;text-align:right">
-                <a href="{{ route('app.students.edit', $student) }}">Edit</a>
+                @if(!empty($canManageLearners))
+                  <a href="{{ route('app.students.edit', $student) }}">Edit</a>
+                @endif
               </td>
             </tr>
           @endforeach

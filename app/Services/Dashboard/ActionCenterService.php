@@ -123,7 +123,7 @@ class ActionCenterService
             }
         }
 
-        if ($this->can($permissions, 'attendance.mark') && $this->modules->enabled($school, 'attendance')) {
+        if ($this->canAny($permissions, ['attendance.mark', 'attendance.manage']) && $this->modules->enabled($school, 'attendance')) {
             $classes = SchoolClass::query()->where('school_id', $schoolId)->count();
             $marked = AttendanceRecord::query()
                 ->where('school_id', $schoolId)
