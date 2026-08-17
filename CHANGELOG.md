@@ -12,6 +12,7 @@
 - DOS can open Staff to invite teachers without `staff.manage` or `learners.manage`.
 - Granular bursar fee permissions; void, discount, and reverse are audited.
 - School shell: grouped sidebar, breadcrumbs, skip link, `<main>`, mobile drawer, term in the top bar.
+- Home and app layout compile correctly (Laravel `@php` is a block, not a one-liner). Closed/locked periods reject mark saves with a `period_id` validation error instead of HTTP 403.
 
 ### Platform staff password reset
 

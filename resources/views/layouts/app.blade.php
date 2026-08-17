@@ -158,23 +158,23 @@
 <body class="{{ request()->cookie('sidebar_collapsed') === '1' ? 'sidebar-collapsed' : '' }}">
   <a class="skip-link" href="#main-content">Skip to content</a>
   @auth
-    @php($nav = $nav ?? app(\App\Services\Navigation\NavigationBuilder::class)->build(auth()->user()))
+    @php
+      $nav = $nav ?? app(\App\Services\Navigation\NavigationBuilder::class)->build(auth()->user());
+      $crumbSection = null;
+      $crumbItem = null;
+      foreach ($nav['sections'] ?? [] as $section) {
+          foreach ($section['items'] ?? [] as $item) {
+              if (! empty($item['active'])) {
+                  $crumbSection = $section['label'] ?? null;
+                  $crumbItem = $item['label'] ?? null;
+              }
+          }
+      }
+    @endphp
     @include('layouts.partials.topbar', ['nav' => $nav])
     <div class="app-shell">
       @include('layouts.partials.sidebar', ['nav' => $nav])
       <main id="main-content" class="wrap" tabindex="-1">
-        @php
-          $crumbSection = null;
-          $crumbItem = null;
-          foreach ($nav['sections'] ?? [] as $section) {
-            foreach ($section['items'] ?? [] as $item) {
-              if (!empty($item['active'])) {
-                $crumbSection = $section['label'] ?? null;
-                $crumbItem = $item['label'] ?? null;
-              }
-            }
-          }
-        @endphp
         @if(($nav['zone'] ?? '') === 'school' && $crumbItem && ! request()->routeIs('app.home'))
           <nav class="breadcrumb" aria-label="Breadcrumb">
             <ol>

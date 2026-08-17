@@ -21,12 +21,19 @@ class AssessmentScopeAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     private School $school;
+
     private SchoolClass $classA;
+
     private SchoolClass $classB;
+
     private Subject $math;
+
     private Subject $sst;
+
     private AssessmentPeriod $period;
+
     private Student $studentA;
+
     private AcademicYear $year;
 
     protected function setUp(): void
@@ -46,8 +53,8 @@ class AssessmentScopeAuthorizationTest extends TestCase
             'is_current' => true,
         ]);
 
-        $this->classA = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5A', 'code' => 'P5A']);
-        $this->classB = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5B', 'code' => 'P5B']);
+        $this->classA = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5A-asmt', 'code' => 'P5AAS']);
+        $this->classB = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P5B-asmt', 'code' => 'P5BAS']);
         $this->math = Subject::create(['school_id' => $this->school->id, 'name' => 'Mathematics', 'code' => 'MTH']);
         $this->sst = Subject::create(['school_id' => $this->school->id, 'name' => 'SST', 'code' => 'SST']);
         $this->period = AssessmentPeriod::create([
@@ -174,8 +181,8 @@ class AssessmentScopeAuthorizationTest extends TestCase
             ]));
 
         $response->assertOk();
-        $response->assertSee('P5A');
-        $response->assertDontSee('P5B');
+        $response->assertSee('P5A-asmt');
+        $response->assertDontSee('P5B-asmt');
         $response->assertSee('Mathematics');
         $response->assertDontSee('SST');
     }

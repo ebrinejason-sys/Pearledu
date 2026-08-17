@@ -187,6 +187,11 @@ class AssessmentController extends Controller
 
         $period = AssessmentPeriod::query()->findOrFail((int) $data['period_id']);
         abort_unless((int) $period->school_id === (int) $school->id, 404);
+        if (! $this->workflow->canEnterMarks($period)) {
+            throw ValidationException::withMessages([
+                'period_id' => 'Mark entry is closed for this period. An administrator must reopen it.',
+            ]);
+        }
         $sheet = $this->marksheets->find($school->id, (int) $period->id, $classId, $subjectId);
         abort_unless($this->marksheets->canEditMarks($user, $period, $sheet), 403, 'This marksheet is locked. Submit, verify, or return it first.');
 

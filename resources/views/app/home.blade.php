@@ -7,7 +7,7 @@
     <div class="page-header">
       <div>
         <p class="page-header__eyebrow">School dashboard</p>
-        <h1 class="page-header__title">{{ $workspace['greeting'] ?? $school->name }}</h1>
+        <h1 class="page-header__title">{{ data_get($workspace, 'greeting') ?? $school->name }}</h1>
         <p style="margin:6px 0 0;color:var(--muted);font-size:14px">{{ now()->timezone(config('app.timezone'))->format('l, j F Y') }}</p>
       </div>
       <div class="page-header__actions">
@@ -46,58 +46,57 @@
     @endif
 
     @if(!empty($workspace['homeroom']))
-      @php($hr = $workspace['homeroom'])
       <div class="card" style="margin-bottom:16px">
         <div class="dash-chart-card__head">
-          <h2 style="margin:0;font-size:18px">My Class · {{ $hr['class_name'] }}</h2>
+          <h2 style="margin:0;font-size:18px">My Class · {{ $workspace['homeroom']['class_name'] }}</h2>
           <a class="btn ghost" href="{{ route('app.teaching.homeroom') }}">Open class</a>
         </div>
         <div class="workspace-kpis" style="margin-top:12px">
-          <div class="dash-stat"><div class="dash-stat__value">{{ $hr['students'] }}</div><div class="dash-stat__label">Students</div></div>
-          <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">{{ $hr['present'] }}</div><div class="dash-stat__label">Present today</div></div>
-          <div class="dash-stat dash-stat--warning"><div class="dash-stat__value">{{ $hr['absent'] }}</div><div class="dash-stat__label">Absent</div></div>
-          <div class="dash-stat"><div class="dash-stat__value">{{ $hr['late'] }}</div><div class="dash-stat__label">Late</div></div>
+          <div class="dash-stat"><div class="dash-stat__value">{{ $workspace['homeroom']['students'] }}</div><div class="dash-stat__label">Students</div></div>
+          <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">{{ $workspace['homeroom']['present'] }}</div><div class="dash-stat__label">Present today</div></div>
+          <div class="dash-stat dash-stat--warning"><div class="dash-stat__value">{{ $workspace['homeroom']['absent'] }}</div><div class="dash-stat__label">Absent</div></div>
+          <div class="dash-stat"><div class="dash-stat__value">{{ $workspace['homeroom']['late'] }}</div><div class="dash-stat__label">Late</div></div>
         </div>
       </div>
     @endif
 
     @if(!empty($workspace['bursar']))
-      @php($fin = $workspace['bursar'])
       <div class="card" style="margin-bottom:16px">
         <div class="dash-chart-card__head">
           <h2 style="margin:0;font-size:18px">School fees</h2>
           <a class="btn ghost" href="{{ route('app.fees.index') }}">Open fees</a>
         </div>
         <div class="workspace-kpis" style="margin-top:12px">
-          <div class="dash-stat"><div class="dash-stat__value">UGX {{ number_format($fin['expected'], 0) }}</div><div class="dash-stat__label">Expected</div></div>
-          <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">UGX {{ number_format($fin['collected'], 0) }}</div><div class="dash-stat__label">Collected</div></div>
-          <div class="dash-stat dash-stat--warning"><div class="dash-stat__value">UGX {{ number_format($fin['outstanding'], 0) }}</div><div class="dash-stat__label">Outstanding</div></div>
-          <div class="dash-stat"><div class="dash-stat__value">{{ $fin['rate'] }}%</div><div class="dash-stat__label">Collection rate</div></div>
+          <div class="dash-stat"><div class="dash-stat__value">UGX {{ number_format($workspace['bursar']['expected'], 0) }}</div><div class="dash-stat__label">Expected</div></div>
+          <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">UGX {{ number_format($workspace['bursar']['collected'], 0) }}</div><div class="dash-stat__label">Collected</div></div>
+          <div class="dash-stat dash-stat--warning"><div class="dash-stat__value">UGX {{ number_format($workspace['bursar']['outstanding'], 0) }}</div><div class="dash-stat__label">Outstanding</div></div>
+          <div class="dash-stat"><div class="dash-stat__value">{{ $workspace['bursar']['rate'] }}%</div><div class="dash-stat__label">Collection rate</div></div>
         </div>
-        @if($fin['pending'] > 0)
-          <p style="margin:12px 0 0"><a href="{{ route('app.fees.index') }}#payments">{{ $fin['pending'] }} payment(s) pending verification</a></p>
+        @if($workspace['bursar']['pending'] > 0)
+          <p style="margin:12px 0 0"><a href="{{ route('app.fees.index') }}#payments">{{ $workspace['bursar']['pending'] }} payment(s) pending verification</a></p>
         @endif
       </div>
     @endif
 
     @if(!empty($workspace['academicLead']))
-      @php($ac = $workspace['academicLead'])
       <div class="card" style="margin-bottom:16px">
         <div class="dash-chart-card__head">
           <h2 style="margin:0;font-size:18px">Academic workflow</h2>
           <a class="btn ghost" href="{{ route('app.assessment.index') }}">Assessment periods</a>
         </div>
-        <p style="color:var(--muted);font-size:14px">{{ $ac['period'] ?? 'No assessment period yet' }}</p>
+        <p style="color:var(--muted);font-size:14px">{{ $workspace['academicLead']['period'] ?? 'No assessment period yet' }}</p>
         <div class="workspace-kpis">
-          <div class="dash-stat"><div class="dash-stat__value">{{ $ac['submitted_pct'] }}%</div><div class="dash-stat__label">Marks submitted</div></div>
-          <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">{{ $ac['verified_pct'] }}%</div><div class="dash-stat__label">Marks verified</div></div>
-          <div class="dash-stat dash-stat--warning"><div class="dash-stat__value">{{ $ac['draft'] }}</div><div class="dash-stat__label">Still in draft</div></div>
+          <div class="dash-stat"><div class="dash-stat__value">{{ $workspace['academicLead']['submitted_pct'] }}%</div><div class="dash-stat__label">Marks submitted</div></div>
+          <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">{{ $workspace['academicLead']['verified_pct'] }}%</div><div class="dash-stat__label">Marks verified</div></div>
+          <div class="dash-stat dash-stat--warning"><div class="dash-stat__value">{{ $workspace['academicLead']['draft'] }}</div><div class="dash-stat__label">Still in draft</div></div>
         </div>
       </div>
     @endif
 
     @if(!empty($workspace['operationsLead']) || !empty($workspace['governance']))
-      @php($ops = $workspace['operationsLead'] ?? $workspace['governance'])
+      @php
+        $ops = $workspace['operationsLead'] ?? $workspace['governance'];
+      @endphp
       <div class="card" style="margin-bottom:16px">
         <h2 style="margin-top:0;font-size:18px">{{ !empty($workspace['governance']) ? 'School performance' : 'School overview' }}</h2>
         <div class="workspace-kpis">
@@ -281,7 +280,7 @@
   .dash-access summary::-webkit-details-marker{display:none}
   .dash-access summary span{font-size:13px;color:var(--muted)}
   .dash-access__list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-  @media(max-width:800px){
+  @@media(max-width:800px){
     .dash-stats{grid-template-columns:repeat(2,1fr)}
     .dash-cols{height:140px}
   }
