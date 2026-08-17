@@ -3,7 +3,11 @@
 @section('content')
   <div class="page-header"><div><p class="page-header__eyebrow">{{ $school->name }}</p><h2 class="page-header__title">Fees</h2></div></div>
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
+  @if(empty($canManageFinance))
+    <p class="vx-auth-hint" style="margin-bottom:16px">Read-only finance view. Recording payments and changing invoices is limited to the bursar.</p>
+  @endif
 
+  @if(!empty($canManageFinance))
   <div class="grid g2">
     <div class="card"><h3 style="margin-top:0">Fee structure</h3>
       <form method="post" action="{{ route('app.fees.structures.store') }}">@csrf
@@ -30,6 +34,7 @@
       </form>
     </div>
   </div>
+  @endif
 
   <div class="card">
     <h3 style="margin-top:0">Structures</h3>
@@ -44,6 +49,7 @@
           <td>{{ $s->term?->name ?? '—' }}</td>
           <td><span class="pill">{{ $s->is_active ? 'active' : 'archived' }}</span></td>
           <td>
+            @if(!empty($canManageFinance))
             <form method="post" action="{{ route('app.fees.structures.archive', $s) }}" style="margin-bottom:8px">@csrf
               <button class="btn" type="submit">{{ $s->is_active ? 'Archive' : 'Reactivate' }}</button>
             </form>
@@ -66,6 +72,7 @@
               </select>
               <button class="btn" type="submit">Update</button>
             </form>
+            @endif
           </td>
         </tr>
       @empty
@@ -75,6 +82,7 @@
     </table>
   </div>
 
+  @if(!empty($canManageFinance))
   <div class="grid g2">
     <div class="card"><h3 style="margin-top:0">Bulk invoice a class</h3>
       <form method="post" action="{{ route('app.fees.invoices.bulk') }}">@csrf
@@ -102,6 +110,7 @@
       </form>
     </div>
   </div>
+  @endif
 
   <div class="card" id="payments">
     <table>
@@ -118,13 +127,15 @@
             <td style="white-space:nowrap">
               @if($p->method === 'schoolpay')
                 <span class="pill">awaiting SchoolPay</span>
-              @else
+              @elseif(!empty($canManageFinance))
                 <form method="post" action="{{ route('app.fees.payments.confirm', $p) }}" style="display:inline">@csrf
                   <button class="btn accent" type="submit" style="padding:4px 10px;font-size:12px">Confirm</button>
                 </form>
                 <form method="post" action="{{ route('app.fees.payments.reject', $p) }}" style="display:inline">@csrf
                   <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Reject</button>
                 </form>
+              @else
+                <span class="pill">pending</span>
               @endif
             </td>
           </tr>
@@ -135,7 +146,7 @@
     </table>
   </div>
 
-  @if($school->schoolPayConfigured())
+  @if(!empty($canManageFinance) && $school->schoolPayConfigured())
     <div class="card">
       <h3 style="margin-top:0">SchoolPay sync</h3>
       <p style="margin:0 0 10px;color:var(--muted);font-size:13px">Pull completed SchoolPay receipts for a day and apply any that are not yet on invoices. Student SchoolPay payment codes must be set on learner records.</p>
@@ -164,7 +175,7 @@
             <td>{{ number_format($inv->balance) }}</td>
             <td><span class="pill">{{ $inv->status }}</span></td>
             <td style="white-space:nowrap">
-              @if($inv->status !== 'void')
+              @if(!empty($canManageFinance) && $inv->status !== 'void')
                 <form method="post" action="{{ route('app.fees.invoices.void', $inv) }}" style="display:inline" onsubmit="return confirm('Void this invoice?')">
                   @csrf
                   <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">Void</button>

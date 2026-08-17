@@ -9,6 +9,7 @@
         @if($student->schoolClass) · {{ $student->schoolClass->name }} @endif
       </p>
     </div>
+    @if(!empty($canManageLearners))
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <a class="btn" href="{{ route('app.students.edit', $student) }}">Edit</a>
       <form method="post" action="{{ route('app.students.destroy', $student) }}" onsubmit="return confirm('Archive this student record?')">
@@ -17,6 +18,7 @@
         <button class="btn ghost" type="submit">Archive</button>
       </form>
     </div>
+    @endif
   </div>
 
   <div class="grid g2">
@@ -25,7 +27,7 @@
       <p><strong>EMIS:</strong> {{ $student->emis_number ?: '—' }}</p>
       <p><strong>Class:</strong> {{ $student->schoolClass?->name ?: '—' }}</p>
       <p><strong>Status:</strong> {{ $student->status }}</p>
-      <p style="color:var(--muted);font-size:13px">LIN/NIN are hidden on this page to avoid unnecessary sensitive reads. Open Edit to view or change them.</p>
+      <p style="color:var(--muted);font-size:13px">LIN/NIN are hidden on this page to avoid unnecessary sensitive reads.@if(!empty($canManageLearners)) Open Edit to view or change them.@endif</p>
     </div>
 
     <div class="card">
@@ -36,13 +38,16 @@
           <span class="pill">{{ $student->user->status }}</span>
         </p>
         <p style="color:var(--muted);font-size:13px;margin:0 0 12px">{{ $student->user->email }}@if($student->user->phone) · {{ $student->user->phone }}@endif</p>
+        @if(!empty($canManageLearners))
         <form method="post" action="{{ route('app.students.account.destroy', $student) }}" onsubmit="return confirm('Unlink this login from the learner? The user account is kept.')">
           @csrf
           @method('DELETE')
           <button class="btn ghost" type="submit">Unlink login</button>
         </form>
+        @endif
       @else
-        <p style="color:var(--muted)">No portal login linked. Invite or attach one so the learner can use results, LMS, and CBT.</p>
+        <p style="color:var(--muted)">No portal login linked.@if(!empty($canManageLearners)) Invite or attach one so the learner can use results, LMS, and CBT.@endif</p>
+        @if(!empty($canManageLearners))
 
         <h4>Attach existing member</h4>
         <form method="post" action="{{ route('app.students.account.store', $student) }}" style="margin-bottom:18px">
@@ -65,6 +70,7 @@
           @error('full_name')<div class="err">{{ $message }}</div>@enderror
           <p style="margin-top:8px"><button class="btn" type="submit">Invite &amp; link</button></p>
         </form>
+        @endif
       @endif
     </div>
   </div>
@@ -86,6 +92,7 @@
                 </div>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
+                @if(!empty($canManageLearners))
                 @unless($link->is_primary)
                   <form method="post" action="{{ route('app.students.guardians.primary', [$student, $link]) }}">
                     @csrf
@@ -98,12 +105,14 @@
                   @method('DELETE')
                   <button class="btn ghost" type="submit">Detach</button>
                 </form>
+                @endif
               </div>
             </li>
           @endforeach
         </ul>
       @endif
 
+      @if(!empty($canManageLearners))
       <h4>Attach existing member</h4>
       <form method="post" action="{{ route('app.students.guardians.store', $student) }}" style="margin-bottom:18px">
         @csrf
@@ -135,8 +144,10 @@
         @error('full_name')<div class="err">{{ $message }}</div>@enderror
         <button class="btn" type="submit">Invite &amp; link</button>
       </form>
+      @endif
   </div>
 
+  @if(!empty($canViewFinance))
   <div class="card" style="margin-top:16px">
     <h3 style="margin-top:0">Statement</h3>
     @if(empty($statement['lines']))
@@ -158,4 +169,5 @@
       <p style="margin:12px 0 0"><strong>Balance: UGX {{ number_format($statement['balance']) }}</strong></p>
     @endif
   </div>
+  @endif
 @endsection

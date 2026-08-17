@@ -31,6 +31,7 @@ Resolution: user preference → school theme → default. App/auth layouts injec
 **Email** — Resend via SMTP (`.env.example`).
 
 See `docs/DATA_PROTECTION.md` for the full privacy/security architecture.
+See `docs/ROLES.md` for school role definitions, permission matrix, and data scope.
 
 ## Run it (local or server)
 

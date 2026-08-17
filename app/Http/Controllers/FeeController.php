@@ -22,6 +22,8 @@ class FeeController extends Controller
     {
         $school = $ctx->school();
         abort_unless($school, 404);
+        $user = request()->user();
+        $canManageFinance = $user && in_array('finance.manage', $user->permissionsForSchool($school->id), true);
         $structures = FeeStructure::where('school_id', $school->id)->with(['schoolClass', 'term'])->orderByDesc('id')->get();
         $invoices = FeeInvoice::where('school_id', $school->id)->with('student')->orderByDesc('id')->limit(100)->get();
         $pendingPayments = FeePayment::where('school_id', $school->id)
@@ -34,7 +36,7 @@ class FeeController extends Controller
         $terms = Term::where('school_id', $school->id)->orderBy('sequence')->get();
         $students = Student::where('school_id', $school->id)->orderBy('full_name')->get();
 
-        return view('app.fees.index', compact('school', 'structures', 'invoices', 'pendingPayments', 'classes', 'terms', 'students'));
+        return view('app.fees.index', compact('school', 'structures', 'invoices', 'pendingPayments', 'classes', 'terms', 'students', 'canManageFinance'));
     }
 
     public function storeStructure(Request $request, TenantContext $ctx)

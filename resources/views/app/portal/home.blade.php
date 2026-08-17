@@ -18,11 +18,14 @@
         <h3 style="margin-top:0">Quick links</h3>
         <p style="display:flex;flex-wrap:wrap;gap:8px">
           <a class="btn" href="{{ route('app.portal.results', ['student_id' => $student->id]) }}">Results</a>
-          <a class="btn ghost" href="{{ route('app.portal.fees', ['student_id' => $student->id]) }}">Fees</a>
+          @if(!empty($canViewFees))
+            <a class="btn ghost" href="{{ route('app.portal.fees', ['student_id' => $student->id]) }}">Fees</a>
+          @endif
           <a class="btn ghost" href="{{ route('app.portal.timetable', ['student_id' => $student->id]) }}">Timetable</a>
           <a class="btn ghost" href="{{ route('app.portal.announcements', ['student_id' => $student->id]) }}">Announcements</a>
         </p>
       </div>
+      @if(!empty($canViewFees))
       <div class="card">
         <h3 style="margin-top:0">Fee snapshot</h3>
         @forelse($invoices as $inv)
@@ -34,6 +37,7 @@
           <p style="color:var(--muted);margin:0">No invoices yet.</p>
         @endforelse
       </div>
+      @endif
     </div>
 
     <div class="grid g2" style="margin-top:8px">

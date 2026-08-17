@@ -52,6 +52,7 @@ class DemoTenantSeeder extends Seeder
             'director' => ['Daniel Director', 'director@standrews.test'],
             'head_teacher' => ['Helen Head', 'head@standrews.test'],
             'deputy_head_teacher' => ['Diana Deputy', 'deputy@standrews.test'],
+            'director_of_studies' => ['Doris Studies', 'dos@standrews.test'],
             'bursar' => ['Bernard Bursar', 'bursar@standrews.test'],
             'class_teacher' => ['Carol Class', 'classteacher@standrews.test'],
             'subject_teacher' => ['Simon Subject', 'teacher@standrews.test'],

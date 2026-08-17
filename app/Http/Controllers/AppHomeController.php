@@ -18,11 +18,12 @@ class AppHomeController extends Controller
         $permissions = $schoolId && $user ? $user->permissionsForSchool($schoolId) : [];
 
         $portalPerms = [
-            'child.results.view', 'self.results.view', 'child.fees.view',
+            'child.results.view', 'self.results.view', 'child.fees.view', 'self.fees.view',
             'fees.pay', 'self.timetable.view', 'announcements.view',
         ];
         $staffHeavy = collect($permissions)->contains(fn ($p) => in_array($p, [
-            'learners.manage', 'finance.manage', 'school.manage', 'staff.manage', 'assessment.enter',
+            'learners.manage', 'learners.view', 'finance.manage', 'finance.view', 'school.manage',
+            'curriculum.manage', 'staff.manage', 'assessment.enter', 'assessment.manage', 'assessment.view',
         ], true));
 
         if (! $staffHeavy && collect($portalPerms)->intersect($permissions)->isNotEmpty() && $portal->learnersFor($user)->isNotEmpty()) {

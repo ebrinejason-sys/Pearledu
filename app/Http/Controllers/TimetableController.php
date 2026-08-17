@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
+use App\Models\Role;
 use App\Models\Room;
 use App\Models\SchoolClass;
 use App\Models\Subject;
@@ -41,9 +42,7 @@ class TimetableController extends Controller
         $teachers = User::query()
             ->whereHas('roleAssignments', fn ($q) => $q->where('school_id', $school->id)
                 ->where('is_active', true)
-                ->whereHas('role', fn ($r) => $r->whereIn('key', [
-                    'class_teacher', 'subject_teacher', 'head_teacher', 'deputy_head_teacher', 'school_admin',
-                ])))
+                ->whereHas('role', fn ($r) => $r->whereIn('key', Role::TEACHING_CAPABLE)))
             ->orderBy('full_name')
             ->get(['id', 'full_name']);
 

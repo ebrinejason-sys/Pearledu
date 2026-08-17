@@ -63,22 +63,22 @@ class SchoolDashboardService
         $smsBalance = $school->smsBalance();
 
         $stats = array_values(array_filter([
-            $this->has($permissions, 'learners.manage')
+            $this->hasAny($permissions, ['learners.manage', 'learners.view'])
                 ? ['label' => 'Active students', 'value' => number_format($students), 'hint' => 'On roll', 'tone' => 'brand']
                 : null,
             $this->has($permissions, 'staff.manage')
                 ? ['label' => 'Staff accounts', 'value' => number_format($staff), 'hint' => 'Active roles', 'tone' => 'brand']
                 : null,
-            $this->has($permissions, 'finance.manage')
+            $this->hasAny($permissions, ['finance.manage', 'finance.view'])
                 ? ['label' => 'Fees outstanding', 'value' => 'UGX '.number_format($openFees, 0), 'hint' => 'Open invoices', 'tone' => 'accent']
                 : null,
-            $this->has($permissions, 'finance.manage')
+            $this->hasAny($permissions, ['finance.manage', 'finance.view'])
                 ? ['label' => 'Pending payments', 'value' => number_format($pendingPayments), 'hint' => 'Awaiting confirm', 'tone' => $pendingPayments > 0 ? 'warning' : 'brand']
                 : null,
             $this->has($permissions, 'admissions.manage')
                 ? ['label' => 'Admissions queue', 'value' => number_format($pendingAdmissions), 'hint' => 'Pending review', 'tone' => $pendingAdmissions > 0 ? 'warning' : 'brand']
                 : null,
-            $this->has($permissions, 'attendance.mark')
+            $this->hasAny($permissions, ['attendance.mark', 'attendance.manage', 'attendance.view'])
                 ? ['label' => 'Attendance today', 'value' => number_format($todayAttendance), 'hint' => 'Records marked', 'tone' => 'brand']
                 : null,
             $this->has($permissions, 'sms.send')
@@ -166,10 +166,13 @@ class SchoolDashboardService
     {
         $catalog = [
             ['perm' => 'learners.manage', 'route' => 'app.students.index', 'label' => 'Students', 'desc' => 'Records & guardians', 'icon' => 'students'],
+            ['perm' => 'learners.view', 'route' => 'app.students.index', 'label' => 'Students', 'desc' => 'Learner profiles', 'icon' => 'students'],
             ['perm' => 'learners.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
             ['perm' => 'admissions.manage', 'route' => 'app.admissions.index', 'label' => 'Admissions', 'desc' => 'Applications queue', 'icon' => 'admissions'],
             ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'label' => 'Fees', 'desc' => 'Invoices & payments', 'icon' => 'fees'],
+            ['perm' => 'finance.view', 'route' => 'app.fees.index', 'label' => 'Fees', 'desc' => 'Fee statements', 'icon' => 'fees'],
             ['perm' => 'attendance.mark', 'route' => 'app.attendance.index', 'label' => 'Attendance', 'desc' => 'Daily register', 'icon' => 'attendance'],
+            ['perm' => 'attendance.manage', 'route' => 'app.attendance.index', 'label' => 'Attendance', 'desc' => 'Daily register', 'icon' => 'attendance'],
             ['perm' => 'assessment.enter', 'route' => 'app.assessment.marks', 'label' => 'Enter marks', 'desc' => 'Assessment entry', 'icon' => 'assessment'],
             ['perm' => 'assessment.manage', 'route' => 'app.assessment.index', 'label' => 'Assessment', 'desc' => 'Periods & reports', 'icon' => 'assessment'],
             ['perm' => 'timetable.manage', 'route' => 'app.timetable.index', 'label' => 'Timetable', 'desc' => 'Weekly grid', 'icon' => 'timetable'],
@@ -178,6 +181,7 @@ class SchoolDashboardService
             ['perm' => 'announcements.manage', 'route' => 'app.announcements.index', 'label' => 'Announcements', 'desc' => 'School notices', 'icon' => 'announcements'],
             ['perm' => 'school.manage', 'route' => 'app.settings.school', 'label' => 'School identity', 'desc' => 'Theme & features', 'icon' => 'platform'],
             ['perm' => 'school.manage', 'route' => 'app.years.index', 'label' => 'Academic years', 'desc' => 'Terms & calendar', 'icon' => 'years'],
+            ['perm' => 'curriculum.manage', 'route' => 'app.years.index', 'label' => 'Academic years', 'desc' => 'Terms & calendar', 'icon' => 'years'],
             ['perm' => 'lms.manage', 'route' => 'app.lms.index', 'label' => 'LMS', 'desc' => 'Materials & tasks', 'icon' => 'lms'],
             ['perm' => 'cbt.manage', 'route' => 'app.cbt.index', 'label' => 'CBT', 'desc' => 'Online exams', 'icon' => 'cbt'],
             ['perm' => 'library.manage', 'route' => 'app.library.index', 'label' => 'Library', 'desc' => 'Books & loans', 'icon' => 'library'],
@@ -220,11 +224,14 @@ class SchoolDashboardService
     {
         $map = [
             'school.manage' => 'School setup',
+            'curriculum.manage' => 'Curriculum',
             'staff.manage' => 'Staff',
             'learners.manage' => 'Learners',
+            'learners.view' => 'Learners (view)',
             'finance.manage' => 'Finance',
             'finance.view' => 'Finance (view)',
             'attendance.mark' => 'Attendance',
+            'attendance.manage' => 'Attendance (school-wide)',
             'assessment.enter' => 'Enter marks',
             'assessment.manage' => 'Assessment',
             'assessment.view' => 'Assessment (view)',
@@ -240,12 +247,14 @@ class SchoolDashboardService
             'transport.manage' => 'Transport',
             'hostel.manage' => 'Hostel',
             'hr.manage' => 'HR',
+            'hr.view' => 'HR (view)',
             'clinic.manage' => 'Clinic',
             'helpdesk.manage' => 'Helpdesk',
             'helpdesk.create' => 'Helpdesk tickets',
             'emis.manage' => 'EMIS',
             'promotions.approve' => 'Promotions',
             'accounts.manage' => 'Accounts',
+            'reports.view' => 'Reports',
         ];
 
         $labels = [];
@@ -261,5 +270,17 @@ class SchoolDashboardService
     private function has(array $permissions, string $perm): bool
     {
         return in_array($perm, $permissions, true);
+    }
+
+    /** @param list<string> $permissions @param list<string> $perms */
+    private function hasAny(array $permissions, array $perms): bool
+    {
+        foreach ($perms as $perm) {
+            if ($this->has($permissions, $perm)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

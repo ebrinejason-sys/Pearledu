@@ -20,7 +20,9 @@ class AssessmentScopeTest extends TestCase
     use RefreshDatabase;
 
     private School $school;
+
     private AssessmentScope $scope;
+
     private AcademicYear $year;
 
     protected function setUp(): void
@@ -91,7 +93,7 @@ class AssessmentScopeTest extends TestCase
     public function test_school_admin_is_unrestricted(): void
     {
         $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
-        $class = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P1', 'code' => 'P1']);
+        $class = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P1 Scope', 'code' => 'P1-SCOPE']);
         $subject = Subject::create(['school_id' => $this->school->id, 'name' => 'English', 'code' => 'ENG']);
 
         $this->assertTrue($this->scope->canManage($admin, $this->school->id));
@@ -103,7 +105,7 @@ class AssessmentScopeTest extends TestCase
     public function test_ended_teaching_assignment_stops_access(): void
     {
         $teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
-        $class = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P2', 'code' => 'P2']);
+        $class = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P2 Scope', 'code' => 'P2-SCOPE']);
         $subject = Subject::create(['school_id' => $this->school->id, 'name' => 'Science', 'code' => 'SCI']);
 
         $this->assignTeacher($teacher, $class, $subject, [
@@ -117,7 +119,7 @@ class AssessmentScopeTest extends TestCase
     public function test_non_current_year_assignment_does_not_grant_access(): void
     {
         $teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
-        $class = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P6', 'code' => 'P6']);
+        $class = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P6 Scope', 'code' => 'P6-SCOPE']);
         $subject = Subject::create(['school_id' => $this->school->id, 'name' => 'Art', 'code' => 'ART']);
 
         $prior = AcademicYear::create([
@@ -138,6 +140,18 @@ class AssessmentScopeTest extends TestCase
         ]);
 
         $this->assertFalse($this->scope->canEnter($teacher, $this->school->id, $class->id, $subject->id));
+    }
+
+    public function test_head_teacher_views_all_classes(): void
+    {
+        $head = User::where('email', 'head@standrews.test')->firstOrFail();
+        $class = SchoolClass::create(['school_id' => $this->school->id, 'level' => 'primary', 'name' => 'P7', 'code' => 'P7H']);
+        $subject = Subject::create(['school_id' => $this->school->id, 'name' => 'History', 'code' => 'HIS']);
+
+        $this->assertFalse($this->scope->canManage($head, $this->school->id));
+        $this->assertFalse($this->scope->canEnter($head, $this->school->id, $class->id, $subject->id));
+        $this->assertTrue($this->scope->canViewClass($head, $this->school->id, $class->id));
+        $this->assertNull($this->scope->viewableClassIds($head, $this->school->id));
     }
 
     public function test_class_teacher_permissions_no_longer_include_enter(): void
