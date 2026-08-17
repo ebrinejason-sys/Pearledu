@@ -112,7 +112,7 @@
         </ul>
       @endif
 
-      @if(!empty($canManageLearners))
+      @if(!empty($canLinkGuardians))
       <h4>Attach existing member</h4>
       <form method="post" action="{{ route('app.students.guardians.store', $student) }}" style="margin-bottom:18px">
         @csrf

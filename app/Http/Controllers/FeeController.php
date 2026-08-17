@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Term;
 use App\Services\Academics\CurrentAcademicContext;
+use App\Services\Audit\AuditLogger;
 use App\Services\Fees\FeeInvoiceService;
 use App\Services\Fees\FeePaymentService;
 use App\Services\SchoolPay\SchoolPayPaymentService;
@@ -182,16 +183,20 @@ class FeeController extends Controller
         );
     }
 
-    public function voidInvoice(FeeInvoice $invoice, TenantContext $ctx, FeeInvoiceService $invoices)
+    public function voidInvoice(FeeInvoice $invoice, TenantContext $ctx, FeeInvoiceService $invoices, AuditLogger $audit, Request $request)
     {
         $school = $ctx->school();
         abort_unless($school && (int) $invoice->school_id === (int) $school->id, 404);
         $invoices->void($invoice);
+        $audit->record('fees.invoice.voided', $invoice, [
+            'reference' => $invoice->reference,
+            'amount' => $invoice->amount,
+        ], actor: $request->user());
 
         return back()->with('status', 'Invoice voided.');
     }
 
-    public function discountInvoice(Request $request, FeeInvoice $invoice, TenantContext $ctx, FeeInvoiceService $invoices)
+    public function discountInvoice(Request $request, FeeInvoice $invoice, TenantContext $ctx, FeeInvoiceService $invoices, AuditLogger $audit)
     {
         $school = $ctx->school();
         abort_unless($school && (int) $invoice->school_id === (int) $school->id, 404);
@@ -200,6 +205,10 @@ class FeeController extends Controller
             'reason' => 'required|string|max:190',
         ]);
         $invoices->applyDiscount($invoice, (float) $data['amount'], $data['reason'], $request->user()?->id);
+        $audit->record('fees.discount.applied', $invoice, [
+            'amount' => $data['amount'],
+            'reason' => $data['reason'],
+        ], actor: $request->user());
 
         return back()->with('status', 'Discount applied.');
     }
@@ -270,11 +279,15 @@ class FeeController extends Controller
         return back()->with('status', 'Payment rejected. Invoice balance unchanged.');
     }
 
-    public function reversePayment(FeePayment $payment, TenantContext $ctx, FeePaymentService $svc, Request $request)
+    public function reversePayment(FeePayment $payment, TenantContext $ctx, FeePaymentService $svc, Request $request, AuditLogger $audit)
     {
         $school = $ctx->school();
         abort_unless($school && (int) $payment->school_id === (int) $school->id, 404);
         $svc->reverse($payment, (int) $request->user()->id, $request->input('reason'));
+        $audit->record('fees.payment.reversed', $payment, [
+            'amount' => $payment->amount,
+            'reason' => $request->input('reason'),
+        ], actor: $request->user());
 
         return back()->with('status', 'Payment reversed. Invoice balance restored.');
     }

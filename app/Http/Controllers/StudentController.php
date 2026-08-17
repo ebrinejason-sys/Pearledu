@@ -28,15 +28,20 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
+        $classFilter = $request->integer('class_id') ?: null;
         $schoolId = $this->context->schoolId();
         abort_unless($schoolId && $request->user(), 403);
 
         $classIds = $this->learners->viewableClassIds($request->user(), $schoolId);
         abort_if($classIds === [], 403);
+        if ($classFilter && is_array($classIds) && ! in_array($classFilter, $classIds, true)) {
+            abort(403);
+        }
 
         $students = Student::query()
             ->with('schoolClass')
             ->when(is_array($classIds), fn ($query) => $query->whereIn('class_id', $classIds))
+            ->when($classFilter, fn ($query) => $query->where('class_id', $classFilter))
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('full_name', 'ilike', '%'.$q.'%')
@@ -84,11 +89,14 @@ class StudentController extends Controller
 
         $student->load(['schoolClass', 'guardianships.guardian', 'user', 'enrollments.academicYear', 'enrollments.schoolClass']);
         $canManageLearners = $this->learners->canMutateStudent($user, $schoolId, $student);
+        $canLinkGuardians = $this->learners->canLinkGuardian($user, $schoolId, $student);
         $canViewFinance = in_array('finance.view', $user->permissionsForSchool($schoolId), true)
             || in_array('finance.manage', $user->permissionsForSchool($schoolId), true);
         $statement = $canViewFinance ? $this->ledger->statement($student) : ['lines' => [], 'balance' => 0];
 
-        return view('app.students.show', compact('student', 'statement', 'canManageLearners', 'canViewFinance'));
+        return view('app.students.show', compact(
+            'student', 'statement', 'canManageLearners', 'canLinkGuardians', 'canViewFinance'
+        ));
     }
 
     public function edit(Student $student)
@@ -134,7 +142,9 @@ class StudentController extends Controller
     public function storeGuardian(Request $request, Student $student)
     {
         $this->assertTenantOwned($student);
-        $this->assertCanMutate($student);
+        $user = $request->user();
+        $schoolId = $this->context->schoolId();
+        abort_unless($user && $schoolId && $this->learners->canLinkGuardian($user, $schoolId, $student), 403);
         $mode = $request->input('mode', 'attach');
 
         if ($mode === 'invite') {

@@ -21,12 +21,12 @@ class RoleSeeder extends Seeder
             ['key' => 'director_of_studies', 'scope' => 'school', 'label' => 'Director of Studies'],
             ['key' => 'bursar', 'scope' => 'school', 'label' => 'Bursar'],
             ['key' => 'class_teacher', 'scope' => 'school', 'label' => 'Class Teacher'],
-            ['key' => 'subject_teacher', 'scope' => 'school', 'label' => 'Subject Teacher'],
+            ['key' => 'subject_teacher', 'scope' => 'school', 'label' => 'Teacher'],
             ['key' => 'parent', 'scope' => 'school', 'label' => 'Parent'],
             ['key' => 'student', 'scope' => 'school', 'label' => 'Student'],
         ];
         foreach ($roles as $r) {
-            Role::firstOrCreate(['key' => $r['key']], $r);
+            Role::updateOrCreate(['key' => $r['key']], $r);
         }
     }
 }

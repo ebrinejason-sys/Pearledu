@@ -21,6 +21,7 @@ class RolePermissionMatrixTest extends TestCase
     {
         $perms = $this->roles()['student'];
         $this->assertContains('self.fees.view', $perms);
+        $this->assertContains('self.attendance.view', $perms);
         $this->assertNotContains('fees.pay', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('finance.manage', $perms);
@@ -31,6 +32,7 @@ class RolePermissionMatrixTest extends TestCase
         $perms = $this->roles()['parent'];
         $this->assertContains('fees.pay', $perms);
         $this->assertContains('child.fees.view', $perms);
+        $this->assertContains('child.attendance.view', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('finance.manage', $perms);
     }
@@ -55,6 +57,8 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('finance.manage', $perms);
         $this->assertNotContains('learners.manage', $perms);
+        $this->assertContains('users.invite.parent', $perms);
+        $this->assertContains('class.view', $perms);
     }
 
     public function test_director_of_studies_manages_academics_not_finance_or_hr(): void
@@ -67,13 +71,19 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertNotContains('finance.manage', $perms);
         $this->assertNotContains('finance.view', $perms);
         $this->assertNotContains('hr.manage', $perms);
-        $this->assertNotContains('school.manage', $perms);
+        $this->assertNotContains('learners.manage', $perms);
+        $this->assertContains('learner.academic.manage', $perms);
+        $this->assertContains('enrollment.manage', $perms);
+        $this->assertContains('staff.invite.teacher', $perms);
+        $this->assertNotContains('staff.manage', $perms);
     }
 
     public function test_bursar_is_finance_only(): void
     {
         $perms = $this->roles()['bursar'];
         $this->assertContains('finance.manage', $perms);
+        $this->assertContains('fees.payment.reverse', $perms);
+        $this->assertContains('fees.invoice.void', $perms);
         $this->assertNotContains('assessment.view', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('learners.manage', $perms);

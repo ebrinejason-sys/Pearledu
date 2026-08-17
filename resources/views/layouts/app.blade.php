@@ -14,6 +14,19 @@
   *{box-sizing:border-box} html,body{margin:0}
   body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
   :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+  .skip-link{position:absolute;left:-9999px;top:8px;z-index:200;padding:10px 14px;background:var(--brand);color:var(--on-brand);border-radius:var(--radius-sm);font-weight:700}
+  .skip-link:focus,.skip-link:focus-visible{left:12px}
+  .breadcrumb{margin:0 0 14px;font-size:13px;color:var(--muted)}
+  .breadcrumb ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .breadcrumb li:not(:last-child)::after{content:"/";margin-left:6px;color:var(--line)}
+  .breadcrumb a{color:var(--muted)}
+  .breadcrumb [aria-current="page"]{color:var(--ink);font-weight:600}
+  .child-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+  .child-card{display:block;padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:inherit}
+  .child-card[aria-current="true"]{border-color:var(--brand);box-shadow:0 0 0 2px color-mix(in srgb, var(--brand) 25%, transparent)}
+  .child-card strong{display:block;font-size:15px}
+  .child-card span{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
+  .workspace-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
   a{color:var(--brand);text-decoration:none}
   .wrap{flex:1;min-width:0;max-width:1140px;padding:24px 20px 40px}
   .impersonation-banner{background:var(--warning-soft);border-bottom:1px solid var(--warning);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -34,6 +47,9 @@
     .brand .vx-logo{--vx-logo-h:22px;height:22px}
     .wrap{padding:16px 14px 32px}
     .page-header{margin-bottom:16px}
+    .page-header{margin-bottom:16px}
+    .btn{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+    input,select,textarea{min-height:44px;font-size:16px}
     table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   }
   .context-pill{font-size:12px;font-weight:600;color:var(--brand);background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:4px 12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -140,24 +156,48 @@
 @yield('head')
 </head>
 <body class="{{ request()->cookie('sidebar_collapsed') === '1' ? 'sidebar-collapsed' : '' }}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
   @auth
     @php($nav = $nav ?? app(\App\Services\Navigation\NavigationBuilder::class)->build(auth()->user()))
     @include('layouts.partials.topbar', ['nav' => $nav])
     <div class="app-shell">
       @include('layouts.partials.sidebar', ['nav' => $nav])
-      <div class="wrap">
-        @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
+      <main id="main-content" class="wrap" tabindex="-1">
+        @php
+          $crumbSection = null;
+          $crumbItem = null;
+          foreach ($nav['sections'] ?? [] as $section) {
+            foreach ($section['items'] ?? [] as $item) {
+              if (!empty($item['active'])) {
+                $crumbSection = $section['label'] ?? null;
+                $crumbItem = $item['label'] ?? null;
+              }
+            }
+          }
+        @endphp
+        @if(($nav['zone'] ?? '') === 'school' && $crumbItem && ! request()->routeIs('app.home'))
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol>
+              <li><a href="{{ route('app.home') }}">Home</a></li>
+              @if($crumbSection && $crumbSection !== 'Home')
+                <li>{{ $crumbSection }}</li>
+              @endif
+              <li aria-current="page">{{ $crumbItem }}</li>
+            </ol>
+          </nav>
+        @endif
+        @if(session('status'))<div class="status" role="status">{{ session('status') }}</div>@endif
         @yield('content')
-      </div>
+      </main>
     </div>
   @else
     <div class="topbar">
       @include('layouts.partials.brand', ['brandHref' => url('/login')])
     </div>
-    <div class="wrap">
-      @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
+    <main id="main-content" class="wrap" tabindex="-1">
+      @if(session('status'))<div class="status" role="status">{{ session('status') }}</div>@endif
       @yield('content')
-    </div>
+    </main>
   @endauth
 </body>
 </html>

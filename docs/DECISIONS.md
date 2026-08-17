@@ -51,3 +51,15 @@
 **Consequences:** Compromised accounts can still sign in with the old password until the staff member completes the reset (admins can Force logout separately).
 
 **Rollback/revisit:** If recovery must lock the account immediately, invalidate sessions and rotate the password in the same action.
+
+## 2026-08-17 — Role workspaces, scoped LMS/CBT, marksheet workflow
+
+**Problem:** School users shared one generic dashboard. LMS/CBT were not assignment-scoped. Class-teacher homeroom could not be edited safely. Parents/students had no attendance. DOS could invite teachers in policy but could not open Staff. Assessment had period statuses but no teacher submit → DOS verify step.
+
+**Decision:** Keep `PermissionResolver` + `config/permissions.php`. Add `LmsScope`, `CbtScope`, `MarksheetWorkflow`, `RoleWorkspaceService`. Split invite route permissions (`staff.invite.teacher`, `users.invite.parent`, `enrollment.manage`). User-facing Teacher label; internal key remains `subject_teacher`.
+
+**Reason:** Least privilege and the existing multi-role architecture. Navigation regrouping is permission-driven, not a second RBAC system.
+
+**Consequences:** Class teachers invite parents from the learner profile. DOS invites teachers from Staff but cannot revoke access or manage school identity. Submitted marksheets are locked for teachers.
+
+**Rollback/revisit:** Fee granular keys still OR with `finance.manage` so bursar/school admin are not locked out. A later pass can drop the broad key once every fee route is granular-only.

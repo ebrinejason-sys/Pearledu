@@ -3,6 +3,7 @@
 namespace App\Services\Portal;
 
 use App\Models\Announcement;
+use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
 use App\Models\FeeInvoice;
 use App\Models\Mark;
@@ -28,6 +29,7 @@ class PortalService
 
         if (in_array('child.results.view', $permissions, true)
             || in_array('child.fees.view', $permissions, true)
+            || in_array('child.attendance.view', $permissions, true)
             || in_array('fees.pay', $permissions, true)) {
             return Student::query()
                 ->where('school_id', $schoolId)
@@ -39,6 +41,7 @@ class PortalService
 
         if (in_array('self.results.view', $permissions, true)
             || in_array('self.fees.view', $permissions, true)
+            || in_array('self.attendance.view', $permissions, true)
             || in_array('self.timetable.view', $permissions, true)
             || in_array('lms.view', $permissions, true)
             || in_array('cbt.take', $permissions, true)) {
@@ -135,6 +138,17 @@ class PortalService
             })
             ->orderByDesc('id')
             ->limit(50)
+            ->get();
+    }
+
+    /** @return Collection<int, AttendanceRecord> */
+    public function attendance(Student $student): Collection
+    {
+        return AttendanceRecord::query()
+            ->where('student_id', $student->id)
+            ->where('school_id', $student->school_id)
+            ->orderByDesc('attended_on')
+            ->limit(40)
             ->get();
     }
 

@@ -32,9 +32,12 @@ class PortalController extends Controller
             'invoices' => $student ? $this->portal->invoices($student)->take(5) : collect(),
             'announcements' => $student ? $this->portal->announcements($student, $user)->take(5) : collect(),
             'resultsPreview' => $student ? $this->portal->results($student)->take(5) : collect(),
+            'attendancePreview' => $student ? $this->portal->attendance($student)->take(7) : collect(),
             'canViewFees' => in_array('child.fees.view', $user->permissionsForSchool($this->context->schoolId()), true)
                 || in_array('self.fees.view', $user->permissionsForSchool($this->context->schoolId()), true)
                 || in_array('fees.pay', $user->permissionsForSchool($this->context->schoolId()), true),
+            'canViewAttendance' => in_array('child.attendance.view', $user->permissionsForSchool($this->context->schoolId()), true)
+                || in_array('self.attendance.view', $user->permissionsForSchool($this->context->schoolId()), true),
         ]);
     }
 
@@ -129,6 +132,21 @@ class PortalController extends Controller
     {
         return $this->portalPage($request, 'app.portal.announcements', function ($user, $student) {
             return ['announcements' => $student ? $this->portal->announcements($student, $user) : collect()];
+        });
+    }
+
+    public function attendance(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->context->schoolId();
+        $perms = $user->permissionsForSchool($schoolId);
+        abort_unless(
+            in_array('child.attendance.view', $perms, true) || in_array('self.attendance.view', $perms, true),
+            403
+        );
+
+        return $this->portalPage($request, 'app.portal.attendance', function ($user, $student) {
+            return ['records' => $student ? $this->portal->attendance($student) : collect()];
         });
     }
 

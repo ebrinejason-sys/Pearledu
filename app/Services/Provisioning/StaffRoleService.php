@@ -22,7 +22,7 @@ class StaffRoleService
     /**
      * @param  list<string>  $roleKeys
      */
-    public function sync(School $school, User $target, array $roleKeys, User $actor, bool $asPlatform = false): void
+    public function sync(School $school, User $target, array $roleKeys, User $actor, bool $asPlatform = false, ?int $classId = null): void
     {
         if ($target->is_platform) {
             throw ValidationException::withMessages(['user' => 'Platform accounts are managed under PearlEdu staff.']);
@@ -54,7 +54,24 @@ class StaffRoleService
             }
         }
 
-        DB::transaction(function () use ($school, $target, $roleKeys, $roleIdsByKey, $actor) {
+        $wantsHomeroom = in_array(Role::CLASS_TEACHER, $roleKeys, true);
+        $classTeacherRoleId = Role::query()->where('key', Role::CLASS_TEACHER)->value('id');
+        $existingHomeroom = RoleAssignment::query()
+            ->where('user_id', $target->id)
+            ->where('school_id', $school->id)
+            ->where('role_id', $classTeacherRoleId)
+            ->where('is_active', true)
+            ->first();
+
+        if ($wantsHomeroom) {
+            $resolvedClassId = $classId ?: ($existingHomeroom?->class_id ? (int) $existingHomeroom->class_id : null);
+            if (! $resolvedClassId) {
+                throw ValidationException::withMessages(['class_id' => 'Choose a homeroom class for the class teacher.']);
+            }
+            $classId = $resolvedClassId;
+        }
+
+        DB::transaction(function () use ($school, $target, $roleKeys, $roleIdsByKey, $actor, $classId) {
             $keepIds = $roleIdsByKey->values()->all();
 
             RoleAssignment::query()
@@ -65,12 +82,28 @@ class StaffRoleService
                 ->update(['is_active' => false, 'ends_on' => now()]);
 
             foreach ($roleKeys as $key) {
-                RoleAssignment::firstOrCreate([
+                $roleId = $roleIdsByKey[$key];
+                $assignment = RoleAssignment::query()
+                    ->where('user_id', $target->id)
+                    ->where('role_id', $roleId)
+                    ->where('school_id', $school->id)
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($assignment) {
+                    if ($key === Role::CLASS_TEACHER && $classId) {
+                        $assignment->update(['class_id' => $classId, 'assigned_by' => $actor->id]);
+                    }
+
+                    continue;
+                }
+
+                RoleAssignment::create([
                     'user_id' => $target->id,
-                    'role_id' => $roleIdsByKey[$key],
+                    'role_id' => $roleId,
                     'school_id' => $school->id,
+                    'class_id' => $key === Role::CLASS_TEACHER ? $classId : null,
                     'is_active' => true,
-                ], [
                     'assigned_by' => $actor->id,
                 ]);
             }
@@ -79,6 +112,7 @@ class StaffRoleService
         $this->audit->record('staff.roles_updated', $target, [
             'school_id' => $school->id,
             'role_keys' => $roleKeys,
+            'class_id' => $wantsHomeroom ? $classId : null,
             'actor_id' => $actor->id,
         ], actor: $actor);
     }

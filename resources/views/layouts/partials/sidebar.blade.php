@@ -40,7 +40,7 @@
   $collapsed = request()->cookie('sidebar_collapsed') === '1';
 @endphp
 
-<div class="sidebar-backdrop" onclick="document.body.classList.remove('sidebar-open')"></div>
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
 <aside id="app-sidebar" class="sidebar" aria-label="Section navigation">
   <nav class="sidebar__nav">
@@ -93,4 +93,32 @@
     var collapsed = document.body.classList.toggle('sidebar-collapsed');
     document.cookie = 'sidebar_collapsed=' + (collapsed ? '1' : '0') + ';path=/;max-age=31536000;SameSite=Lax';
   };
+  (function () {
+    var btn = document.getElementById('sidebar-open-btn');
+    var backdrop = document.getElementById('sidebar-backdrop');
+    var sidebar = document.getElementById('app-sidebar');
+    function setOpen(open) {
+      document.body.classList.toggle('sidebar-open', open);
+      if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (btn) btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    }
+    if (btn) {
+      btn.addEventListener('click', function () {
+        setOpen(!document.body.classList.contains('sidebar-open'));
+      });
+    }
+    if (backdrop) {
+      backdrop.addEventListener('click', function () { setOpen(false); });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+    if (sidebar) {
+      sidebar.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          if (window.matchMedia('(max-width: 800px)').matches) setOpen(false);
+        });
+      });
+    }
+  })();
 </script>

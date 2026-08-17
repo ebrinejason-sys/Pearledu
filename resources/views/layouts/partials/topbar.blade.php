@@ -22,8 +22,9 @@
 
 <header class="app-header">
   <div class="app-header__row">
-    <button type="button" class="sidebar-toggle sidebar-toggle--mobile" aria-label="Open menu" aria-expanded="false" aria-controls="app-sidebar" onclick="document.body.classList.toggle('sidebar-open')">
+    <button type="button" class="sidebar-toggle sidebar-toggle--mobile" aria-label="Open menu" aria-expanded="false" aria-controls="app-sidebar" id="sidebar-open-btn">
       <span aria-hidden="true">☰</span>
+      <span class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Menu</span>
     </button>
 
     @include('layouts.partials.brand', [
@@ -34,6 +35,9 @@
       <span class="context-pill" title="School workspace">Workspace · {{ $nav['school']['name'] }}</span>
     @elseif(!empty($nav['school']))
       <span class="context-pill" title="Current school">{{ $nav['school']['name'] }}</span>
+      @if(!empty($nav['school']['term_label']))
+        <span class="context-pill context-pill--platform" title="Current term">{{ $nav['school']['term_label'] }}</span>
+      @endif
     @elseif(($nav['zone'] ?? '') === 'platform')
       <span class="context-pill context-pill--platform">Platform console</span>
     @endif

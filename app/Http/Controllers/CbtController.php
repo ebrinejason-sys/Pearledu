@@ -9,23 +9,34 @@ use App\Models\CbtQuestion;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Services\Authorization\CbtScope;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CbtController extends Controller
 {
+    public function __construct(private CbtScope $scope) {}
+
     public function index(Request $request, TenantContext $ctx)
     {
         $school = $ctx->school();
         abort_unless($school, 404);
-        $perms = $request->user()->permissionsForSchool($school->id);
+        $user = $request->user();
+        $perms = $user->permissionsForSchool($school->id);
         $canManage = in_array('cbt.manage', $perms, true);
 
         if ($canManage) {
-            $exams = CbtExam::where('school_id', $school->id)->withCount('questions')->orderByDesc('id')->get();
+            $classIds = $this->scope->writableClassIds($user, $school->id);
+            $exams = CbtExam::where('school_id', $school->id)
+                ->when(is_array($classIds), fn ($q) => $q->where(function ($inner) use ($classIds) {
+                    $inner->whereNull('class_id')->orWhereIn('class_id', $classIds ?: [0]);
+                }))
+                ->withCount('questions')->orderByDesc('id')->get();
             $subjects = Subject::where('school_id', $school->id)->orderBy('name')->get();
-            $classes = SchoolClass::where('school_id', $school->id)->orderBy('name')->get();
+            $classes = SchoolClass::where('school_id', $school->id)
+                ->when(is_array($classIds), fn ($q) => $q->whereIn('id', $classIds))
+                ->orderBy('name')->get();
 
             return view('app.cbt.index', compact('school', 'exams', 'subjects', 'classes', 'canManage'));
         }
@@ -53,6 +64,12 @@ class CbtController extends Controller
             'subject_id' => 'nullable|integer|exists:subjects,id',
             'class_id' => 'nullable|integer|exists:school_classes,id',
         ]);
+        abort_unless($this->scope->canWrite(
+            $request->user(),
+            $school->id,
+            isset($data['class_id']) ? (int) $data['class_id'] : null,
+            isset($data['subject_id']) ? (int) $data['subject_id'] : null,
+        ), 403, 'You can only create exams for your assigned class and subject.');
         CbtExam::create($data + ['school_id' => $school->id, 'duration_minutes' => $data['duration_minutes'] ?? 30]);
 
         return back()->with('status', 'Exam created.');
@@ -72,6 +89,13 @@ class CbtController extends Controller
             'correct_key' => 'required|in:a,b,c,d',
             'points' => 'nullable|numeric|min:0',
         ]);
+        $exam = CbtExam::where('school_id', $school->id)->findOrFail($data['exam_id']);
+        abort_unless($this->scope->canWrite(
+            $request->user(),
+            $school->id,
+            $exam->class_id ? (int) $exam->class_id : null,
+            $exam->subject_id ? (int) $exam->subject_id : null,
+        ), 403, 'You can only add questions to exams for your assigned class and subject.');
         $choices = array_filter([
             'a' => $data['choice_a'],
             'b' => $data['choice_b'],
@@ -94,6 +118,12 @@ class CbtController extends Controller
     {
         $school = $ctx->school();
         abort_unless($school && (int) $exam->school_id === (int) $school->id, 404);
+        abort_unless($this->scope->canWrite(
+            request()->user(),
+            $school->id,
+            $exam->class_id ? (int) $exam->class_id : null,
+            $exam->subject_id ? (int) $exam->subject_id : null,
+        ), 403);
         $exam->update(['is_published' => ! $exam->is_published]);
 
         return back()->with('status', $exam->is_published ? 'Exam published.' : 'Exam unpublished.');

@@ -37,9 +37,11 @@ class StaffController extends Controller
                 'user' => $assignments->first()->user,
                 'roles' => $assignments->map(fn ($a) => [
                     'label' => $a->role?->label,
-                    'class' => $a->schoolClass?->name,
+                    'class' => $a->schoolClass?->displayName() ?? $a->schoolClass?->name,
+                    'key' => $a->role?->key,
                 ])->unique(fn ($r) => $r['label'].'|'.$r['class'])->values()->all(),
                 'role_keys' => $assignments->pluck('role.key')->filter()->unique()->values()->all(),
+                'homeroom_class_id' => $assignments->first(fn ($a) => $a->role?->key === 'class_teacher')?->class_id,
             ])
             ->filter(fn ($m) => $m['user'] !== null)
             ->sortBy(fn ($m) => $m['user']->full_name ?? '')
@@ -53,7 +55,9 @@ class StaffController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return view('app.staff.index', compact('school', 'members', 'openInvites', 'roles', 'classes'));
+        $canManageStaff = in_array('staff.manage', $request->user()->permissionsForSchool($school->id), true);
+
+        return view('app.staff.index', compact('school', 'members', 'openInvites', 'roles', 'classes', 'canManageStaff'));
     }
 
     public function store(Request $request, TenantContext $context, StaffInvitationService $inviter, InvitePolicy $policy)
@@ -114,9 +118,11 @@ class StaffController extends Controller
                 $allowed,
                 $user->activeAssignments()->where('school_id', $school->id)->with('role')->get()->pluck('role.key')->filter()->all()
             ))))],
+            'class_id' => 'nullable|integer|exists:school_classes,id',
         ]);
 
-        $roles->sync($school, $user, $data['role_keys'], $request->user(), false);
+        $classId = ! empty($data['class_id']) ? (int) $data['class_id'] : null;
+        $roles->sync($school, $user, $data['role_keys'], $request->user(), false, $classId);
 
         return back()->with('status', 'Roles updated for '.$user->full_name.'.');
     }

@@ -8,25 +8,41 @@ use App\Models\LmsSubmission;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Services\Authorization\LmsScope;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class LmsController extends Controller
 {
+    public function __construct(private LmsScope $scope) {}
+
     public function index(Request $request, TenantContext $ctx)
     {
         $school = $ctx->school();
         abort_unless($school, 404);
-        $perms = $request->user()->permissionsForSchool($school->id);
+        $user = $request->user();
+        $perms = $user->permissionsForSchool($school->id);
         $canManage = in_array('lms.manage', $perms, true);
 
         if ($canManage) {
-            $materials = LmsMaterial::where('school_id', $school->id)->with(['subject', 'schoolClass'])->orderByDesc('id')->get();
-            $assignments = LmsAssignment::where('school_id', $school->id)->with(['subject', 'schoolClass'])->orderByDesc('id')->get();
+            $classIds = $this->scope->writableClassIds($user, $school->id);
+            $materials = LmsMaterial::where('school_id', $school->id)
+                ->when(is_array($classIds), fn ($q) => $q->where(function ($inner) use ($classIds) {
+                    $inner->whereNull('class_id')->orWhereIn('class_id', $classIds ?: [0]);
+                }))
+                ->with(['subject', 'schoolClass'])->orderByDesc('id')->get();
+            $assignments = LmsAssignment::where('school_id', $school->id)
+                ->when(is_array($classIds), fn ($q) => $q->where(function ($inner) use ($classIds) {
+                    $inner->whereNull('class_id')->orWhereIn('class_id', $classIds ?: [0]);
+                }))
+                ->with(['subject', 'schoolClass'])->orderByDesc('id')->get();
             $subjects = Subject::where('school_id', $school->id)->orderBy('name')->get();
-            $classes = SchoolClass::where('school_id', $school->id)->orderBy('name')->get();
+            $classes = SchoolClass::where('school_id', $school->id)
+                ->when(is_array($classIds), fn ($q) => $q->whereIn('id', $classIds))
+                ->orderBy('name')->get();
             $submissions = LmsSubmission::where('school_id', $school->id)
+                ->whereIn('assignment_id', $assignments->pluck('id')->all() ?: [0])
                 ->with(['assignment', 'student'])->orderByDesc('id')->limit(100)->get();
 
             return view('app.lms.index', compact('school', 'materials', 'assignments', 'subjects', 'classes', 'submissions', 'canManage'));
@@ -60,6 +76,12 @@ class LmsController extends Controller
             'subject_id' => 'nullable|integer|exists:subjects,id',
             'class_id' => 'nullable|integer|exists:school_classes,id',
         ]);
+        abort_unless($this->scope->canWrite(
+            $request->user(),
+            $school->id,
+            isset($data['class_id']) ? (int) $data['class_id'] : null,
+            isset($data['subject_id']) ? (int) $data['subject_id'] : null,
+        ), 403, 'You can only post materials for your assigned class and subject.');
         LmsMaterial::create($data + ['school_id' => $school->id, 'created_by' => $request->user()->id]);
 
         return back()->with('status', 'Material posted.');
@@ -76,6 +98,12 @@ class LmsController extends Controller
             'subject_id' => 'nullable|integer|exists:subjects,id',
             'class_id' => 'nullable|integer|exists:school_classes,id',
         ]);
+        abort_unless($this->scope->canWrite(
+            $request->user(),
+            $school->id,
+            isset($data['class_id']) ? (int) $data['class_id'] : null,
+            isset($data['subject_id']) ? (int) $data['subject_id'] : null,
+        ), 403, 'You can only create assignments for your assigned class and subject.');
         LmsAssignment::create($data + ['school_id' => $school->id, 'created_by' => $request->user()->id]);
 
         return back()->with('status', 'Assignment created.');
@@ -122,6 +150,13 @@ class LmsController extends Controller
     {
         $school = $ctx->school();
         abort_unless($school && (int) $submission->school_id === (int) $school->id, 404);
+        $submission->loadMissing('assignment');
+        abort_unless($this->scope->canWrite(
+            $request->user(),
+            $school->id,
+            $submission->assignment?->class_id ? (int) $submission->assignment->class_id : null,
+            $submission->assignment?->subject_id ? (int) $submission->assignment->subject_id : null,
+        ), 403, 'You can only grade submissions for your assigned class and subject.');
         $data = $request->validate([
             'score' => 'required|numeric|min:0|max:100',
             'feedback' => 'nullable|string|max:2000',

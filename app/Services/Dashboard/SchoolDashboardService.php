@@ -126,10 +126,10 @@ class SchoolDashboardService
 
         return [
             'stats' => $stats,
-            'classChart' => $this->hasAny($permissions, ['learners.manage', 'school.manage', 'finance.manage'])
+            'classChart' => $this->hasAny($permissions, ['learners.manage', 'school.manage', 'curriculum.manage', 'staff.manage'])
                 ? $this->classEnrollmentChart($schoolId)
                 : [],
-            'feeChart' => $this->has($permissions, 'finance.manage')
+            'feeChart' => $this->hasAny($permissions, ['finance.manage', 'finance.view', 'finance.report.view'])
                 ? $this->feeCollectionChart($schoolId)
                 : [],
             'shortcuts' => $this->shortcuts($permissions, $school),
@@ -206,6 +206,7 @@ class SchoolDashboardService
             ['perm' => 'learners.manage', 'route' => 'app.students.index', 'label' => 'Students', 'desc' => 'Records & guardians', 'icon' => 'students'],
             ['perm' => 'learners.view', 'route' => 'app.students.index', 'label' => 'Students', 'desc' => 'Learner profiles', 'icon' => 'students'],
             ['perm' => 'learners.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
+            ['perm' => 'enrollment.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
             ['perm' => 'admissions.manage', 'route' => 'app.admissions.index', 'label' => 'Admissions', 'desc' => 'Applications queue', 'icon' => 'admissions'],
             ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'params' => ['status' => 'demanded'], 'label' => 'Demanded fees', 'desc' => 'Students still owing', 'icon' => 'fees'],
             ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'params' => ['status' => 'cleared'], 'label' => 'Cleared fees', 'desc' => 'Paid in full', 'icon' => 'fees'],
@@ -213,11 +214,14 @@ class SchoolDashboardService
             ['perm' => 'finance.view', 'route' => 'app.fees.index', 'label' => 'Fees', 'desc' => 'Fee statements', 'icon' => 'fees'],
             ['perm' => 'attendance.mark', 'route' => 'app.attendance.index', 'label' => 'Attendance', 'desc' => 'Daily register', 'icon' => 'attendance'],
             ['perm' => 'attendance.manage', 'route' => 'app.attendance.index', 'label' => 'Attendance', 'desc' => 'Daily register', 'icon' => 'attendance'],
+            ['perm' => 'assessment.enter', 'route' => 'app.teaching.mine', 'label' => 'My Teaching', 'desc' => 'Lessons, marks, LMS', 'icon' => 'teaching'],
+            ['perm' => 'class.view', 'route' => 'app.teaching.homeroom', 'label' => 'My Class', 'desc' => 'Homeroom roster', 'icon' => 'classes'],
             ['perm' => 'assessment.enter', 'route' => 'app.assessment.marks', 'label' => 'Enter marks', 'desc' => 'Assessment entry', 'icon' => 'assessment'],
             ['perm' => 'assessment.manage', 'route' => 'app.assessment.index', 'label' => 'Assessment', 'desc' => 'Periods & reports', 'icon' => 'assessment'],
             ['perm' => 'timetable.manage', 'route' => 'app.timetable.index', 'label' => 'Timetable', 'desc' => 'Days, periods, generate', 'icon' => 'timetable'],
             ['perm' => 'timetable.manage', 'route' => 'app.teaching.index', 'label' => 'Teaching load', 'desc' => 'Who teaches what', 'icon' => 'teaching'],
             ['perm' => 'staff.manage', 'route' => 'app.staff.index', 'label' => 'Staff', 'desc' => 'Roles & invites', 'icon' => 'staff'],
+            ['perm' => 'staff.invite.teacher', 'route' => 'app.staff.index', 'label' => 'Staff', 'desc' => 'Invite teachers', 'icon' => 'staff'],
             ['perm' => 'sms.send', 'route' => 'app.sms', 'label' => 'Send SMS', 'desc' => 'Parent messages', 'icon' => 'sms'],
             ['perm' => 'announcements.manage', 'route' => 'app.announcements.index', 'label' => 'Announcements', 'desc' => 'School notices', 'icon' => 'announcements'],
             ['perm' => 'school.manage', 'route' => 'app.settings.school', 'label' => 'School identity', 'desc' => 'Theme & features', 'icon' => 'platform'],

@@ -64,6 +64,16 @@ class LearnerScope
             && $this->canViewStudent($user, $schoolId, $student);
     }
 
+    public function canLinkGuardian(User $user, int $schoolId, Student $student): bool
+    {
+        if (! $this->canViewStudent($user, $schoolId, $student)) {
+            return false;
+        }
+
+        return $this->canMutateAnywhere($user, $schoolId)
+            || $this->has($user, $schoolId, 'users.invite.parent');
+    }
+
     private function has(User $user, int $schoolId, string $permission): bool
     {
         return in_array($permission, $user->permissionsForSchool($schoolId), true);

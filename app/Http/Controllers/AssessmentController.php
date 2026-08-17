@@ -11,6 +11,7 @@ use App\Models\Term;
 use App\Services\Academics\CurrentAcademicContext;
 use App\Services\Assessment\AssessmentPeriodWorkflow;
 use App\Services\Assessment\MarksheetService;
+use App\Services\Assessment\MarksheetWorkflow;
 use App\Services\Authorization\AssessmentScope;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,6 +24,7 @@ class AssessmentController extends Controller
         private AssessmentScope $scope,
         private AssessmentPeriodWorkflow $workflow,
         private CurrentAcademicContext $academic,
+        private MarksheetWorkflow $marksheets,
     ) {}
 
     public function index(TenantContext $context)
@@ -134,12 +136,28 @@ class AssessmentController extends Controller
 
         $hasAssignments = $this->scope->canManage($user, $school->id) || $classes->isNotEmpty();
         $period = $periods->firstWhere('id', $periodId);
-        $canEnterMarks = $period ? $this->workflow->canEnterMarks($period) : false;
+        $marksheet = ($period && $classId && $subjectId)
+            ? $this->marksheets->find($school->id, (int) $period->id, $classId, $subjectId)
+            : null;
+        $canEnterMarks = $period ? $this->marksheets->canEditMarks($user, $period, $marksheet) : false;
+        $perms = $user->permissionsForSchool($school->id);
+        $canSubmitMarksheet = $period
+            && $classId
+            && $subjectId
+            && $this->workflow->canEnterMarks($period)
+            && in_array('marksheet.submit', $perms, true)
+            && ($marksheet === null || $marksheet->status === 'draft');
+        $canVerifyMarksheet = $marksheet?->status === 'submitted'
+            && in_array('marksheet.verify', $perms, true);
+        $canReturnMarksheet = $marksheet
+            && in_array($marksheet->status, ['submitted', 'verified'], true)
+            && $this->scope->canManage($user, $school->id);
 
         return view('app.assessment.marks', compact(
             'school', 'periods', 'classes', 'subjects',
             'periodId', 'classId', 'subjectId', 'students', 'existing', 'hasAssignments',
-            'period', 'canEnterMarks'
+            'period', 'canEnterMarks', 'marksheet',
+            'canSubmitMarksheet', 'canVerifyMarksheet', 'canReturnMarksheet'
         ));
     }
 
@@ -166,6 +184,11 @@ class AssessmentController extends Controller
         $subjectId = (int) $data['subject_id'];
 
         abort_unless($this->scope->canEnter($user, $school->id, $classId, $subjectId), 403);
+
+        $period = AssessmentPeriod::query()->findOrFail((int) $data['period_id']);
+        abort_unless((int) $period->school_id === (int) $school->id, 404);
+        $sheet = $this->marksheets->find($school->id, (int) $period->id, $classId, $subjectId);
+        abort_unless($this->marksheets->canEditMarks($user, $period, $sheet), 403, 'This marksheet is locked. Submit, verify, or return it first.');
 
         $studentIds = collect($data['rows'])->pluck('student_id')->map(fn ($id) => (int) $id)->all();
         $validCount = Student::query()
@@ -199,6 +222,42 @@ class AssessmentController extends Controller
         );
 
         return back()->with('status', 'Marks saved.');
+    }
+
+    public function submitMarksheet(Request $request, TenantContext $context)
+    {
+        return $this->transitionMarksheet($request, $context, 'submit');
+    }
+
+    public function verifyMarksheet(Request $request, TenantContext $context)
+    {
+        return $this->transitionMarksheet($request, $context, 'verify');
+    }
+
+    public function returnMarksheet(Request $request, TenantContext $context)
+    {
+        return $this->transitionMarksheet($request, $context, 'return');
+    }
+
+    private function transitionMarksheet(Request $request, TenantContext $context, string $action)
+    {
+        $school = $context->school();
+        abort_unless($school, 404);
+        $data = $request->validate([
+            'period_id' => 'required|integer|exists:assessment_periods,id',
+            'class_id' => 'required|integer|exists:school_classes,id',
+            'subject_id' => 'required|integer|exists:subjects,id',
+        ]);
+        $period = AssessmentPeriod::query()->findOrFail((int) $data['period_id']);
+        abort_unless((int) $period->school_id === (int) $school->id, 404);
+
+        $sheet = match ($action) {
+            'submit' => $this->marksheets->submit($request->user(), $period, (int) $data['class_id'], (int) $data['subject_id']),
+            'verify' => $this->marksheets->verify($request->user(), $period, (int) $data['class_id'], (int) $data['subject_id']),
+            default => $this->marksheets->returnToDraft($request->user(), $period, (int) $data['class_id'], (int) $data['subject_id']),
+        };
+
+        return back()->with('status', 'Marksheet is now '.$sheet->status.'.');
     }
 
     public function broadsheet(Request $request, TenantContext $context, MarksheetService $marks)
