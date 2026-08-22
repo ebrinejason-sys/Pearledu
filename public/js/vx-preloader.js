@@ -6,8 +6,12 @@ export function runPreloader(container, opts) {
   var HOLD_MS = 350;
   var FADE_MS = 400;
 
-  var lines = Array.prototype.slice.call(container.querySelectorAll('line[data-index]'));
-  if (!lines.length) { onDone(); return; }
+  var marks = Array.prototype.slice.call(container.querySelectorAll('[data-index]'));
+  if (!marks.length) { onDone(); return; }
+
+  function isStrokeLine(el) {
+    return el.tagName && el.tagName.toLowerCase() === 'line';
+  }
 
   function lineLength(line) {
     var x1 = parseFloat(line.getAttribute('x1'));
@@ -15,29 +19,44 @@ export function runPreloader(container, opts) {
     return Math.abs(x2 - x1);
   }
 
-  lines.forEach(function (line) {
-    var len = lineLength(line);
-    line.style.strokeDasharray = String(len);
-    line.style.strokeDashoffset = String(len);
-    line.style.transition = 'none';
+  marks.forEach(function (el) {
+    el.style.transition = 'none';
+    if (isStrokeLine(el)) {
+      var len = lineLength(el);
+      el.style.strokeDasharray = String(len);
+      el.style.strokeDashoffset = String(len);
+    } else {
+      el.style.opacity = '0';
+    }
   });
 
   if (reduceMotion) {
-    lines.forEach(function (line) { line.style.strokeDashoffset = '0'; });
+    marks.forEach(function (el) {
+      if (isStrokeLine(el)) {
+        el.style.strokeDashoffset = '0';
+      } else {
+        el.style.opacity = '1';
+      }
+    });
     fadeOut();
     return;
   }
 
-  var maxAbsIndex = lines.reduce(function (max, line) {
-    return Math.max(max, Math.abs(parseInt(line.getAttribute('data-index'), 10)));
+  var maxAbsIndex = marks.reduce(function (max, el) {
+    return Math.max(max, Math.abs(parseInt(el.getAttribute('data-index'), 10)));
   }, 0);
 
   requestAnimationFrame(function () {
-    lines.forEach(function (line) {
-      var idx = Math.abs(parseInt(line.getAttribute('data-index'), 10));
+    marks.forEach(function (el) {
+      var idx = Math.abs(parseInt(el.getAttribute('data-index'), 10));
       var delay = idx * STAGGER_MS;
-      line.style.transition = 'stroke-dashoffset ' + REVEAL_MS + 'ms ease-out ' + delay + 'ms';
-      line.style.strokeDashoffset = '0';
+      if (isStrokeLine(el)) {
+        el.style.transition = 'stroke-dashoffset ' + REVEAL_MS + 'ms ease-out ' + delay + 'ms';
+        el.style.strokeDashoffset = '0';
+      } else {
+        el.style.transition = 'opacity ' + REVEAL_MS + 'ms ease-out ' + delay + 'ms';
+        el.style.opacity = '1';
+      }
     });
   });
 

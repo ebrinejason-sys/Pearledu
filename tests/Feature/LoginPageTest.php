@@ -83,6 +83,9 @@ class LoginPageTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('id="vx-preloader"', false);
         $response->assertSee('id="vx-preloader-lines"', false);
+        $response->assertSee('data-index="-10"', false);
+        $response->assertSee('data-index="0"', false);
+        $response->assertDontSee('x1="35.97"', false);
         $response->assertSee('vx-preloader-shown', false);
         $response->assertSee("import('/js/vx-preloader.js')", false);
     }
@@ -93,7 +96,9 @@ class LoginPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('class="vx-logo"', false);
+        $response->assertSee('viewBox="30 30 340 340"', false);
         $response->assertDontSee('logo.png', false);
+        $response->assertDontSee('voxsign-logo.svg', false);
     }
 
     public function test_login_page_uses_equal_split_and_shared_favicons(): void
@@ -102,6 +107,7 @@ class LoginPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('grid-template-columns:1fr 1fr', false);
+        $response->assertSee('favicon.svg', false);
         $response->assertSee('favicon.ico', false);
         $response->assertSee('apple-touch-icon.png', false);
     }

@@ -172,5 +172,16 @@
 
 **Rollback/revisit:** Do not grant reverse/reject to director or head. School admin remains break-glass only.
 
+## 2026-08-22 — Product mark is the 21-chord sphere, system-wide
+
+**Problem:** The filled scanline sphere (the current PearlEdu / VoxSign mark) lived in several Blade copies. Login used a stroke-line reconstruction for the preloader. Favicons preferred PNG/ICO and did not advertise `favicon.svg`. The traced `voxsign-logo.svg` dump is not the product mark.
+
+**Decision:** `layouts.partials.logo` is the single inline source (21 filled chords, `viewBox="30 30 340 340"`). Auth, app chrome, marketing, PearlEdu landing, email, and the login preloader include that partial. Favicons and the PWA manifest lead with `favicon.svg`. School `logo_path` remains a per-school crest, not the product mark. Do not use `voxsign-logo.svg` in the UI.
+
+**Reason:** One geometry, recolored with `currentColor` / theme tokens. The preloader should reveal the same mark staff already see in the sidebar, not a different line drawing.
+
+**Consequences:** Raster PNG/ICO remain as fallbacks for clients that ignore SVG icons. Apple touch icons stay PNG.
+
+**Rollback/revisit:** Do not replace a school's uploaded crest with the PearlEdu sphere.
 
 
