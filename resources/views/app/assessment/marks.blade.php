@@ -58,7 +58,7 @@
         @endif
       </p>
     @endif
-    <form method="post" action="{{ route('app.assessment.marks.store') }}">
+    <form method="post" action="{{ route('app.assessment.marks.store') }}" data-offline-queue="marks">
       @csrf
       <input type="hidden" name="period_id" value="{{ $periodId }}">
       <input type="hidden" name="class_id" value="{{ $classId }}">

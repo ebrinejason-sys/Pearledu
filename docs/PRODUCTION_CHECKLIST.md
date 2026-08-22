@@ -115,7 +115,18 @@ Then: Git Version Control → Update from Remote → Deploy HEAD (ongoing deploy
 8. Sign in as bursar and confirm Assessment is forbidden; sign in as DOS and confirm Fees is forbidden  
 9. Send one SMS only after Twilio is configured  
 
-Do **not** run `php artisan school:seed-walkthrough` on the live server. That command seeds a local demonstration primary (Baby–P7) with a shared password and is refused when `APP_ENV=production`.
+### Online walkthrough school (optional)
+
+To click through roles on the live host, SSH in and run **once**:
+
+```bash
+cd /home/voxsignco/pearledu-app
+php artisan school:seed-walkthrough --password='Choose-a-long-password' --force
+```
+
+Then sign in at `/login` with `admin@stkizito.test`, `head@stkizito.test`, `dos@stkizito.test`, `bursar@stkizito.test`, `english@stkizito.test`, `ct.p4@stkizito.test`, and so on (same password). Attendance and marks keep a local copy if the phone loses signal; fees still need a connection.
+
+Do **not** put `SEED_TEST_SCHOOL_PASSWORD` in the live `.env` (`app:production-check` fails if it is set). When testing is finished, purge **St. Kizito Demonstration Primary** from the platform school page.
 
 ## E. Reply with these when ready (I can verify the checklist wording against them — do not paste live secrets into chat if you prefer not to)
 

@@ -28,7 +28,7 @@
 
   @if($students->isNotEmpty() && !empty($canMark))
   <div class="card">
-    <form method="post" action="{{ route('app.attendance.store') }}">
+    <form method="post" action="{{ route('app.attendance.store') }}" data-offline-queue="attendance">
       @csrf
       <input type="hidden" name="class_id" value="{{ $classId }}">
       <input type="hidden" name="attended_on" value="{{ $date }}">

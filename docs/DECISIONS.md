@@ -80,11 +80,23 @@
 
 **Problem:** First-school testing needed Baby–P7 filled (~100 learners) and named staff logins. `DemoTenantSeeder` stays passwordless for CI.
 
-**Decision:** Add `php artisan school:seed-walkthrough` backed by `WalkthroughSchoolService`. It calls `SchoolProvisioner`, `role_assignments`, enrollments, and `config/permissions.php`. It refuses `APP_ENV=production`. Passwords come from `--password` or `SEED_TEST_SCHOOL_PASSWORD` (never a committed default).
+**Decision:** Add `php artisan school:seed-walkthrough` backed by `WalkthroughSchoolService`. It calls `SchoolProvisioner`, `role_assignments`, enrollments, and `config/permissions.php`. Production refuses the command unless `--force` is passed (password on the CLI only). `SEED_TEST_SCHOOL_PASSWORD` must stay unset on the live `.env`.
 
-**Reason:** Operators can click through each role without inventing a parallel RBAC or bloating PHPUnit’s demo tenant.
+**Reason:** Operators can click through each role on a laptop or on the live host without inventing a parallel RBAC or bloating PHPUnit’s demo tenant.
 
-**Consequences:** Kindergarten remains an empty scaffold class. Homeroom teachers do not receive `assessment.enter`; English/Maths subject teachers do, scoped by teaching assignments.
+**Consequences:** Kindergarten remains an empty scaffold class. Homeroom teachers do not receive `assessment.enter`; English/Maths subject teachers do, scoped by teaching assignments. Purge EMIS `1999001` from the platform console when online testing is finished.
 
-**Rollback/revisit:** Delete the walkthrough school from the platform console if a local database should be empty again.
+**Rollback/revisit:** Delete the walkthrough school from the platform console.
+
+## 2026-08-22 — Offline-first attendance and marks
+
+**Problem:** Staff on school grounds often lose mobile data mid-register. A full offline MIS would duplicate authorization. Idle logout must still protect shared computers.
+
+**Decision:** Service worker caches the last-loaded school pages. Attendance save and mark draft save (`data-offline-queue`) write to IndexedDB when the request cannot complete, then POST the same existing routes when online. Queue is keyed by user id + school id. Fees, role edits, and marksheet verify/submit stay online-only. 401/419 keeps the queue and sends the user to login.
+
+**Reason:** Replay through `AttendanceController` / `AssessmentController` so `AttendanceScope` and `AssessmentScope` remain the security boundary. Client storage is not authorization.
+
+**Consequences:** A class roster must be opened once while online before it can be reused offline. Idle 30-minute logout is unchanged.
+
+**Rollback/revisit:** Add more form kinds only when they upsert through an existing scoped service.
 

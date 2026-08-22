@@ -51,7 +51,7 @@ php artisan serve
 
 Set `SEED_DEMO_TENANT=true` and run `php artisan db:seed` to create a sample school + role assignments for exploration. **No shared demo passwords are published** — accounts stay invitation-status until you activate them via the invite flow. Never invent or circulate demo credentials for production.
 
-## Local walkthrough school (Baby–P7, ~100 learners)
+## Walkthrough school (Baby–P7, ~100 learners)
 
 After migrate + `db:seed`, create a primary school you can sign into and click through:
 
@@ -59,7 +59,9 @@ After migrate + `db:seed`, create a primary school you can sign into and click t
 php artisan school:seed-walkthrough --password='Choose-a-long-password'
 ```
 
-That command is refused in production. It uses `SchoolProvisioner` and the existing role catalog (not a second permission system). Every class from Baby through P7 gets 10 learners (100 total). Named staff:
+On the **live server**, add `--force` so you can test in the browser. Pass the password on the command only — do not set `SEED_TEST_SCHOOL_PASSWORD` in production `.env`. Purge **St. Kizito Demonstration Primary** from the platform console when you are done.
+
+It uses `SchoolProvisioner` and the existing role catalog (not a second permission system). Every class from Baby through P7 gets 10 learners (100 total). Named staff:
 
 | Who | Email | What to try |
 |---|---|---|
@@ -93,7 +95,7 @@ Core MIS surfaces are implemented end-to-end (migrations, RLS, services, school 
 
 **Still planned for deeper polish:** UGSMS provider driver, parent phone OTP (deferred), live video classes, and broader school-user 2FA. Run migrations + `db:verify-security` + `app:production-check` + tests on real Postgres before production trust.
 
-Sessions expire after **30 minutes of inactivity** (`SESSION_LIFETIME`). Remember-me does not skip that window. See `docs/PRODUCTION_CHECKLIST.md` for first-school go-live.
+Sessions expire after **30 minutes of inactivity** (`SESSION_LIFETIME`). Remember-me does not skip that window. Attendance and mark-entry forms queue on the device if the network drops and replay through the same routes when you are back online (fees stay online-only). See `docs/PRODUCTION_CHECKLIST.md` for first-school go-live.
 
 **Production go-live:** see `docs/PRODUCTION_CHECKLIST.md` (server `.env`, cron, Resend, Twilio, SchoolPay credentials). Deploy runs `app:production-check` after migrate.
 

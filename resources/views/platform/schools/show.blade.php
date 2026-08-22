@@ -21,6 +21,13 @@
 
   @error('school')<div class="err">{{ $message }}</div>@enderror
 
+  @if($school->emis_number === \App\Services\Provisioning\WalkthroughSchoolService::EMIS_NUMBER)
+    <div class="status" role="status" style="margin-bottom:16px">
+      Demonstration school for online walkthrough testing (EMIS {{ $school->emis_number }}).
+      Purge it from this page when staff have finished clicking through roles. Do not use these stkizito.test logins as a real school.
+    </div>
+  @endif
+
   <div class="grid g2">
     <div class="card">
       <h3 style="margin-top:0">Edit school</h3>

@@ -1,0 +1,22 @@
+{
+  "name": "PearlEdu",
+  "short_name": "PearlEdu",
+  "description": "School management — attendance and marks keep working when the network drops.",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5FBFD",
+  "theme_color": "#053F5C",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ]
+}

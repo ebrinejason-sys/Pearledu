@@ -23,8 +23,9 @@ use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
- * Opt-in local walkthrough tenant: Baby–P7, ~100 learners, named staff.
- * Uses SchoolProvisioner + role_assignments + enrollments. Never for production.
+ * Opt-in walkthrough tenant: Baby–P7, ~100 learners, named staff.
+ * Uses SchoolProvisioner + role_assignments + enrollments.
+ * Production requires an explicit --force from the artisan command.
  */
 class WalkthroughSchoolService
 {
@@ -56,10 +57,10 @@ class WalkthroughSchoolService
      *     accounts: list<array{role: string, email: string, name: string}>
      * }
      */
-    public function seed(string $password): array
+    public function seed(string $password, bool $allowProduction = false): array
     {
-        if (app()->isProduction()) {
-            throw new RuntimeException('Walkthrough school seeding is not allowed in production.');
+        if (app()->isProduction() && ! $allowProduction) {
+            throw new RuntimeException('Walkthrough school seeding on a live server requires --force.');
         }
 
         if (strlen($password) < 10) {

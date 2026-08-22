@@ -11,6 +11,7 @@
 <meta name="idle-login" content="{{ route('login') }}">
 @endauth
 @include('layouts.partials.favicons')
+@include('layouts.partials.offline-head')
 @if(!empty($themeFontUrl))
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -217,6 +218,7 @@
       @csrf
     </form>
     <script src="{{ asset('js/idle-session.js') }}" defer></script>
+    @include('layouts.partials.offline-body')
   @else
     <div class="topbar">
       @include('layouts.partials.brand', ['brandHref' => url('/login')])
@@ -225,6 +227,7 @@
       @if(session('status'))<div class="status" role="status">{{ session('status') }}</div>@endif
       @yield('content')
     </main>
+    @include('layouts.partials.offline-body')
   @endauth
 </body>
 </html>
