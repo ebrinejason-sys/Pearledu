@@ -15,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
@@ -219,7 +220,7 @@ class InvitationLifecycleTest extends TestCase
             'role_key' => 'support_agent',
             'token_hash' => Hash::make($raw),
             'expires_at' => now()->addDay(),
-            'batch_id' => (string) \Illuminate\Support\Str::uuid(),
+            'batch_id' => (string) Str::uuid(),
         ]);
 
         $response = $this->post('/invitations/'.$invitation->id.'/accept', [

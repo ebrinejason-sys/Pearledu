@@ -13,6 +13,7 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Fees\DefaulterNoticeService;
 use App\Services\Fees\FeeInvoiceService;
 use App\Services\Fees\FeePaymentService;
+use App\Services\Fees\FeeReceiptService;
 use App\Services\SchoolPay\SchoolPayPaymentService;
 use App\Services\Tenancy\TenantContext;
 use App\Support\FeeKind;
@@ -89,7 +90,7 @@ class FeeController extends Controller
         ]);
     }
 
-    public function emailReceipt(FeePayment $payment, TenantContext $ctx, \App\Services\Fees\FeeReceiptService $receipts, Request $request)
+    public function emailReceipt(FeePayment $payment, TenantContext $ctx, FeeReceiptService $receipts, Request $request)
     {
         $school = $ctx->school();
         abort_unless($school && (int) $payment->school_id === (int) $school->id, 404);

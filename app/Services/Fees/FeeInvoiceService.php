@@ -81,6 +81,7 @@ class FeeInvoiceService
         foreach ($structures as $structure) {
             if (! $structure->appliesToStudent($student)) {
                 $skipped++;
+
                 continue;
             }
             $result = $this->ensureInvoice((int) $student->school_id, (int) $student->id, $structure, null);

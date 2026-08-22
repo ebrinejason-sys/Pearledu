@@ -2,9 +2,11 @@
 
 namespace App\Services\Provisioning;
 
+use App\Models\AcademicYear;
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\School;
+use App\Models\SchoolClass;
 use App\Models\SchoolInvitation;
 use App\Models\Subject;
 use App\Models\TeachingAssignment;
@@ -240,7 +242,7 @@ class StaffInvitationService
             ]);
         }
 
-        $year = \App\Models\AcademicYear::query()
+        $year = AcademicYear::query()
             ->where('school_id', $school->id)
             ->where('is_current', true)
             ->first()
@@ -257,7 +259,7 @@ class StaffInvitationService
                 ->where('school_id', $school->id)
                 ->whereKey($pair['subject_id'])
                 ->exists();
-            $classOk = \App\Models\SchoolClass::query()
+            $classOk = SchoolClass::query()
                 ->where('school_id', $school->id)
                 ->whereKey($pair['class_id'])
                 ->exists();

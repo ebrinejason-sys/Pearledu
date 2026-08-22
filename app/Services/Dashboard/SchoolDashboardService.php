@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 class SchoolDashboardService
 {
     public function __construct(private GenderStatsService $gender) {}
+
     /**
      * @param  list<string>  $permissions
      * @return array{

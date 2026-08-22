@@ -14,8 +14,10 @@ use App\Services\Assessment\MarksheetService;
 use App\Services\Assessment\MarksheetWorkflow;
 use App\Services\Authorization\AssessmentScope;
 use App\Services\Tenancy\TenantContext;
+use App\Support\AssessmentSet;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AssessmentController extends Controller
@@ -57,14 +59,14 @@ class AssessmentController extends Controller
             'name' => 'required|string|max:120',
             'term_id' => 'nullable|integer|exists:terms,id',
             'max_score' => 'nullable|numeric|min:1|max:1000',
-            'kind' => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\AssessmentSet::keys())],
+            'kind' => ['nullable', Rule::in(AssessmentSet::keys())],
             'entry_deadline' => 'nullable|date',
         ]);
 
-        $kind = $data['kind'] ?? \App\Support\AssessmentSet::CUSTOM;
+        $kind = $data['kind'] ?? AssessmentSet::CUSTOM;
         AssessmentPeriod::create([
             'school_id' => $school->id,
-            'name' => \App\Support\AssessmentSet::defaultName($kind, $data['name']),
+            'name' => AssessmentSet::defaultName($kind, $data['name']),
             'kind' => $kind,
             'term_id' => $data['term_id'] ?? $this->academic->term()?->id,
             'max_score' => $data['max_score'] ?? 100,
