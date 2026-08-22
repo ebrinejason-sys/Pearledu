@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title','Report cards · '.$school->name)
 @section('head')
 <style>
