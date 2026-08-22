@@ -50,6 +50,23 @@
     <input name="nationality" value="{{ old('nationality', $isEdit ? ($student->nationality ?? 'Uganda') : 'Uganda') }}">
   </div>
   <div>
+    <label>Date of birth</label>
+    <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $isEdit && $student->date_of_birth ? $student->date_of_birth->format('Y-m-d') : '') }}">
+    @error('date_of_birth')<div class="err">{{ $message }}</div>@enderror
+  </div>
+  <div>
+    <label>Religion</label>
+    <input name="religion" value="{{ old('religion', $isEdit ? ($student->religion ?? '') : '') }}">
+  </div>
+  <div>
+    <label>Home address</label>
+    <input name="home_address" value="{{ old('home_address', $isEdit ? ($student->home_address ?? '') : '') }}">
+  </div>
+  <div style="grid-column:1 / -1">
+    <label>Medical notes</label>
+    <textarea name="medical_notes" rows="3">{{ old('medical_notes', $isEdit ? ($student->medical_notes ?? '') : '') }}</textarea>
+  </div>
+  <div>
     <label>Photo (upload or camera)</label>
     <input type="file" name="photo" accept="image/*" capture="user">
     @error('photo')<div class="err">{{ $message }}</div>@enderror

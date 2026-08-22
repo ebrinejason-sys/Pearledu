@@ -47,7 +47,10 @@ class StaffInvitationService
      *   role_key?: string,
      *   role_keys?: list<string>,
      *   class_id?: ?int,
-     *   teaching_assignments?: list<array{subject_id:int, class_ids: list<int>}>
+     *   date_of_birth?: ?string,
+     *   nationality?: ?string,
+     *   home_address?: ?string,
+     *   teaching_assignments?: list<array{subject_id:int, class_ids: list<int>, periods_per_week?: int}>
      * }  $data
      * @return array{
      *   user: User,
@@ -114,6 +117,15 @@ class StaffInvitationService
             }
             if (filled($data['nin'] ?? null)) {
                 $fill['nin'] = $data['nin'];
+            }
+            if (array_key_exists('date_of_birth', $data) && filled($data['date_of_birth'])) {
+                $fill['date_of_birth'] = $data['date_of_birth'];
+            }
+            if (array_key_exists('nationality', $data) && filled($data['nationality'])) {
+                $fill['nationality'] = $data['nationality'];
+            }
+            if (array_key_exists('home_address', $data) && filled($data['home_address'])) {
+                $fill['home_address'] = $data['home_address'];
             }
             $user->forceFill($fill)->save();
 
@@ -214,7 +226,7 @@ class StaffInvitationService
     }
 
     /**
-     * @param  list<array{subject_id?: mixed, class_ids?: mixed}>  $rows
+     * @param  list<array{subject_id?: mixed, class_ids?: mixed, periods_per_week?: mixed}>  $rows
      */
     private function syncTeachingAssignments(School $school, User $user, array $rows): void
     {
@@ -228,10 +240,14 @@ class StaffInvitationService
             if ($subjectId <= 0) {
                 continue;
             }
+            $periods = (int) ($row['periods_per_week'] ?? 3);
+            if ($periods < 1) {
+                $periods = 3;
+            }
             foreach ($classIds as $classId) {
                 $id = (int) $classId;
                 if ($id > 0) {
-                    $pairs[] = ['subject_id' => $subjectId, 'class_id' => $id];
+                    $pairs[] = ['subject_id' => $subjectId, 'class_id' => $id, 'periods_per_week' => $periods];
                 }
             }
         }
@@ -280,7 +296,7 @@ class StaffInvitationService
                 ],
                 [
                     'status' => 'active',
-                    'periods_per_week' => 3,
+                    'periods_per_week' => $pair['periods_per_week'],
                 ],
             );
         }

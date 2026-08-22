@@ -101,4 +101,14 @@ class LearnerScopeTest extends TestCase
         $this->assertTrue($this->scope->canMutateStudent($admin, $this->school->id, $student));
         $this->assertNull($this->scope->viewableClassIds($admin, $this->school->id));
     }
+
+    public function test_secretary_views_all_learners_and_cannot_mutate(): void
+    {
+        $secretary = User::where('email', 'secretary@standrews.test')->firstOrFail();
+        $student = Student::create(['school_id' => $this->school->id, 'full_name' => 'Front Office Learner', 'status' => 'active']);
+
+        $this->assertTrue($this->scope->canViewStudent($secretary, $this->school->id, $student));
+        $this->assertFalse($this->scope->canMutateStudent($secretary, $this->school->id, $student));
+        $this->assertNull($this->scope->viewableClassIds($secretary, $this->school->id));
+    }
 }

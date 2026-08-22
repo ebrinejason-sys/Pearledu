@@ -79,6 +79,11 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     Route::middleware('permission:staff.view,staff.manage')->group(function () {
         Route::get('/staff/{user}', [StaffProfileController::class, 'show'])->name('app.staff.show')->whereNumber('user');
     });
+    Route::middleware('permission:staff.manage,staff.profile.update')->group(function () {
+        Route::put('/staff/{user}/profile', [StaffProfileController::class, 'update'])->name('app.staff.profile.update')->whereNumber('user');
+        Route::post('/staff/{user}/documents', [StaffProfileController::class, 'storeDocument'])->name('app.staff.documents.store')->whereNumber('user');
+        Route::delete('/staff/{user}/documents/{document}', [StaffProfileController::class, 'destroyDocument'])->name('app.staff.documents.destroy')->whereNumber('user');
+    });
     Route::middleware('permission:staff.id.print')->group(function () {
         Route::get('/staff/{user}/id-card', [StaffIdController::class, 'show'])->name('app.staff.id')->whereNumber('user');
     });
@@ -248,6 +253,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     Route::middleware('permission:fees.invoice.create,finance.manage')->group(function () {
         Route::post('/fees/invoices', [FeeController::class, 'storeInvoice'])->name('app.fees.invoices.store');
         Route::post('/fees/invoices/bulk', [FeeController::class, 'storeBulkInvoices'])->name('app.fees.invoices.bulk');
+        Route::post('/students/{student}/fees', [StudentController::class, 'applyFee'])->name('app.students.fees.apply')->whereNumber('student');
     });
     Route::middleware('permission:fees.invoice.void,finance.manage')->group(function () {
         Route::post('/fees/invoices/{invoice}/void', [FeeController::class, 'voidInvoice'])->name('app.fees.invoices.void');

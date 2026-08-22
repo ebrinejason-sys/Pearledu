@@ -23,6 +23,7 @@ return [
             'reports.view',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
             'staff.view', 'staff.messages', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
+            'staff.profile.update',
             'hr.payroll.view', 'hr.payroll.manage',
         ],
         'director' => [
@@ -32,6 +33,7 @@ return [
             'attendance.view', 'hr.view', 'announcements.manage', 'users.invite.parent',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
             'staff.view', 'staff.messages', 'staff.attendance.view', 'hr.payroll.view',
+            'staff.profile.update',
         ],
         'head_teacher' => [
             // Operational lead: staff/learners/ops; cannot write grades or fees.
@@ -42,6 +44,7 @@ return [
             'timetable.manage', 'sms.send', 'announcements.manage', 'hr.view', 'hr.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
             'staff.view', 'staff.messages', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
+            'staff.profile.update',
             'hr.payroll.view',
         ],
         'deputy_head_teacher' => [
@@ -53,6 +56,7 @@ return [
             'hr.view', 'hr.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
             'staff.view', 'staff.messages', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
+            'staff.profile.update',
             'hr.payroll.view',
         ],
         'director_of_studies' => [
@@ -75,9 +79,11 @@ return [
             'staff.messages', 'hr.payroll.view', 'hr.payroll.manage',
         ],
         'secretary' => [
-            // Front office: printable staff IDs and barcode clock. No finance or grade writes.
+            // Front office: reception lookup, staff files, printable IDs, barcode clock.
+            // No finance or grade writes, and cannot mutate staff roles.
             'school.view', 'staff.view', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
-            'staff.messages',
+            'staff.messages', 'staff.profile.update',
+            'learners.view',
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'class_teacher' => [

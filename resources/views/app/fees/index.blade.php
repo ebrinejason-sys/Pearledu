@@ -5,7 +5,7 @@
     <div>
       <p class="page-header__eyebrow">{{ $school->name }}</p>
       <h1 class="page-header__title">Fee structures</h1>
-      <p style="margin:6px 0 0;color:var(--muted);font-size:14px">Set tuition by day or boarding class, plus extra fees such as van. Record payment from the invoices page.</p>
+      <p style="margin:6px 0 0;color:var(--muted);font-size:14px">Save tuition by day or boarding for a class. One-off extras (van, club) can also be applied on the learner’s profile; the profile statement is the cumulative amount due.</p>
     </div>
   </div>
   @if(empty($canManageFinance))
