@@ -135,7 +135,8 @@ class ImpersonationTest extends TestCase
 
         $this->get(route('platform.auth.confirm.resume'))
             ->assertOk()
-            ->assertSee('name="reason"', false);
+            ->assertSee('name="reason"', false)
+            ->assertSee('Continue', false);
     }
 
     public function test_elevated_imitation_requires_matching_support_ticket(): void

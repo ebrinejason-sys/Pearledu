@@ -57,7 +57,40 @@ class ConfirmPlatformAuthController extends Controller
         return view('platform.auth.resume-action', [
             'uri' => $uri,
             'method' => strtoupper((string) $pending['method']),
-            'input' => is_array($pending['input'] ?? null) ? $pending['input'] : [],
+            'fields' => $this->flattenInput(is_array($pending['input'] ?? null) ? $pending['input'] : []),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return list<array{name: string, value: string}>
+     */
+    private function flattenInput(array $input, string $prefix = ''): array
+    {
+        $fields = [];
+        foreach ($input as $key => $value) {
+            if (in_array((string) $key, ['_token', '_method', 'password', 'current_password'], true) && $prefix === '') {
+                continue;
+            }
+
+            $name = $prefix === '' ? (string) $key : $prefix.'['.$key.']';
+            if (is_array($value)) {
+                $fields = array_merge($fields, $this->flattenInput($value, $name));
+
+                continue;
+            }
+            if (is_bool($value)) {
+                $fields[] = ['name' => $name, 'value' => $value ? '1' : '0'];
+
+                continue;
+            }
+            if ($value === null) {
+                continue;
+            }
+
+            $fields[] = ['name' => $name, 'value' => (string) $value];
+        }
+
+        return $fields;
     }
 }
