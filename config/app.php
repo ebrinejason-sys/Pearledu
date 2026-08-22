@@ -135,4 +135,16 @@ return [
 
     'seed_demo_tenant' => (bool) env('SEED_DEMO_TENANT', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Walkthrough school password (local only)
+    |--------------------------------------------------------------------------
+    |
+    | Optional default for `php artisan school:seed-walkthrough`. Never set
+    | this in production. Prefer passing --password on the command line.
+    |
+    */
+
+    'seed_test_school_password' => env('SEED_TEST_SCHOOL_PASSWORD'),
+
 ];

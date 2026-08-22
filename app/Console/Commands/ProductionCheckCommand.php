@@ -187,6 +187,13 @@ class ProductionCheckCommand extends Command
                 'SEED_DEMO_TENANT is enabled — must be false in production.'
             );
         }
+
+        if (filled(config('app.seed_test_school_password'))) {
+            $this->failOrWarn(
+                app()->isProduction(),
+                'SEED_TEST_SCHOOL_PASSWORD is set — walkthrough seed passwords must not exist on a live server.'
+            );
+        }
     }
 
     private function checkSchoolPay(): void

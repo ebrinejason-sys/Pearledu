@@ -51,6 +51,29 @@ php artisan serve
 
 Set `SEED_DEMO_TENANT=true` and run `php artisan db:seed` to create a sample school + role assignments for exploration. **No shared demo passwords are published** — accounts stay invitation-status until you activate them via the invite flow. Never invent or circulate demo credentials for production.
 
+## Local walkthrough school (Baby–P7, ~100 learners)
+
+After migrate + `db:seed`, create a primary school you can sign into and click through:
+
+```bash
+php artisan school:seed-walkthrough --password='Choose-a-long-password'
+```
+
+That command is refused in production. It uses `SchoolProvisioner` and the existing role catalog (not a second permission system). Every class from Baby through P7 gets 10 learners (100 total). Named staff:
+
+| Who | Email | What to try |
+|---|---|---|
+| School Admin | `admin@stkizito.test` | Setup wizard, staff, import |
+| Head Teacher | `head@stkizito.test` | Learners, attendance oversight — not fees or mark entry |
+| DOS | `dos@stkizito.test` | Assessment periods, teaching assignments |
+| Bursar | `bursar@stkizito.test` | Fees / invoices — not assessment |
+| English / Maths teachers | `english@stkizito.test` / `maths@stkizito.test` | Mark entry for assigned classes |
+| Class teacher (e.g. P4) | `ct.p4@stkizito.test` | Homeroom attendance — cannot enter marks |
+| Parent | `parent@stkizito.test` | Portal for a P1 and a P4 child |
+| Learner | `learner.p4@stkizito.test` | Student portal |
+
+Same password for all of those accounts (the one you passed to the command). Kindergarten is scaffolded empty; Baby–P7 are filled.
+
 ## Verify the security guarantees
 
 ```bash

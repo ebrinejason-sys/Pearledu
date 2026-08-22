@@ -75,3 +75,16 @@
 **Consequences:** DOS still invites teachers from Staff. Head Teacher still cannot demote the bursar via the role checkboxes. Idle logout is user-level (activity on any device refreshes `last_seen_at`).
 
 **Rollback/revisit:** If a school needs class-level SMS, add a scoped sender rather than restoring school-wide `sms.send` on teachers.
+
+## 2026-08-22 — Walkthrough primary school is an opt-in artisan command
+
+**Problem:** First-school testing needed Baby–P7 filled (~100 learners) and named staff logins. `DemoTenantSeeder` stays passwordless for CI.
+
+**Decision:** Add `php artisan school:seed-walkthrough` backed by `WalkthroughSchoolService`. It calls `SchoolProvisioner`, `role_assignments`, enrollments, and `config/permissions.php`. It refuses `APP_ENV=production`. Passwords come from `--password` or `SEED_TEST_SCHOOL_PASSWORD` (never a committed default).
+
+**Reason:** Operators can click through each role without inventing a parallel RBAC or bloating PHPUnit’s demo tenant.
+
+**Consequences:** Kindergarten remains an empty scaffold class. Homeroom teachers do not receive `assessment.enter`; English/Maths subject teachers do, scoped by teaching assignments.
+
+**Rollback/revisit:** Delete the walkthrough school from the platform console if a local database should be empty again.
+
