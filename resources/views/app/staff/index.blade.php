@@ -176,7 +176,7 @@
     $bands = [
       'leadership' => ['title' => 'Leadership', 'members' => collect()],
       'teaching' => ['title' => 'Teaching staff', 'members' => collect()],
-      'office' => ['title' => 'Office & support', 'members' => collect()],
+      'office' => ['title' => 'Office and support', 'members' => collect()],
     ];
     foreach ($members as $member) {
       $band = $member['band'] ?? 'office';

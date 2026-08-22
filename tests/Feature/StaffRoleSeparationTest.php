@@ -221,7 +221,7 @@ class StaffRoleSeparationTest extends TestCase
             ->assertOk()
             ->assertSee('Leadership', false)
             ->assertSee('Teaching staff', false)
-            ->assertSee('Office & support', false)
+            ->assertSee('Office and support', false)
             ->assertSee('Daniel Director', false)
             ->assertSee('Bernard Bursar', false)
             ->assertSee('Sarah Secretary', false)
