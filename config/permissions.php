@@ -66,9 +66,9 @@ return [
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'class_teacher' => [
-            // Homeroom: view class reports — not unrestricted mark entry.
+            // Homeroom: view class reports — not unrestricted mark entry or school-wide SMS.
             'attendance.view', 'attendance.mark', 'assessment.view', 'class.view',
-            'learners.view', 'users.invite.parent', 'sms.send', 'self.timetable.view',
+            'learners.view', 'users.invite.parent', 'self.timetable.view',
             'helpdesk.create', 'helpdesk.view_own',
         ],
         'subject_teacher' => [

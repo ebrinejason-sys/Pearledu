@@ -109,6 +109,17 @@ class ProductionCheckCommand extends Command
         if (! config('session.encrypt')) {
             $this->warnings[] = 'SESSION_ENCRYPT is off — prefer true for school MIS sessions.';
         }
+
+        $lifetime = (int) config('session.lifetime', 30);
+        if ($lifetime > 120) {
+            $this->failOrWarn(
+                app()->isProduction(),
+                "SESSION_LIFETIME is {$lifetime} minutes — prefer 15–30 so idle staff are signed out on shared computers."
+            );
+        }
+        if ($lifetime < 5) {
+            $this->warnings[] = "SESSION_LIFETIME is {$lifetime} minutes — too short; staff will be signed out while working.";
+        }
     }
 
     private function checkMail(): void

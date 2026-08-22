@@ -57,7 +57,10 @@ class InvitationController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
-        $user->forceFill(['last_login_at' => now()])->save();
+        $user->forceFill([
+            'last_login_at' => now(),
+            'last_seen_at' => now(),
+        ])->save();
         $audit->record('auth.login', $user);
 
         // Same host for every school — pin tenant id from membership (no subdomain required).

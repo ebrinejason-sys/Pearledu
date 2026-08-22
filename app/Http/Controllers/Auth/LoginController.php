@@ -89,7 +89,10 @@ class LoginController extends Controller
     {
         $request->session()->regenerate();
         $user = Auth::user();
-        $user->forceFill(['last_login_at' => now()])->save();
+        $user->forceFill([
+            'last_login_at' => now(),
+            'last_seen_at' => now(),
+        ])->save();
         $audit->record('auth.login', $user);
 
         if ($user && $user->isPlatformOperator()) {

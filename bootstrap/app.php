@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\BlockImpersonationWrites;
+use App\Http\Middleware\EnforceIdleSession;
 use App\Http\Middleware\EnsurePlatformOperator;
 use App\Http\Middleware\EnsurePlatformSchoolEntered;
 use App\Http\Middleware\EnsureTwoFactorPending;
@@ -51,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             PinAuthenticatedTenant::class,
             BlockImpersonationWrites::class,
             SecurityHeaders::class,
+            EnforceIdleSession::class,
         ]);
         // Critical: pin school RLS before implicit model binding. Otherwise pearledu.* stays
         // platform-scoped during SubstituteBindings and school users can IDOR other tenants.

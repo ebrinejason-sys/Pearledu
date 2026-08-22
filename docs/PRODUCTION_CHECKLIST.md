@@ -36,7 +36,8 @@ Fill these and keep them **only on the server `.env`** (never commit):
 | `APP_URL` | `https://pearledu.voxsign.co.ug` |
 | `SESSION_SECURE_COOKIE` | `true` |
 | `SESSION_DOMAIN` | `.voxsign.co.ug` |
-| `SESSION_LIFETIME` | `30` (idle logout minutes) |
+| `SESSION_LIFETIME` | `30` (idle logout minutes; enforced even with Remember me) |
+| `SESSION_IDLE_WARNING_MINUTES` | `2` (in-app warning before sign-out) |
 | `SEED_DEMO_TENANT` | `false` |
 | Postgres | Non-superuser, non-`BYPASSRLS` role + password |
 | Tenancy hosts | `TENANCY_BASE_DOMAIN=voxsign.co.ug` |
@@ -106,9 +107,13 @@ Then: Git Version Control → Update from Remote → Deploy HEAD (ongoing deploy
 
 1. Sign in as platform admin → onboard or open the pilot school  
 2. Invite school admin → accept invite (password 10+) → land on dashboard  
-3. Create a student + fee invoice  
-4. Invite a parent → pay fees (manual path, then SchoolPay if enabled)  
-5. Send one SMS only after Twilio is configured  
+3. Complete setup wizard: identity, year/terms, classes, subjects, import learners, invite **named roles** (Head, DOS, bursar, teachers) — do not stack every job on School Admin  
+4. Assign teaching (class + subject) before asking teachers to enter marks  
+5. Create a student + fee invoice  
+6. Invite a parent → pay fees (manual path, then SchoolPay if enabled)  
+7. Walk away from a signed-in staff session for 30 minutes and confirm it asks for a password again  
+8. Sign in as bursar and confirm Assessment is forbidden; sign in as DOS and confirm Fees is forbidden  
+9. Send one SMS only after Twilio is configured  
 
 ## E. Reply with these when ready (I can verify the checklist wording against them — do not paste live secrets into chat if you prefer not to)
 

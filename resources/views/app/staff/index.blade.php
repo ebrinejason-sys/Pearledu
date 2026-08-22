@@ -97,11 +97,7 @@
           <td><strong>{{ $user->full_name }}</strong></td>
           <td>{{ $user->email ?? $user->phone ?? '—' }}</td>
           <td>
-            @if($roles->isEmpty())
-              @foreach($member['roles'] as $role)
-                <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
-              @endforeach
-            @else
+            @if(!empty($canManageStaff) && $roles->isNotEmpty())
               <form method="post" action="{{ route('app.staff.roles', $user) }}" style="display:grid;gap:8px">
                 @csrf @method('PUT')
                 @foreach($member['role_keys'] as $existingKey)
@@ -133,6 +129,10 @@
                 </div>
                 <button type="submit" class="btn ghost">Save responsibilities</button>
               </form>
+            @else
+              @foreach($member['roles'] as $role)
+                <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
+              @endforeach
             @endif
           </td>
           <td>{{ $user->status }}</td>

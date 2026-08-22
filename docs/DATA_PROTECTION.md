@@ -112,6 +112,7 @@ A living list of ways tenant isolation or privacy could fail, with status.
 | 20 | 2FA not enforced for high-privilege accounts | Platform operators require email OTP; authenticator TOTP optional; school-user 2FA | **partial (platform email OTP enforced; school-user 2FA planned)** |
 | 21 | Insider/operator over-access | every `school.entered` is audited + scoped | **enforced** |
 | 22 | CSRF on state-changing actions | Laravel CSRF tokens on all forms | **enforced** |
+| 23 | Abandoned staff workstation / remember-me resurrection | Idle timeout on `users.last_seen_at` (default 30 min) + remember-token rotation; in-app warning | **enforced** |
 
 ---
 

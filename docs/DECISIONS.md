@@ -63,3 +63,15 @@
 **Consequences:** Class teachers invite parents from the learner profile. DOS invites teachers from Staff but cannot revoke access or manage school identity. Submitted marksheets are locked for teachers.
 
 **Rollback/revisit:** Fee granular keys still OR with `finance.manage` so bursar/school admin are not locked out. A later pass can drop the broad key once every fee route is granular-only.
+
+## 2026-08-22 — Idle sessions and invite-only staff mutations
+
+**Problem:** `SESSION_LIFETIME` only expired the cookie. Remember-me could silently sign someone back in on a shared staff computer. DOS (`staff.invite.teacher`) could POST `/staff/{user}/roles` and strip a Head Teacher or bursar. Class teachers had school-wide `sms.send`. Anyone with `assessment.view` could open the assessment-period admin screen.
+
+**Decision:** Persist `users.last_seen_at`. `EnforceIdleSession` signs out after 30 idle minutes and rotates remember tokens. Heartbeat + in-app warning extend the window only after real activity. `updateRoles` / `revoke` require `staff.manage`. `StaffRoleService` refuses to remove a responsibility the actor cannot invite. Teachers lose school-wide SMS. Assessment period admin is `assessment.manage` only.
+
+**Reason:** Least privilege and workstation lock for a school MIS. Invitation authority stays; mutation of existing staff is an HR/ops action.
+
+**Consequences:** DOS still invites teachers from Staff. Head Teacher still cannot demote the bursar via the role checkboxes. Idle logout is user-level (activity on any device refreshes `last_seen_at`).
+
+**Rollback/revisit:** If a school needs class-level SMS, add a scoped sender rather than restoring school-wide `sms.send` on teachers.

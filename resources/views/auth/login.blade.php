@@ -53,7 +53,8 @@
           @csrf
           <label>Email or phone</label><input name="identifier" type="text" value="{{ old('identifier') }}" required autofocus autocomplete="username" placeholder="you@school.com or 07…">
           @include('partials.password-input', ['name' => 'password', 'label' => 'Password', 'autocomplete' => 'current-password'])
-          <label class="vx-auth-remember"><input type="checkbox" name="remember"> Remember me</label>
+          <label class="vx-auth-remember"><input type="checkbox" name="remember"> Stay signed in on this device</label>
+          <p class="vx-auth-idle-note">You are signed out after {{ (int) config('session.lifetime') }} minutes of inactivity, even if this box is checked.</p>
           @error('identifier')<div class="err">{{ $message }}</div>@enderror
           @error('password')<div class="err">{{ $message }}</div>@enderror
           <p style="margin:10px 0 0;font-size:13px"><a href="{{ route('password.request') }}" style="color:var(--sidebar-ink,#9FE7F5)">Forgot password?</a></p>

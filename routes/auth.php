@@ -33,6 +33,7 @@ Route::middleware('web')->group(function () {
     Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'store'])->middleware('throttle:10,1');
 
     Route::middleware('auth')->group(function () {
+        Route::post('/session/heartbeat', [\App\Http\Controllers\Auth\HeartbeatController::class, 'store'])->name('session.heartbeat');
         Route::get('/account', [AccountController::class, 'show'])->name('account.settings');
         Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
         Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');

@@ -28,19 +28,38 @@ class StaffRoleService
             throw ValidationException::withMessages(['user' => 'Platform accounts are managed under PearlEdu staff.']);
         }
 
+        if (! $asPlatform && ! in_array('staff.manage', $actor->permissionsForSchool($school->id), true)) {
+            abort(403);
+        }
+
         $roleKeys = array_values(array_unique($roleKeys));
         if ($roleKeys === []) {
             throw ValidationException::withMessages(['role_keys' => 'Select at least one role, or revoke access instead.']);
         }
 
         $allowed = $this->policy->rolesInvitableBy($actor, $school->id, $asPlatform);
+        $existingKeys = RoleAssignment::query()
+            ->where('user_id', $target->id)
+            ->where('school_id', $school->id)
+            ->where('is_active', true)
+            ->with('role')
+            ->get()
+            ->pluck('role.key')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        foreach ($existingKeys as $key) {
+            if (! in_array($key, $roleKeys, true) && ! in_array($key, $allowed, true)) {
+                throw ValidationException::withMessages([
+                    'role_keys' => "You cannot remove the [{$key}] responsibility.",
+                ]);
+            }
+        }
+
         foreach ($roleKeys as $key) {
-            $already = RoleAssignment::query()
-                ->where('user_id', $target->id)
-                ->where('school_id', $school->id)
-                ->where('is_active', true)
-                ->whereHas('role', fn ($q) => $q->where('key', $key))
-                ->exists();
+            $already = in_array($key, $existingKeys, true);
 
             if (! $already && ! in_array($key, $allowed, true)) {
                 throw ValidationException::withMessages(['role_keys' => "You cannot assign the role [{$key}]."]);
