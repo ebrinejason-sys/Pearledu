@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Provisioning\StaffRoleService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
 class RoleWorkspaceAuthorizationTest extends TestCase
@@ -127,6 +128,8 @@ class RoleWorkspaceAuthorizationTest extends TestCase
             ->where('role_id', $classTeacherId)
             ->update(['class_id' => $classA->id]);
 
+        $load = TeacherInviteLoad::ensure($this->school);
+
         app(StaffRoleService::class)->sync(
             $this->school,
             $teacher,
@@ -134,6 +137,7 @@ class RoleWorkspaceAuthorizationTest extends TestCase
             $admin,
             false,
             null,
+            $load['teaching_assignments'],
         );
 
         $this->assertDatabaseHas('role_assignments', [

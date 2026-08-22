@@ -2,16 +2,12 @@
 
 namespace App\Services\Provisioning;
 
-use App\Models\AcademicYear;
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\School;
-use App\Models\SchoolClass;
 use App\Models\SchoolInvitation;
-use App\Models\Subject;
-use App\Models\TeachingAssignment;
 use App\Models\User;
-use App\Services\Academics\CurrentAcademicContext;
+use App\Services\Academics\TeachingLoadService;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\InvitationDispatcher;
 use App\Services\Authorization\InvitePolicy;
@@ -33,7 +29,7 @@ class StaffInvitationService
         private TenantContext $context,
         private InvitationDispatcher $dispatcher,
         private InvitePolicy $policy,
-        private CurrentAcademicContext $academic,
+        private TeachingLoadService $teachingLoad,
     ) {}
 
     /**
@@ -189,7 +185,7 @@ class StaffInvitationService
             }
 
             if (in_array('subject_teacher', $roleKeys, true)) {
-                $this->syncTeachingAssignments($school, $user, $data['teaching_assignments'] ?? []);
+                $this->teachingLoad->sync($school, $user, $data['teaching_assignments'] ?? []);
             }
 
             // One activation link covers every role in this invite batch.
@@ -223,83 +219,6 @@ class StaffInvitationService
         }
 
         throw ValidationException::withMessages(['role_keys' => 'Select at least one role.']);
-    }
-
-    /**
-     * @param  list<array{subject_id?: mixed, class_ids?: mixed, periods_per_week?: mixed}>  $rows
-     */
-    private function syncTeachingAssignments(School $school, User $user, array $rows): void
-    {
-        $pairs = [];
-        foreach ($rows as $row) {
-            $subjectId = (int) ($row['subject_id'] ?? 0);
-            $classIds = $row['class_ids'] ?? [];
-            if (! is_array($classIds)) {
-                $classIds = [$classIds];
-            }
-            if ($subjectId <= 0) {
-                continue;
-            }
-            $periods = (int) ($row['periods_per_week'] ?? 3);
-            if ($periods < 1) {
-                $periods = 3;
-            }
-            foreach ($classIds as $classId) {
-                $id = (int) $classId;
-                if ($id > 0) {
-                    $pairs[] = ['subject_id' => $subjectId, 'class_id' => $id, 'periods_per_week' => $periods];
-                }
-            }
-        }
-
-        if ($pairs === []) {
-            throw ValidationException::withMessages([
-                'teaching_assignments' => 'Specify a subject and at least one class for this teacher so the timetable can avoid collisions.',
-            ]);
-        }
-
-        $year = AcademicYear::query()
-            ->where('school_id', $school->id)
-            ->where('is_current', true)
-            ->first()
-            ?? $this->academic->year();
-
-        if (! $year || (int) $year->school_id !== (int) $school->id) {
-            throw ValidationException::withMessages([
-                'teaching_assignments' => 'Set a current academic year before assigning subjects to classes.',
-            ]);
-        }
-
-        foreach ($pairs as $pair) {
-            $subjectOk = Subject::query()
-                ->where('school_id', $school->id)
-                ->whereKey($pair['subject_id'])
-                ->exists();
-            $classOk = SchoolClass::query()
-                ->where('school_id', $school->id)
-                ->whereKey($pair['class_id'])
-                ->exists();
-            if (! $subjectOk || ! $classOk) {
-                throw ValidationException::withMessages([
-                    'teaching_assignments' => 'Each teaching assignment must use a subject and class from this school.',
-                ]);
-            }
-
-            TeachingAssignment::query()->updateOrCreate(
-                [
-                    'school_id' => $school->id,
-                    'user_id' => $user->id,
-                    'subject_id' => $pair['subject_id'],
-                    'class_id' => $pair['class_id'],
-                    'academic_year_id' => $year->id,
-                    'term_id' => null,
-                ],
-                [
-                    'status' => 'active',
-                    'periods_per_week' => $pair['periods_per_week'],
-                ],
-            );
-        }
     }
 
     private function resolveUser(?string $email, ?string $phone, string $fullName): User

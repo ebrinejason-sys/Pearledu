@@ -17,7 +17,7 @@
   <div class="grid g2">
     <div class="card">
       <h3 style="margin-top:0">Invite staff</h3>
-      <form method="post" action="{{ route('platform.staff.store') }}">
+      <form method="post" action="{{ route('platform.staff.store') }}" id="platform-invite-form">
         @csrf
         <label>Full name</label>
         <input name="full_name" value="{{ old('full_name') }}" required>
@@ -39,15 +39,23 @@
         <input name="nin" value="{{ old('nin') }}" required autocomplete="off" minlength="10" maxlength="20">
         @error('nin')<div class="err">{{ $message }}</div>@enderror
         <label>Roles</label>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
+        <div class="role-picks">
           @foreach($roles as $role)
-            <label style="display:flex;align-items:center;gap:6px;font-weight:500">
-              <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" @checked(collect(old('role_keys', ['school_admin']))->contains($role->key))>
-              {{ $role->label }}
+            <label class="role-pick">
+              <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-platform-role" @checked(collect(old('role_keys', ['school_admin']))->contains($role->key))>
+              <strong>{{ $role->label }}</strong>
             </label>
           @endforeach
         </div>
         @error('role_keys')<div class="err">{{ $message }}</div>@enderror
+        <div id="platform-teaching-field" hidden>
+          <h3 style="font-size:15px;margin:8px 0 0">Teaching load</h3>
+          @include('app.teaching._load-builder', [
+            'builderId' => 'platform-invite-load',
+            'subjects' => $subjects ?? collect(),
+            'classes' => $classes ?? collect(),
+          ])
+        </div>
         <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
       </form>
     </div>
@@ -101,10 +109,18 @@
               <div style="display:flex;flex-wrap:wrap;gap:8px">
                 @foreach($roles as $role)
                   <label style="display:flex;align-items:center;gap:6px;font-weight:500;font-size:13px">
-                    <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" @checked(collect($member['role_keys'])->contains($role->key))>
-                    {{ $role->label }}
-                  </label>
+                  <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-platform-member-role" data-user="{{ $user->id }}" @checked(collect($member['role_keys'])->contains($role->key))>
+                  {{ $role->label }}
+                </label>
                 @endforeach
+              </div>
+              <div class="js-platform-member-teach" data-user="{{ $user->id }}" @if(!collect($member['role_keys'])->contains('subject_teacher')) hidden @endif>
+                @include('app.teaching._load-builder', [
+                  'builderId' => 'platform-member-'.$user->id,
+                  'subjects' => $subjects ?? collect(),
+                  'classes' => $classes ?? collect(),
+                  'hint' => 'Required when granting Teacher if this person has no current-year load.',
+                ])
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <button type="submit" class="btn ghost">Save roles</button>
@@ -144,4 +160,30 @@
   .btn-link-action{background:none;border:0;padding:0;color:var(--brand);font:inherit;font-weight:600;cursor:pointer}
   .btn-link-danger{color:var(--danger,#b42318)}
 </style>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    function syncPlatformInvite() {
+      var field = document.getElementById('platform-teaching-field');
+      if (!field) return;
+      var on = Array.from(document.querySelectorAll('#platform-invite-form .js-platform-role:checked')).some(function (el) {
+        return el.value === 'subject_teacher';
+      });
+      field.hidden = !on;
+    }
+    document.querySelectorAll('#platform-invite-form .js-platform-role').forEach(function (el) {
+      el.addEventListener('change', syncPlatformInvite);
+    });
+    syncPlatformInvite();
+    document.querySelectorAll('.js-platform-member-role').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var box = document.querySelector('.js-platform-member-teach[data-user="' + el.getAttribute('data-user') + '"]');
+        if (!box) return;
+        var any = Array.from(document.querySelectorAll('.js-platform-member-role[data-user="' + el.getAttribute('data-user') + '"]')).some(function (cb) {
+          return cb.value === 'subject_teacher' && cb.checked;
+        });
+        box.hidden = !any;
+      });
+    });
+  });
+</script>
 @endsection

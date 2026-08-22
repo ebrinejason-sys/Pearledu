@@ -445,6 +445,68 @@ class SchoolOpsFeesAssessmentTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_teacher_invite_accepts_many_subject_and_class_rows_with_periods(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+        $classB = SchoolClass::create([
+            'school_id' => $this->school->id,
+            'level' => 'primary',
+            'name' => 'P5 Invite B',
+            'code' => 'INV-B-'.$this->school->id,
+        ]);
+        $science = Subject::create([
+            'school_id' => $this->school->id,
+            'name' => 'Science Invite',
+            'code' => 'SCI-INV-'.$this->school->id,
+        ]);
+
+        $this->actingAsInSchool($this->admin)->post(route('app.staff.store'), [
+            'full_name' => 'Multi Load Teacher',
+            'email' => 'multiload@standrews.test',
+            'gender' => 'male',
+            'nin' => 'CM55555678901',
+            'staff_kind' => 'teaching',
+            'role_keys' => ['subject_teacher'],
+            'teaching_assignments' => [
+                [
+                    'subject_id' => $load['subject']->id,
+                    'class_ids' => [(int) $load['class']->id, $classB->id],
+                    'periods_per_week' => 6,
+                ],
+                [
+                    'subject_id' => $science->id,
+                    'class_ids' => [(int) $load['class']->id],
+                    'periods_per_week' => 3,
+                ],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $invited = User::where('email', 'multiload@standrews.test')->firstOrFail();
+        $this->assertDatabaseHas('teaching_assignments', [
+            'user_id' => $invited->id,
+            'subject_id' => $load['subject']->id,
+            'class_id' => $load['class']->id,
+            'periods_per_week' => 6,
+        ]);
+        $this->assertDatabaseHas('teaching_assignments', [
+            'user_id' => $invited->id,
+            'subject_id' => $load['subject']->id,
+            'class_id' => $classB->id,
+            'periods_per_week' => 6,
+        ]);
+        $this->assertDatabaseHas('teaching_assignments', [
+            'user_id' => $invited->id,
+            'subject_id' => $science->id,
+            'class_id' => $load['class']->id,
+            'periods_per_week' => 3,
+        ]);
+
+        $this->actingAsInSchool($this->admin)->get(route('app.staff.index'))
+            ->assertOk()
+            ->assertSee('Teaching load', false)
+            ->assertSee('What they teach', false);
+    }
+
     public function test_school_admin_can_set_class_stream_and_director_sees_emis_census(): void
     {
         $class = SchoolClass::create([

@@ -7,6 +7,7 @@ use App\Models\RoleAssignment;
 use App\Models\SchoolClass;
 use App\Models\SchoolInvitation;
 use App\Models\Subject;
+use App\Models\TeachingAssignment;
 use App\Models\User;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Hr\StaffBadgeService;
@@ -75,6 +76,26 @@ class StaffController extends Controller
         }
         $members = $members->sortBy(fn ($m) => $m['user']->full_name ?? '')->values();
 
+        $teachingByUser = TeachingAssignment::query()
+            ->where('school_id', $school->id)
+            ->forCurrentYear($school->id)
+            ->effective()
+            ->with(['subject', 'schoolClass'])
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn (TeachingAssignment $row) => (int) $row->user_id);
+
+        $members = $members->map(function (array $member) use ($teachingByUser) {
+            $userId = (int) $member['user']->id;
+            $member['teaching_load'] = $teachingByUser->get($userId, collect())->map(fn (TeachingAssignment $row) => [
+                'subject' => $row->subject?->name,
+                'class' => $row->schoolClass instanceof SchoolClass ? $row->schoolClass->displayName() : null,
+                'periods' => (int) ($row->periods_per_week ?: 3),
+            ])->values()->all();
+
+            return $member;
+        });
+
         $openInvites = SchoolInvitation::query()
             ->where('school_id', $school->id)
             ->whereNull('accepted_at')
@@ -131,7 +152,7 @@ class StaffController extends Controller
             'teaching_assignments.*.subject_id' => 'nullable|integer',
             'teaching_assignments.*.class_ids' => 'nullable|array',
             'teaching_assignments.*.class_ids.*' => 'integer',
-            'teaching_assignments.*.periods_per_week' => 'nullable|integer|min:1|max:40',
+            'teaching_assignments.*.periods_per_week' => 'nullable|integer|min:1|max:20',
             'salary_amount' => 'nullable|integer|min:0',
             'salary_notes' => 'nullable|string|max:255',
         ]);
@@ -221,10 +242,27 @@ class StaffController extends Controller
                 $user->activeAssignments()->where('school_id', $school->id)->with('role')->get()->pluck('role.key')->filter()->all()
             ))))],
             'class_id' => 'nullable|integer|exists:school_classes,id',
+            'teaching_assignments' => 'nullable|array',
+            'teaching_assignments.*.subject_id' => 'nullable|integer',
+            'teaching_assignments.*.class_ids' => 'nullable|array',
+            'teaching_assignments.*.class_ids.*' => 'integer',
+            'teaching_assignments.*.periods_per_week' => 'nullable|integer|min:1|max:20',
         ]);
 
         $classId = ! empty($data['class_id']) ? (int) $data['class_id'] : null;
-        $roles->sync($school, $user, $data['role_keys'], $request->user(), false, $classId);
+        try {
+            $roles->sync(
+                $school,
+                $user,
+                $data['role_keys'],
+                $request->user(),
+                false,
+                $classId,
+                $data['teaching_assignments'] ?? [],
+            );
+        } catch (ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors());
+        }
 
         return back()->with('status', 'Roles updated for '.$user->full_name.'.');
     }

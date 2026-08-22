@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\User;
+use App\Services\Academics\TeachingLoadService;
 use App\Services\Audit\AuditLogger;
 use App\Services\Authorization\InvitePolicy;
 use Illuminate\Support\Facades\DB;
@@ -17,12 +18,14 @@ class StaffRoleService
     public function __construct(
         private InvitePolicy $policy,
         private AuditLogger $audit,
+        private TeachingLoadService $teachingLoad,
     ) {}
 
     /**
      * @param  list<string>  $roleKeys
+     * @param  list<array<string, mixed>>  $teachingAssignments
      */
-    public function sync(School $school, User $target, array $roleKeys, User $actor, bool $asPlatform = false, ?int $classId = null): void
+    public function sync(School $school, User $target, array $roleKeys, User $actor, bool $asPlatform = false, ?int $classId = null, array $teachingAssignments = []): void
     {
         if ($target->is_platform) {
             throw ValidationException::withMessages(['user' => 'Platform accounts are managed under PearlEdu staff.']);
@@ -90,7 +93,10 @@ class StaffRoleService
             $classId = $resolvedClassId;
         }
 
-        DB::transaction(function () use ($school, $target, $roleKeys, $roleIdsByKey, $actor, $classId) {
+        $wantsTeacher = in_array(Role::SUBJECT_TEACHER, $roleKeys, true);
+        $hasLoad = $wantsTeacher && $this->teachingLoad->hasCurrentLoad($school, $target);
+
+        DB::transaction(function () use ($school, $target, $roleKeys, $roleIdsByKey, $actor, $classId, $wantsTeacher, $hasLoad, $teachingAssignments) {
             $keepIds = $roleIdsByKey->values()->all();
 
             RoleAssignment::query()
@@ -125,6 +131,15 @@ class StaffRoleService
                     'is_active' => true,
                     'assigned_by' => $actor->id,
                 ]);
+            }
+
+            if ($wantsTeacher) {
+                $this->teachingLoad->sync(
+                    $school,
+                    $target,
+                    $teachingAssignments,
+                    requireNonEmpty: ! $hasLoad,
+                );
             }
         });
 

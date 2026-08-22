@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\RoleAssignment;
+use App\Models\SchoolClass;
 use App\Models\SchoolInvitation;
+use App\Models\Subject;
 use App\Models\User;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
@@ -14,6 +16,7 @@ use App\Services\Tenancy\EnteredSchoolGuard;
 use App\Support\Gender;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class StaffController extends Controller
@@ -49,9 +52,11 @@ class StaffController extends Controller
 
         $roleKeys = $policy->rolesInvitableBy($request->user(), $school->id, true);
         $roles = Role::query()->whereIn('key', $roleKeys)->orderBy('label')->get();
+        $classes = SchoolClass::query()->where('school_id', $school->id)->orderBy('name')->orderBy('stream')->get();
+        $subjects = Subject::query()->where('school_id', $school->id)->orderBy('name')->get();
         $canImitate = $request->user()->hasPlatformPermission('platform.users.impersonate');
 
-        return view('platform.staff.index', compact('school', 'members', 'openInvites', 'roles', 'canImitate'));
+        return view('platform.staff.index', compact('school', 'members', 'openInvites', 'roles', 'classes', 'subjects', 'canImitate'));
     }
 
     public function store(Request $request, StaffInvitationService $inviter, InvitePolicy $policy)
@@ -68,12 +73,22 @@ class StaffController extends Controller
             'nin' => [$needsIdentity ? 'required' : 'nullable', 'string', 'min:10', 'max:20'],
             'role_keys' => 'required|array|min:1',
             'role_keys.*' => ['string', Rule::in($allowed)],
+            'teaching_assignments' => 'nullable|array',
+            'teaching_assignments.*.subject_id' => 'nullable|integer',
+            'teaching_assignments.*.class_ids' => 'nullable|array',
+            'teaching_assignments.*.class_ids.*' => 'integer',
+            'teaching_assignments.*.periods_per_week' => 'nullable|integer|min:1|max:20',
         ]);
+        if (in_array('subject_teacher', $data['role_keys'], true)) {
+            $data['teaching_assignments'] = $data['teaching_assignments'] ?? [];
+        }
 
         try {
             $result = $inviter->invite($school, $data, $request->user(), true);
         } catch (RuntimeException $e) {
             return back()->withInput()->withErrors(['email' => $e->getMessage()]);
+        } catch (ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors());
         } catch (\Throwable $e) {
             report($e);
 
@@ -106,9 +121,26 @@ class StaffController extends Controller
         $data = $request->validate([
             'role_keys' => 'required|array|min:1',
             'role_keys.*' => ['string', Rule::in($allowed)],
+            'teaching_assignments' => 'nullable|array',
+            'teaching_assignments.*.subject_id' => 'nullable|integer',
+            'teaching_assignments.*.class_ids' => 'nullable|array',
+            'teaching_assignments.*.class_ids.*' => 'integer',
+            'teaching_assignments.*.periods_per_week' => 'nullable|integer|min:1|max:20',
         ]);
 
-        $roles->sync($school, $user, $data['role_keys'], $request->user(), true);
+        try {
+            $roles->sync(
+                $school,
+                $user,
+                $data['role_keys'],
+                $request->user(),
+                true,
+                null,
+                $data['teaching_assignments'] ?? [],
+            );
+        } catch (ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors());
+        }
 
         return back()->with('status', 'Roles updated for '.$user->full_name.'.');
     }
