@@ -69,6 +69,7 @@ It uses `SchoolProvisioner` and the existing role catalog (not a second permissi
 | Head Teacher | `head@stkizito.test` | Learners, attendance oversight — not fees or mark entry |
 | DOS | `dos@stkizito.test` | Assessment periods, teaching assignments |
 | Bursar | `bursar@stkizito.test` | Fees / invoices — not assessment |
+| Secretary | `secretary@stkizito.test` | Staff IDs, clock, learner lookup — not fees or roles |
 | English / Maths teachers | `english@stkizito.test` / `maths@stkizito.test` | Mark entry for assigned classes |
 | Class teacher (e.g. P4) | `ct.p4@stkizito.test` | Homeroom attendance — cannot enter marks |
 | Parent | `parent@stkizito.test` | Portal for a P1 and a P4 child |

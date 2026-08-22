@@ -29,7 +29,10 @@ class StaffController extends Controller
         $school = $context->school();
         abort_unless($school, 404);
 
-        $roleKeys = $policy->rolesInvitableBy($request->user(), $school->id, false);
+        $roleKeys = array_values(array_intersect(
+            $policy->rolesInvitableBy($request->user(), $school->id, false),
+            Role::STAFF
+        ));
         $roles = Role::query()->whereIn('key', $roleKeys)->orderBy('label')->get();
         $classes = SchoolClass::query()->where('school_id', $school->id)->orderBy('name')->orderBy('stream')->get();
         $subjects = Subject::query()->where('school_id', $school->id)->orderBy('name')->get();
@@ -67,10 +70,17 @@ class StaffController extends Controller
                     $homeroomClassId = $assignment->class_id;
                 }
             }
+            $staffKeys = array_values(array_intersect(array_unique($memberRoleKeys), Role::STAFF));
+            if ($staffKeys === []) {
+                continue;
+            }
             $members->push([
                 'user' => $first->user,
                 'roles' => collect($memberRoles)->unique(fn ($r) => $r['label'].'|'.$r['class'])->values()->all(),
                 'role_keys' => array_values(array_unique($memberRoleKeys)),
+                'staff_keys' => $staffKeys,
+                'band' => $this->staffBand($staffKeys),
+                'primary_key' => $this->primaryStaffKey($staffKeys),
                 'homeroom_class_id' => $homeroomClassId,
             ]);
         }
@@ -98,6 +108,7 @@ class StaffController extends Controller
 
         $openInvites = SchoolInvitation::query()
             ->where('school_id', $school->id)
+            ->whereIn('role_key', Role::STAFF)
             ->whereNull('accepted_at')
             ->where('expires_at', '>', now())
             ->with('user')
@@ -142,7 +153,10 @@ class StaffController extends Controller
     ) {
         $school = $context->school();
         abort_unless($school, 404);
-        $allowed = $policy->rolesInvitableBy($request->user(), $school->id, false);
+        $allowed = array_values(array_intersect(
+            $policy->rolesInvitableBy($request->user(), $school->id, false),
+            Role::STAFF
+        ));
 
         $needsIdentity = collect($request->input('role_keys', []))->intersect(array_merge(Role::STAFF, [Role::PARENT]))->isNotEmpty();
         $data = $request->validate([
@@ -246,7 +260,10 @@ class StaffController extends Controller
         abort_unless($school, 404);
         abort_unless($request->user() instanceof User, 403);
         abort_unless($policy->canAdminister($request->user(), $user, $school->id), 403);
-        $allowed = $policy->rolesInvitableBy($request->user(), $school->id, false);
+        $allowed = array_values(array_intersect(
+            $policy->rolesInvitableBy($request->user(), $school->id, false),
+            Role::STAFF
+        ));
 
         $data = $request->validate([
             'role_keys' => 'required|array|min:1',
@@ -288,5 +305,41 @@ class StaffController extends Controller
         $roles->revoke($school, $user, $request->user());
 
         return back()->with('status', 'School access revoked for '.$user->full_name.'.');
+    }
+
+    /**
+     * @param  list<string>  $roleKeys
+     */
+    private function staffBand(array $roleKeys): string
+    {
+        $leadership = [
+            Role::SCHOOL_ADMIN,
+            Role::DIRECTOR,
+            Role::HEAD_TEACHER,
+            Role::DEPUTY_HEAD_TEACHER,
+            Role::DIRECTOR_OF_STUDIES,
+        ];
+        if (array_intersect($roleKeys, $leadership) !== []) {
+            return 'leadership';
+        }
+        if (array_intersect($roleKeys, [Role::SUBJECT_TEACHER, Role::CLASS_TEACHER]) !== []) {
+            return 'teaching';
+        }
+
+        return 'office';
+    }
+
+    /**
+     * @param  list<string>  $roleKeys
+     */
+    private function primaryStaffKey(array $roleKeys): string
+    {
+        foreach (Role::STAFF as $key) {
+            if (in_array($key, $roleKeys, true)) {
+                return $key;
+            }
+        }
+
+        return 'staff';
     }
 }

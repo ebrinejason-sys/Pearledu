@@ -212,4 +212,25 @@ class StaffRoleSeparationTest extends TestCase
             ->assertOk()
             ->assertDontSee('Edit details', false);
     }
+
+    public function test_staff_directory_is_graphical_and_excludes_learners_and_parents(): void
+    {
+        $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
+
+        $this->actingAsInSchool($admin)->get(route('app.staff.index'))
+            ->assertOk()
+            ->assertSee('Leadership', false)
+            ->assertSee('Teaching staff', false)
+            ->assertSee('Office & support', false)
+            ->assertSee('Daniel Director', false)
+            ->assertSee('Bernard Bursar', false)
+            ->assertSee('Sarah Secretary', false)
+            ->assertSee('developed by Voxsign Technologies', false)
+            ->assertSee('viewBox="30 30 340 340"', false)
+            ->assertDontSee('Stella Student', false)
+            ->assertDontSee('student@standrews.test', false)
+            ->assertDontSee('Patricia Parent', false)
+            ->assertDontSee('parent@standrews.test', false)
+            ->assertDontSee('Own learner portal', false);
+    }
 }

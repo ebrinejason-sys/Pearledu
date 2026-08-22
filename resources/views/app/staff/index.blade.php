@@ -145,17 +145,26 @@
   </dialog>
     @endif
 
-    <div class="card">
+    <div class="card staff-invites">
       <h2 style="margin-top:0;font-size:18px">Open invitations</h2>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Invited people cannot sign in until they open the email link and choose a password. Adding a role to the catalog is <code>php artisan db:seed --class=RoleSeeder</code>. If mail never arrived, activate with <code>php artisan invite:activate email@school.test --password='…'</code>.</p>
       @if($openInvites->isEmpty())
-        <p style="color:var(--muted);margin:0">No open invites.</p>
+        <p style="color:var(--muted);margin:0">No open staff invites.</p>
       @else
-        <div class="staff-grid">
+        <div class="staff-grid staff-grid--invites">
           @foreach($openInvites as $invite)
-            <div class="staff-card" style="margin:0;padding:12px">
-              <strong>{{ $invite->user?->full_name ?? '—' }}</strong>
-              <span class="staff-card__meta">{{ $invite->email ?: $invite->phone }}</span>
-              <p style="margin:8px 0 0"><span class="pill">{{ $invite->role_key }}</span> · {{ $invite->expires_at->diffForHumans() }}</p>
+            <div class="staff-card staff-card--invite staff-card--{{ $invite->role_key }}">
+              <div class="staff-card__hero staff-card__hero--compact">
+                <span class="staff-card__photo-lg staff-card__photo-lg--initial" aria-hidden="true">{{ $invite->user?->avatarInitial() ?? '?' }}</span>
+                <div class="staff-card__identity">
+                  <span class="staff-card__name">{{ $invite->user?->full_name ?? '—' }}</span>
+                  <span class="staff-card__meta staff-card__meta--on-hero">{{ $invite->email ?: $invite->phone }}</span>
+                </div>
+              </div>
+              <div class="staff-card__body">
+                <span class="pill">{{ $invite->role_key }}</span>
+                <p class="staff-card__meta" style="margin:8px 0 0">Expires {{ $invite->expires_at->diffForHumans() }}. They cannot log in yet.</p>
+              </div>
             </div>
           @endforeach
         </div>
@@ -163,103 +172,38 @@
     </div>
   </div>
 
-  <h2 style="font-size:18px;margin:8px 0 12px">Active members</h2>
-  <div class="staff-grid">
-    @forelse($members as $member)
-      @php($user = $member['user'])
-      <div class="staff-card">
-        <div class="staff-card__head">
-          @if($user->avatarUrl())
-            <img src="{{ $user->avatarUrl() }}" alt="" class="staff-card__photo" width="42" height="42">
-          @else
-            <span class="staff-card__avatar" aria-hidden="true">{{ $user->avatarInitial() }}</span>
-          @endif
-          <div>
-            <span class="staff-card__name">{{ $user->full_name }}</span>
-            <span class="staff-card__meta">{{ $user->email ?? $user->phone ?? '—' }} · {{ $user->status }}</span>
-          </div>
-        </div>
-        @if(!empty($member['teaching_load']))
-          <div class="teach-chips" style="margin:0 0 12px">
-            @foreach($member['teaching_load'] as $load)
-              <span class="pill">{{ $load['subject'] }} · {{ $load['class'] }} · {{ $load['periods'] }}/wk</span>
-            @endforeach
-          </div>
-        @endif
-        @if(!empty($member['can_administer']) && $roles->isNotEmpty())
-          <form method="post" action="{{ route('app.staff.roles', $user) }}">
-            @csrf @method('PUT')
-            @foreach($member['role_keys'] as $existingKey)
-              @unless($roles->contains('key', $existingKey))
-                <input type="hidden" name="role_keys[]" value="{{ $existingKey }}">
-              @endunless
-            @endforeach
-            <div class="role-picks">
-              @foreach($member['roles'] as $role)
-                @unless($roles->contains('key', $role['key']))
-                  <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
-                @endunless
-              @endforeach
-              @foreach($roles as $role)
-                <label class="role-pick">
-                  <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-member-role" data-user="{{ $user->id }}" @checked(collect($member['role_keys'])->contains($role->key))>
-                  <strong>{{ $role->label }}</strong>
-                </label>
-              @endforeach
-            </div>
-            <div class="js-member-homeroom" data-user="{{ $user->id }}" @if(!collect($member['role_keys'])->contains('class_teacher')) hidden @endif>
-              <label>Homeroom class</label>
-              <select name="class_id">
-                <option value="">Select class</option>
-                @foreach($classes as $c)
-                  <option value="{{ $c->id }}" @selected((string) $member['homeroom_class_id'] === (string) $c->id)>{{ $c->displayName() }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div class="js-member-teach" data-user="{{ $user->id }}" @if(!collect($member['role_keys'])->contains('subject_teacher')) hidden @endif>
-              <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Add or extend teaching load (subject + classes + periods/week). Existing rows stay unless you replace them from Teaching assignments.</p>
-              @include('app.teaching._load-builder', [
-                'builderId' => 'member-load-'.$user->id,
-                'subjects' => $subjects ?? collect(),
-                'classes' => $classes,
-                'hint' => 'New rows are added to this teacher. One person may teach many subjects to many classes.',
-              ])
-            </div>
-            <p style="margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px">
-              <button type="submit" class="btn ghost">Save responsibilities</button>
-              @if(!empty($member['can_edit_file']))
-                <a class="btn ghost" href="{{ route('app.staff.show', $user) }}">Edit details</a>
-              @else
-                <a class="btn ghost" href="{{ route('app.staff.show', $user) }}">Profile</a>
-              @endif
-              @if(!empty($canPrintId))
-                <a class="btn ghost" href="{{ route('app.staff.id', $user) }}">ID card</a>
-              @endif
-            </p>
-          </form>
-        @else
-          @foreach($member['roles'] as $role)
-            <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
-          @endforeach
-          <p style="margin:12px 0 0">
-            @if(!empty($member['can_edit_file']))
-              <a href="{{ route('app.staff.show', $user) }}">Edit details</a>
-            @else
-              <a href="{{ route('app.staff.show', $user) }}">Profile</a>
-            @endif
-          </p>
-        @endif
-        @if(!empty($member['can_administer']) && (int) $user->id !== (int) auth()->id())
-          <form method="post" action="{{ route('app.staff.revoke', $user) }}" onsubmit="return confirm('Revoke school access for {{ $user->full_name }}?')" style="margin-top:8px">
-            @csrf @method('DELETE')
-            <button type="submit" class="btn ghost" style="color:var(--danger,#b42318)">Revoke</button>
-          </form>
-        @endif
+  @php
+    $bands = [
+      'leadership' => ['title' => 'Leadership', 'members' => collect()],
+      'teaching' => ['title' => 'Teaching staff', 'members' => collect()],
+      'office' => ['title' => 'Office & support', 'members' => collect()],
+    ];
+    foreach ($members as $member) {
+      $band = $member['band'] ?? 'office';
+      if (! isset($bands[$band])) {
+        $band = 'office';
+      }
+      $bands[$band]['members']->push($member);
+    }
+  @endphp
+
+  @foreach($bands as $bandKey => $band)
+    @continue($band['members']->isEmpty())
+    <section class="staff-band staff-band--{{ $bandKey }}" aria-labelledby="staff-band-{{ $bandKey }}">
+      <h2 id="staff-band-{{ $bandKey }}" class="staff-band__title">
+        {{ $band['title'] }}
+        <span class="staff-band__count">{{ $band['members']->count() }}</span>
+      </h2>
+      <div class="staff-grid">
+        @foreach($band['members'] as $member)
+          @include('app.staff._card', ['member' => $member])
+        @endforeach
       </div>
-    @empty
-      <div class="card" style="margin:0"><p style="color:var(--muted);margin:0">No members yet.</p></div>
-    @endforelse
-  </div>
+    </section>
+  @endforeach
+  @if($members->isEmpty())
+    <div class="card" style="margin:0"><p style="color:var(--muted);margin:0">No staff members yet.</p></div>
+  @endif
 @endsection
 
 @section('head')

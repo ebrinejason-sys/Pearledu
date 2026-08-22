@@ -57,4 +57,23 @@ class BrandLogoTest extends TestCase
         $this->assertStringContainsString('class="vx-logo"', $html);
         $this->assertSame(21, substr_count($html, '<path '));
     }
+
+    public function test_sidebar_brand_uses_sphere_and_voxsign_tagline(): void
+    {
+        $html = view('layouts.partials.brand', ['showTagline' => true])->render();
+
+        $this->assertStringContainsString('viewBox="30 30 340 340"', $html);
+        $this->assertStringContainsString('developed by Voxsign Technologies', $html);
+        $this->assertStringContainsString('class="vx-logo"', $html);
+        $this->assertSame(21, substr_count($html, '<path '));
+        $this->assertStringNotContainsString('voxsign-logo.svg', $html);
+    }
+
+    public function test_brand_outside_sidebar_omits_the_tagline(): void
+    {
+        $html = view('layouts.partials.brand')->render();
+
+        $this->assertStringContainsString('Pearl', $html);
+        $this->assertStringNotContainsString('developed by Voxsign Technologies', $html);
+    }
 }
