@@ -21,7 +21,7 @@ class HeartbeatController extends Controller
             'ok' => true,
             'lifetime_seconds' => $idle->lifetimeMinutes() * 60,
             'warning_seconds' => $idle->warningMinutes() * 60,
-            'remaining_seconds' => $idle->remainingSeconds($user->fresh() ?? $user),
+            'remaining_seconds' => $idle->remainingSeconds($user),
         ]);
     }
 }
