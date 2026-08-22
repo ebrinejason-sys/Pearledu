@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Audit\AuditLogger;
 use App\Services\Authorization\PermissionResolver;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,8 @@ class User extends Authenticatable
         'full_name',
         'email',
         'phone',
+        'gender',
+        'nin',
         'password',
         'status',
         'preferred_theme',
@@ -39,6 +42,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'nin' => 'encrypted',
             'is_platform' => 'boolean',
             'two_factor_secret' => 'encrypted',
             'two_factor_confirmed_at' => 'datetime',
@@ -144,6 +148,47 @@ class User extends Authenticatable
     public function schoolsForUser()
     {
         return School::whereIn('id', $this->activeAssignments()->whereNotNull('school_id')->pluck('school_id'))->get();
+    }
+
+    public function getNinAttribute($v): ?string
+    {
+        $plain = $v !== null ? $this->castAttribute('nin', $v) : null;
+        if ($plain !== null) {
+            app(AuditLogger::class)->record('sensitive.read', $this, ['field' => 'nin']);
+        }
+
+        return $plain;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function schoolRoleKeys(?int $schoolId = null): array
+    {
+        $query = $this->activeAssignments()->with('role')->whereNotNull('school_id');
+        if ($schoolId) {
+            $query->where('school_id', $schoolId);
+        }
+
+        return $query->get()->pluck('role.key')->filter()->unique()->values()->all();
+    }
+
+    public function isSchoolStaff(?int $schoolId = null): bool
+    {
+        return count(array_intersect($this->schoolRoleKeys($schoolId), Role::STAFF)) > 0;
+    }
+
+    public function requiresNationalId(?int $schoolId = null): bool
+    {
+        $keys = $this->schoolRoleKeys($schoolId);
+
+        return count(array_intersect($keys, Role::STAFF)) > 0
+            || in_array(Role::PARENT, $keys, true);
+    }
+
+    public function hasNationalIdOnFile(): bool
+    {
+        return filled($this->getAttributes()['nin'] ?? null);
     }
 
     public function avatarUrl(): ?string

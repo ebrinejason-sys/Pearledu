@@ -44,7 +44,8 @@ Jane has one account. Navigation and dashboards are composed from the union of t
 | `subject_teacher` | Teacher | Teacher | Current-year `teaching_assignments` (class **and** subject) |
 | `class_teacher` | Class Teacher | Class Teacher | Homeroom `role_assignments.class_id` |
 | `director_of_studies` | Director of Studies | DOS / Dean of Studies / Dean of Academics | School-wide academic |
-| `bursar` | Bursar | Bursar | School-wide finance |
+| `bursar` | Bursar | Bursar | School-wide finance + salary records |
+| `secretary` | Secretary | Secretary | Front office: printable staff IDs and staff clock |
 | `deputy_head_teacher` | Deputy Head Teacher | Operational deputy | School-wide operations, no grade/finance writes, no promotions |
 | `head_teacher` | Head Teacher | Headteacher / Head of School | School-wide view + staff/ops; no grade/finance writes |
 | `director` | Director | Director | School-wide read; staff appointments; no grade/finance/attendance writes |
@@ -76,7 +77,7 @@ Academic operating system: years, terms, classes, subjects, teaching assignments
 
 ### 6. Bursar
 
-Finance workspace: structures, invoicing, payments, SchoolPay reconciliation, discounts, reversals, reports. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades, attendance, or HR.
+Finance workspace: structures, invoicing, payments, SchoolPay reconciliation, discounts, reversals, reports. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades or learner attendance. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
 
 ### 7. Head Teacher
 
@@ -84,7 +85,11 @@ Operational leadership dashboard: students, staff, attendance oversight, promoti
 
 ### 8. Director
 
-Executive/governance dashboard: enrollment, collection, attendance, academic mean, alerts. No transactional writes (marks, attendance, payments).
+Executive/governance dashboard: enrollment, collection, attendance, academic mean, gender stats, class overview (learner profiles + published performance), staff profiles, staff clock history, salary **view** and payment history. No transactional writes (marks, learner attendance, fee mutations, salary changes). `hr.payroll.view` is not `finance.manage`.
+
+### Secretary
+
+Front office: staff directory, printable staff ID cards (photo, name, roles on the front; badge barcode on the back), barcode clock in/out (`staff.attendance.mark`), staff messages. No finance or grade writes. Not invitable by bursars or teachers.
 
 ### Deputy Head Teacher
 
@@ -94,13 +99,13 @@ Same operational shape as Head Teacher except promotions stay with the Head Teac
 
 | Inviter | May invite |
 |---|---|
-| School Admin | Director, Head, Deputy, DOS, Bursar, Class Teacher, Teacher, Parent, Student |
-| Director | Head, Deputy, DOS, Bursar, Class Teacher, Teacher, Parent, Student |
-| Head Teacher | DOS, Class Teacher, Teacher, Parent, Student |
+| School Admin | Director, Head, Deputy, DOS, Bursar, Secretary, Class Teacher, Teacher, Parent, Student |
+| Director | Head, Deputy, DOS, Bursar, Secretary, Class Teacher, Teacher, Parent, Student |
+| Head Teacher | DOS, Secretary, Class Teacher, Teacher, Parent, Student |
 | Deputy Head | Class Teacher, Teacher, Parent, Student |
 | DOS | Class Teacher, Teacher, Parent, Student |
 | Class Teacher | Parent (for learners they can view) |
-| Bursar / Teacher | — |
+| Bursar / Secretary / Teacher | — |
 
 Route access matches policy: DOS can open Staff to send teacher invites; class teachers invite parents from the learner profile, not the staff directory. **Editing or revoking existing staff roles requires `staff.manage`.** `staff.invite.teacher` is invite-only — DOS cannot change a Head Teacher’s responsibilities or strip a bursar.
 
@@ -126,13 +131,14 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 |---|---|---|---|---|---|---|---|
 | Student | own (portal) | own R | own R | own R | — | — | — |
 | Parent | children (portal) | children R | children R | children R + pay | — | — | — |
-| Teacher | assigned R | assigned CRUD | assigned W | — | — | — | — |
-| Class teacher | homeroom R + parent invite | homeroom R | homeroom W | — | — | — | — |
-| DOS | view + enrollment | all CRUD + verify | all W | — | invite teachers | all CRUD | — |
-| Bursar | financial names on invoices | — | — | all CRUD | — | — | — |
-| Head Teacher | all RW | all R | all W | all R | staff RW | — | — |
-| Deputy Head | all RW | all R | all W | all R | staff RW | — | — |
-| Director | all R | all R | all R | all R | staff RW | — | — |
+| Teacher | assigned R | assigned CRUD | assigned W | — | messages | — | — |
+| Class teacher | homeroom R + parent invite | homeroom R | homeroom W | — | messages | — | — |
+| DOS | view + enrollment | all CRUD + verify | all W | — | invite teachers + messages | all CRUD | — |
+| Bursar | financial names on invoices | — | — | all CRUD | messages + payroll W | — | — |
+| Secretary | — | — | staff clock W | — | directory R + ID print | — | — |
+| Head Teacher | all RW | all R | all W + staff clock | all R | staff RW + payroll R | — | — |
+| Deputy Head | all RW | all R | all W + staff clock | all R | staff RW + payroll R | — | — |
+| Director | all R | all R | learner R + staff clock R | all R + class defaulters | staff RW + payroll R | — | — |
 | School admin | all | all | all | all | all | all | all |
 
 ## Implementation map
@@ -150,13 +156,24 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Invite matrix | `InvitePolicy` |
 | Homeroom class_id sync | `StaffRoleService` |
 | Staff role mutation | `staff.manage` routes + `StaffRoleService` (invite-only roles cannot sync/revoke) |
+| Staff ID / clock | `StaffBadgeService`, `StaffClockService` (`staff_badges`, `staff_time_punches`) |
+| Staff messages | `StaffMessageService` (`staff_conversations` / `staff_messages`) |
+| Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) |
+| Gender stats | `GenderStatsService` |
+| Class defaulters | `DefaulterNoticeService` (print + notify class teacher via staff messages) |
 | Idle logout | `EnforceIdleSession` + `users.last_seen_at` (remember-me cannot skip) |
 | Role dashboards | `RoleWorkspaceService` |
 | Nav / shortcuts | `NavigationBuilder`, `SchoolDashboardService` (not a security boundary) |
 
+## Identity and demographics
+
+Staff and parent accounts must store a NIN (encrypted). Learners may have a NIN; it is optional. Gender is `male` / `female` on users and students. Leadership dashboards and class overview show M/F counts. Class teachers see M/F for their homeroom only.
+
+Platform operators who have **entered** a school workspace may edit that school’s EMIS number and SchoolPay credentials (`platform.schools.update` + recent password). They imitate staff from the entered school’s staff list (`platform.users.impersonate`) — the existing impersonation flow, not a second one. `emis_data_entrant` can enter a workspace but cannot change integrations.
+
 ## Deferred
 
-- Bursar portal lock for fee defaulters
+- Bursar portal lock that blocks parent/student access until fees clear
 - Director break-glass override with audit
-- Payroll (bursar spec) — HR leave is the current HR module
+- Full payroll engine (leave, PAYE, statutory filings) — this pass is salary amount + payment history only
 - Per-tenant custom permission grants

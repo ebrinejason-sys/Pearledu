@@ -11,6 +11,7 @@ use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
 use App\Services\Provisioning\StaffRoleService;
 use App\Services\Tenancy\TenantContext;
+use App\Support\Gender;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -56,8 +57,18 @@ class StaffController extends Controller
             ->get();
 
         $canManageStaff = in_array('staff.manage', $request->user()->permissionsForSchool($school->id), true);
+        $perms = $request->user()->permissionsForSchool($school->id);
 
-        return view('app.staff.index', compact('school', 'members', 'openInvites', 'roles', 'classes', 'canManageStaff'));
+        return view('app.staff.index', [
+            'school' => $school,
+            'members' => $members,
+            'openInvites' => $openInvites,
+            'roles' => $roles,
+            'classes' => $classes,
+            'canManageStaff' => $canManageStaff,
+            'canPrintId' => in_array('staff.id.print', $perms, true),
+            'canViewClock' => in_array('staff.attendance.view', $perms, true) || in_array('staff.attendance.mark', $perms, true),
+        ]);
     }
 
     public function store(Request $request, TenantContext $context, StaffInvitationService $inviter, InvitePolicy $policy)
@@ -66,10 +77,13 @@ class StaffController extends Controller
         abort_unless($school, 404);
         $allowed = $policy->rolesInvitableBy($request->user(), $school->id, false);
 
+        $needsIdentity = collect($request->input('role_keys', []))->intersect(array_merge(Role::STAFF, [Role::PARENT]))->isNotEmpty();
         $data = $request->validate([
             'full_name' => 'required|string|max:120',
             'email' => 'nullable|email|max:190|required_without:phone',
             'phone' => 'nullable|string|max:30|required_without:email',
+            'gender' => [$needsIdentity ? 'required' : 'nullable', Rule::in(Gender::keys())],
+            'nin' => [$needsIdentity ? 'required' : 'nullable', 'string', 'min:10', 'max:20'],
             'role_keys' => 'required|array|min:1',
             'role_keys.*' => ['string', Rule::in($allowed)],
             'class_id' => 'nullable|integer|exists:school_classes,id',

@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\Term;
 use App\Services\Academics\CurrentAcademicContext;
 use App\Services\Audit\AuditLogger;
+use App\Services\Fees\DefaulterNoticeService;
 use App\Services\Fees\FeeInvoiceService;
 use App\Services\Fees\FeePaymentService;
 use App\Services\SchoolPay\SchoolPayPaymentService;
@@ -102,6 +103,49 @@ class FeeController extends Controller
             'canManageFinance'
         ));
 
+    }
+
+    public function defaulters(Request $request, TenantContext $ctx, DefaulterNoticeService $defaulters)
+    {
+        $school = $ctx->school();
+        abort_unless($school && $request->user(), 404);
+
+        $perms = $request->user()->permissionsForSchool($school->id);
+        $classes = SchoolClass::query()->where('school_id', $school->id)->orderBy('level')->orderBy('name')->get();
+        $classId = $request->integer('class_id') ?: null;
+        $class = $classId
+            ? SchoolClass::query()->where('school_id', $school->id)->where('id', $classId)->firstOrFail()
+            : null;
+        $rows = $class ? $defaulters->forClass($school, (int) $class->id) : collect();
+        $print = $request->boolean('print');
+
+        return view('app.fees.defaulters', [
+            'school' => $school,
+            'class' => $class,
+            'classes' => $classes,
+            'rows' => $rows,
+            'print' => $print && $class,
+            'canNotify' => in_array('staff.messages', $perms, true),
+            'canViewLearners' => in_array('learners.view', $perms, true) || in_array('learners.manage', $perms, true),
+        ]);
+    }
+
+    public function notifyDefaulters(Request $request, TenantContext $ctx, DefaulterNoticeService $defaulters)
+    {
+        $school = $ctx->school();
+        abort_unless($school && $request->user(), 404);
+        $data = $request->validate([
+            'class_id' => 'required|integer',
+        ]);
+        $class = SchoolClass::query()->where('school_id', $school->id)->where('id', $data['class_id'])->firstOrFail();
+
+        try {
+            $defaulters->notifyClassTeacher($school, $class, $request->user());
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['class_id' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'Class teacher notified about defaulters in '.$class->name.'.');
     }
 
     public function storeStructure(Request $request, TenantContext $ctx)

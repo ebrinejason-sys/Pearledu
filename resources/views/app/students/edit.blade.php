@@ -3,7 +3,7 @@
 @section('content')
   <h2>Edit {{ $student->full_name }}</h2>
   <div class="card">
-    <form method="post" action="{{ route('app.students.update', $student) }}">
+    <form method="post" action="{{ route('app.students.update', $student) }}" enctype="multipart/form-data">
       @csrf
       @method('PUT')
       @include('app.students._form')

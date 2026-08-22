@@ -8,7 +8,7 @@
     </div>
   </div>
   <div class="card">
-    <form method="post" action="{{ route('platform.students.store') }}">
+    <form method="post" action="{{ route('platform.students.store') }}" enctype="multipart/form-data">
       @csrf
       @include('app.students._form')
       <p style="margin-top:16px">

@@ -16,6 +16,7 @@ use App\Http\Controllers\Platform\SupportTicketController;
 use App\Http\Controllers\Platform\SystemController;
 use App\Http\Controllers\Platform\WalkthroughSchoolController;
 use App\Http\Controllers\Platform\WorkspaceController;
+use App\Http\Controllers\Platform\WorkspaceSettingsController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -152,6 +153,12 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.
     // Permission first (platform RLS), then pin entered-school RLS for data routes.
     Route::middleware(['platform.permission:platform.schools.enter', 'platform.school'])->group(function () {
         Route::get('workspace', [WorkspaceController::class, 'show'])->name('workspace');
+        Route::get('workspace/settings', [WorkspaceSettingsController::class, 'edit'])
+            ->middleware('platform.permission:platform.schools.update')
+            ->name('workspace.settings');
+        Route::put('workspace/settings', [WorkspaceSettingsController::class, 'update'])
+            ->middleware(['platform.permission:platform.schools.update', 'platform.recent_auth'])
+            ->name('workspace.settings.update');
 
         Route::get('students', [StudentController::class, 'index'])->name('students.index');
         Route::get('students/create', [StudentController::class, 'create'])->name('students.create');

@@ -15,8 +15,8 @@ class Student extends Model
     use BelongsToSchool, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'school_id', 'user_id', 'full_name', 'emis_number', 'schoolpay_payment_code',
-        'lin', 'nin', 'class_id', 'status',
+        'school_id', 'user_id', 'full_name', 'gender', 'emis_number', 'schoolpay_payment_code',
+        'lin', 'nin', 'photo_path', 'class_id', 'status',
     ];
 
     protected $casts = ['lin' => 'encrypted', 'nin' => 'encrypted'];   // DPPA: encrypted at rest
@@ -87,5 +87,14 @@ class Student extends Model
         }
 
         return $p;
+    }
+
+    public function photoUrl(): ?string
+    {
+        if ($this->photo_path) {
+            return asset('storage/'.$this->photo_path);
+        }
+
+        return $this->user?->avatarUrl();
     }
 }

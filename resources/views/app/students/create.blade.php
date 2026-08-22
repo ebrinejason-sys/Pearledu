@@ -3,7 +3,7 @@
 @section('content')
   <h2>Add student</h2>
   <div class="card">
-    <form method="post" action="{{ route('app.students.store') }}">
+    <form method="post" action="{{ route('app.students.store') }}" enctype="multipart/form-data">
       @csrf
       @include('app.students._form')
       <p style="margin-top:16px">

@@ -19,6 +19,7 @@ use App\Services\Fees\FeeInvoiceService;
 use App\Services\Learners\StudentLifecycleService;
 use App\Services\Sms\SmsCreditService;
 use App\Services\Tenancy\TenantContext;
+use App\Support\Gender;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -198,6 +199,7 @@ class WalkthroughSchoolService
             Role::DEPUTY_HEAD_TEACHER => ['Diana Deputy', 'deputy@stkizito.test'],
             Role::DIRECTOR_OF_STUDIES => ['Doris Studies', 'dos@stkizito.test'],
             Role::BURSAR => ['Bernard Bursar', 'bursar@stkizito.test'],
+            Role::SECRETARY => ['Sarah Secretary', 'secretary@stkizito.test'],
         ];
     }
 
@@ -243,6 +245,8 @@ class WalkthroughSchoolService
             'email' => $email,
             'status' => 'active',
             'password' => $password,
+            'gender' => $this->genderForName($name),
+            'nin' => $user->getAttributes()['nin'] ?? $this->demoNin($email),
         ])->save();
 
         return $user;
@@ -272,6 +276,19 @@ class WalkthroughSchoolService
             'ends_on' => null,
             'class_id' => $classId ?? $assignment->class_id,
         ])->save();
+    }
+
+    private function genderForName(string $name): string
+    {
+        $first = strtolower(strtok($name, ' ') ?: '');
+        $female = ['grace', 'helen', 'diana', 'doris', 'sarah', 'carol', 'mary', 'tina', 'patricia', 'phoebe', 'priscilla', 'esther'];
+
+        return in_array($first, $female, true) ? Gender::FEMALE : Gender::MALE;
+    }
+
+    private function demoNin(string $email): string
+    {
+        return 'CM'.strtoupper(substr(hash('sha256', $email), 0, 12));
     }
 
     private function ensureYearAndTerms(School $school): AcademicYear
@@ -433,8 +450,14 @@ class WalkthroughSchoolService
                         'full_name' => $name,
                         'class_id' => $class->id,
                         'status' => 'active',
+                        'gender' => $index % 2 === 0 ? Gender::FEMALE : Gender::MALE,
                     ],
                 );
+                if (! $student->gender) {
+                    $student->forceFill([
+                        'gender' => $index % 2 === 0 ? Gender::FEMALE : Gender::MALE,
+                    ])->save();
+                }
                 $this->lifecycle->enrollStudent($student, $class->id, $year->id);
                 $index++;
             }

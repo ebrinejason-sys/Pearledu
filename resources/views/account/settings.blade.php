@@ -24,7 +24,7 @@
           @endif
           <div style="flex:1;min-width:0">
             <label>Profile photo</label>
-            <input type="file" name="avatar" accept="image/*">
+            <input type="file" name="avatar" accept="image/*" capture="user">
             @if(auth()->user()->avatar_path)
               <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:500">
                 <input type="checkbox" name="remove_avatar" value="1"> Remove photo
@@ -41,6 +41,16 @@
         <label>Phone</label>
         <input name="phone" value="{{ old('phone', auth()->user()->phone) }}">
         @error('phone')<div class="err">{{ $message }}</div>@enderror
+        <label>Gender</label>
+        <select name="gender">
+          <option value="">— Select —</option>
+          <option value="male" @selected(old('gender', auth()->user()->gender) === 'male')>Male</option>
+          <option value="female" @selected(old('gender', auth()->user()->gender) === 'female')>Female</option>
+        </select>
+        @error('gender')<div class="err">{{ $message }}</div>@enderror
+        <label>National ID (NIN){{ auth()->user()->requiresNationalId() ? ' (required for staff and parents)' : ' (optional)' }}</label>
+        <input name="nin" value="{{ old('nin') }}" autocomplete="off" placeholder="{{ auth()->user()->getAttributes()['nin'] ?? null ? 'Leave blank to keep the current NIN' : 'Enter NIN' }}">
+        @error('nin')<div class="err">{{ $message }}</div>@enderror
         <label>Personal theme override</label>
         <select name="preferred_theme">
           <option value="">Use school / default theme</option>

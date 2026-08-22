@@ -18,8 +18,25 @@
         <label>Search</label>
         <input name="q" value="{{ $q }}" placeholder="Name or EMIS number">
       </div>
+      <div>
+        <label>Class</label>
+        <select name="class_id">
+          <option value="">All classes</option>
+          @foreach(($classes ?? []) as $class)
+            <option value="{{ $class->id }}" @selected((int) ($classFilter ?? 0) === (int) $class->id)>{{ $class->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div>
+        <label>Gender</label>
+        <select name="gender">
+          <option value="">All</option>
+          <option value="male" @selected(($genderFilter ?? '') === 'male')>Male</option>
+          <option value="female" @selected(($genderFilter ?? '') === 'female')>Female</option>
+        </select>
+      </div>
       <button class="btn" type="submit">Search</button>
-      @if($q !== '')
+      @if($q !== '' || !empty($classFilter) || !empty($genderFilter))
         <a class="btn ghost" href="{{ route('app.students.index') }}">Clear</a>
       @endif
     </form>
@@ -33,6 +50,7 @@
         <thead>
           <tr style="text-align:left;color:var(--muted);font-size:13px">
             <th style="padding:8px 4px">Name</th>
+            <th style="padding:8px 4px">Gender</th>
             <th style="padding:8px 4px">EMIS</th>
             <th style="padding:8px 4px">Class</th>
             <th style="padding:8px 4px">Status</th>
@@ -43,6 +61,7 @@
           @foreach($students as $student)
             <tr style="border-top:1px solid var(--border, #e5e7eb)">
               <td style="padding:10px 4px"><a href="{{ route('app.students.show', $student) }}">{{ $student->full_name }}</a></td>
+              <td style="padding:10px 4px">{{ \App\Support\Gender::label($student->gender) }}</td>
               <td style="padding:10px 4px">{{ $student->emis_number ?: '—' }}</td>
               <td style="padding:10px 4px">{{ $student->schoolClass?->name ?: '—' }}</td>
               <td style="padding:10px 4px"><span class="pill">{{ $student->status }}</span></td>

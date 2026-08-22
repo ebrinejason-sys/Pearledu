@@ -16,6 +16,7 @@ use App\Models\Student;
 use App\Models\TimetableSlot;
 use App\Models\User;
 use App\Services\Authorization\AssignedClassResolver;
+use App\Services\People\GenderStatsService;
 use Illuminate\Support\Collection;
 
 /**
@@ -23,7 +24,10 @@ use Illuminate\Support\Collection;
  */
 class RoleWorkspaceService
 {
-    public function __construct(private AssignedClassResolver $assigned) {}
+    public function __construct(
+        private AssignedClassResolver $assigned,
+        private GenderStatsService $gender,
+    ) {}
 
     /**
      * @param  list<string>  $permissions
@@ -161,6 +165,7 @@ class RoleWorkspaceService
             'fees_cleared' => $feesCleared,
             'fees_total' => $feeTotal,
             'roster' => $students->take(12),
+            'gender' => $this->gender->countStudents($school, $classId),
         ];
     }
 
@@ -290,6 +295,7 @@ class RoleWorkspaceService
             'attendance_pct' => $attendancePct,
             'academic_mean' => $mean !== null ? round((float) $mean, 1) : null,
             'finance' => $finance,
+            'gender' => $this->gender->forSchool($school),
         ];
     }
 

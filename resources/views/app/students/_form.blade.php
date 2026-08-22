@@ -25,6 +25,23 @@
     @error('class_id')<div class="err">{{ $message }}</div>@enderror
   </div>
   <div>
+    <label>Gender</label>
+    <select name="gender">
+      <option value="">— Unspecified —</option>
+      <option value="male" @selected(old('gender', $isEdit ? ($student->gender ?? '') : '') === 'male')>Male</option>
+      <option value="female" @selected(old('gender', $isEdit ? ($student->gender ?? '') : '') === 'female')>Female</option>
+    </select>
+    @error('gender')<div class="err">{{ $message }}</div>@enderror
+  </div>
+  <div>
+    <label>Photo (upload or camera)</label>
+    <input type="file" name="photo" accept="image/*" capture="user">
+    @error('photo')<div class="err">{{ $message }}</div>@enderror
+    @if($isEdit && $student->photoUrl())
+      <p style="margin:8px 0 0"><img src="{{ $student->photoUrl() }}" alt="" width="72" height="72" style="width:72px;height:72px;object-fit:cover;border-radius:8px"></p>
+    @endif
+  </div>
+  <div>
     <label>Status</label>
     <select name="status" required>
       @foreach($statuses as $status)
@@ -35,12 +52,12 @@
   </div>
   <div>
     <label>LIN (optional)</label>
-    <input name="lin" value="{{ old('lin', $isEdit ? ($student->lin ?? '') : '') }}" autocomplete="off">
+    <input name="lin" value="{{ old('lin') }}" autocomplete="off" placeholder="{{ $isEdit && ($student->getAttributes()['lin'] ?? null) ? 'Leave blank to keep the current LIN' : '' }}">
     @error('lin')<div class="err">{{ $message }}</div>@enderror
   </div>
   <div>
     <label>NIN (optional)</label>
-    <input name="nin" value="{{ old('nin', $isEdit ? ($student->nin ?? '') : '') }}" autocomplete="off">
+    <input name="nin" value="{{ old('nin') }}" autocomplete="off" placeholder="{{ $isEdit && ($student->getAttributes()['nin'] ?? null) ? 'Leave blank to keep the current NIN' : '' }}">
     @error('nin')<div class="err">{{ $message }}</div>@enderror
   </div>
   <div>
@@ -51,5 +68,5 @@
   </div>
 </div>
 @if($isEdit)
-  <p style="color:var(--muted);font-size:13px;margin-top:8px">LIN/NIN are encrypted at rest. Opening this form audits a sensitive read.</p>
+  <p style="color:var(--muted);font-size:13px;margin-top:8px">LIN/NIN stay encrypted. Leave those fields blank to keep the stored values.</p>
 @endif

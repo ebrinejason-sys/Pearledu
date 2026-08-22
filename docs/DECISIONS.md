@@ -100,3 +100,15 @@
 
 **Rollback/revisit:** Add more form kinds only when they upsert through an existing scoped service.
 
+## 2026-08-22 — School ops: workspace integrations, secretary clock, identity, messages, payroll view
+
+**Problem:** Platform admins already inside a school workspace still left it to edit EMIS/SchoolPay. Staff had no printable ID or clock. Profiles lacked photo/NIN/gender. Bursar/director could not print a class defaulter list or notify that class teacher without SMS. Staff had no in-school messages. Director needed class/staff/salary visibility without finance or grade writes.
+
+**Decision:** Keep `config/permissions.php` + `role_assignments`. Add school role `secretary` (`staff.id.print`, `staff.attendance.mark`, `staff.messages`; no `finance.manage` / `assessment.enter`). Platform workspace settings are `platform.schools.update` + `platform.recent_auth` on the entered school. Impersonation stays the existing platform staff imitate flow. Staff clock and messages are new school-scoped tables with FORCE RLS. `hr.payroll.view` is granted to director/head/deputy; `hr.payroll.manage` stays bursar + school admin. NIN is required for staff and parents, optional for learners. Gender stats use `GenderStatsService`. Class defaulter notify uses staff messages, not `sms.send` on class teachers. Class overview is `reports.view` so teachers cannot see every class.
+
+**Reason:** Least privilege and the existing union architecture. A second RBAC or mixing staff punches into learner `attendance_records` would blur pastoral attendance with HR clock.
+
+**Consequences:** Secretary is invitable by school admin, director, and head. Director can open payroll and clock history but cannot POST salary or clock punches. Learner NIN stays optional.
+
+**Rollback/revisit:** A full payroll engine (leave, PAYE) remains deferred. Expand class-level SMS later without restoring school-wide `sms.send` on teachers.
+
