@@ -108,9 +108,9 @@ class FeePaymentService
         });
     }
 
-    public function reject(FeePayment $payment, int $verifiedBy): FeePayment
+    public function reject(FeePayment $payment, int $verifiedBy, string $reason): FeePayment
     {
-        return DB::transaction(function () use ($payment, $verifiedBy) {
+        return DB::transaction(function () use ($payment, $verifiedBy, $reason) {
             /** @var FeePayment $payment */
             $payment = FeePayment::query()->lockForUpdate()->findOrFail($payment->id);
 
@@ -119,6 +119,7 @@ class FeePaymentService
             }
 
             $payment->status = 'rejected';
+            $payment->decision_reason = $this->requireReason($reason, 'rejecting');
             $payment->verified_by = $verifiedBy;
             $payment->verified_at = now();
             $payment->save();
@@ -127,11 +128,12 @@ class FeePaymentService
         });
     }
 
-    public function reverse(FeePayment $payment, int $verifiedBy, ?string $reason = null): FeePayment
+    public function reverse(FeePayment $payment, int $verifiedBy, string $reason): FeePayment
     {
         return DB::transaction(function () use ($payment, $verifiedBy, $reason) {
             /** @var FeePayment $payment */
             $payment = FeePayment::query()->lockForUpdate()->findOrFail($payment->id);
+            $documented = $this->requireReason($reason, 'reversing');
 
             if ($payment->status !== 'confirmed') {
                 throw ValidationException::withMessages(['payment' => 'Only confirmed payments can be reversed.']);
@@ -158,8 +160,8 @@ class FeePaymentService
                 'invoice_id' => $invoice->id,
                 'amount' => $amount,
                 'method' => 'reversal',
-                'provider_ref' => $reason,
                 'status' => 'confirmed',
+                'decision_reason' => $documented,
                 'reverses_payment_id' => $payment->id,
                 'recorded_by' => $verifiedBy,
                 'verified_by' => $verifiedBy,
@@ -167,6 +169,7 @@ class FeePaymentService
             ]);
 
             $payment->status = 'reversed';
+            $payment->decision_reason = $documented;
             $payment->save();
 
             $newBalance = round((float) $invoice->balance + $amount, 2);
@@ -197,5 +200,17 @@ class FeePaymentService
         $invoice->balance = max(0, $newBalance);
         $invoice->status = $invoice->balance <= 0.0001 ? 'paid' : 'partial';
         $invoice->save();
+    }
+
+    private function requireReason(string $reason, string $action): string
+    {
+        $documented = trim($reason);
+        if (mb_strlen($documented) < 8) {
+            throw ValidationException::withMessages([
+                'reason' => 'Give a reason (at least 8 characters) for '.$action.' this payment.',
+            ]);
+        }
+
+        return mb_substr($documented, 0, 500);
     }
 }

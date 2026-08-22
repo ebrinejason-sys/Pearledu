@@ -20,7 +20,7 @@ class StudentLedgerService
             ->where('status', '!=', 'void')
             ->with([
                 'structure',
-                'payments' => fn ($q) => $q->where('status', 'confirmed')->orderBy('id'),
+                'payments' => fn ($q) => $q->whereIn('status', ['confirmed', 'reversed'])->orderBy('id'),
                 'adjustments',
             ])
             ->orderBy('id')
@@ -51,14 +51,26 @@ class StudentLedgerService
             }
 
             foreach ($invoice->payments as $payment) {
-                $credit = (float) $payment->amount;
-                $balance -= $credit;
-                $label = $payment->reverses_payment_id ? 'Reversal' : 'Payment';
+                $amount = (float) $payment->amount;
+                if ($payment->reverses_payment_id) {
+                    $balance += $amount;
+                    $lines[] = [
+                        'date' => optional($payment->created_at)->toDateString() ?? '',
+                        'description' => 'Reversal'.($payment->decision_reason ? ': '.$payment->decision_reason : ''),
+                        'debit' => $amount,
+                        'credit' => 0.0,
+                    ];
+
+                    continue;
+                }
+
+                $balance -= $amount;
+                $label = $payment->status === 'reversed' ? 'Payment (reversed)' : 'Payment';
                 $lines[] = [
                     'date' => optional($payment->created_at)->toDateString() ?? '',
-                    'description' => $label.' ('.$payment->method.')',
+                    'description' => $label.' ('.$payment->method.')'.($payment->status === 'reversed' && $payment->decision_reason ? ': '.$payment->decision_reason : ''),
                     'debit' => 0.0,
-                    'credit' => $credit,
+                    'credit' => $amount,
                 ];
             }
         }

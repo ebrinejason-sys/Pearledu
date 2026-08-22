@@ -81,6 +81,12 @@
                 <form method="post" action="{{ route('app.fees.payments.confirm', $p) }}" style="display:inline">@csrf
                   <button class="btn accent" type="submit">Confirm</button>
                 </form>
+                <button type="button" class="btn ghost js-decide-pay"
+                        data-open-modal="pay-decision-modal"
+                        data-action="{{ route('app.fees.payments.reject', $p) }}"
+                        data-title="Reject this payment"
+                        data-submit="Reject payment"
+                        data-label="{{ $p->invoice?->reference }} · {{ $p->invoice?->student?->full_name }} · UGX {{ number_format((float) $p->amount) }}">Reject</button>
               @endif
             </td>
           </tr>
@@ -119,6 +125,14 @@
                     <form method="post" action="{{ route('app.fees.receipts.email', $lastPay) }}" style="display:inline">@csrf
                       <button class="btn ghost" type="submit">Email</button>
                     </form>
+                    @if(empty($lastPay->reverses_payment_id))
+                      <button type="button" class="btn ghost js-decide-pay"
+                              data-open-modal="pay-decision-modal"
+                              data-action="{{ route('app.fees.payments.reverse', $lastPay) }}"
+                              data-title="Reverse this payment"
+                              data-submit="Reverse payment"
+                              data-label="{{ $inv->reference }} · {{ $inv->student?->full_name }} · UGX {{ number_format((float) $lastPay->amount) }}">Reverse</button>
+                    @endif
                   @endif
                 @endif
               </td>
@@ -156,22 +170,52 @@
       </p>
     </form>
   </dialog>
+  <dialog class="pe-modal pe-modal--form" id="pay-decision-modal">
+    <form method="post" action="" class="pe-modal__card" id="pay-decision-form">
+      @csrf
+      <h2 id="pay-decision-title" style="margin-top:0">Document this decision</h2>
+      <p id="pay-decision-label" style="color:var(--muted);font-size:14px"></p>
+      <label for="pay-decision-reason">Reason</label>
+      <textarea id="pay-decision-reason" name="reason" required minlength="8" maxlength="500" rows="3" placeholder="Why is this payment being reversed or rejected?">{{ old('reason') }}</textarea>
+      @error('reason')<div class="err">{{ $message }}</div>@enderror
+      <p style="color:var(--muted);font-size:13px;margin:8px 0 0">The reason is stored on the payment and written to the audit trail. Only the bursar (or school admin as break-glass) can reverse or reject a payment.</p>
+      <p style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="btn ghost" type="button" data-close-modal>Cancel</button>
+        <button class="btn accent" type="submit" id="pay-decision-submit">Save</button>
+      </p>
+    </form>
+  </dialog>
   @endif
 @endsection
 @section('head')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var modal = document.getElementById('pay-modal');
-    if (!modal) return;
-    document.querySelectorAll('.js-pay').forEach(function (btn) {
+    if (modal) {
+      document.querySelectorAll('.js-pay').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.getElementById('pay-invoice').value = btn.getAttribute('data-invoice');
+          document.getElementById('pay-amount').value = btn.getAttribute('data-balance');
+          document.getElementById('pay-label').textContent = btn.getAttribute('data-label');
+          modal.showModal();
+        });
+      });
+      document.getElementById('pay-cancel').addEventListener('click', function () { modal.close(); });
+    }
+    var decideForm = document.getElementById('pay-decision-form');
+    document.querySelectorAll('.js-decide-pay').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        document.getElementById('pay-invoice').value = btn.getAttribute('data-invoice');
-        document.getElementById('pay-amount').value = btn.getAttribute('data-balance');
-        document.getElementById('pay-label').textContent = btn.getAttribute('data-label');
-        modal.showModal();
+        if (!decideForm) return;
+        decideForm.setAttribute('action', btn.getAttribute('data-action'));
+        document.getElementById('pay-decision-title').textContent = btn.getAttribute('data-title');
+        document.getElementById('pay-decision-label').textContent = btn.getAttribute('data-label');
+        document.getElementById('pay-decision-submit').textContent = btn.getAttribute('data-submit');
       });
     });
-    document.getElementById('pay-cancel').addEventListener('click', function () { modal.close(); });
+    @if($errors->has('reason'))
+    var decideModal = document.getElementById('pay-decision-modal');
+    if (decideModal && decideModal.showModal && !decideModal.open) decideModal.showModal();
+    @endif
   });
 </script>
 @endsection
