@@ -144,7 +144,7 @@
 
 **Reason:** Charge by class and residence without a second billing engine. Front office keeps files and IDs; bursar keeps money; teachers keep grades.
 
-**Consequences:** Changing class or residency as `learners.manage` adds matching structures; old invoices are not voided. Secretary can open every learner profile. EMIS teaching vs non-teaching still uses role heuristics, not `staff_kind`. Class fee types must be day or boarding (not “any”); bursar may delete a type that has no confirmed/pending payments (unpaid invoices are voided).
+**Consequences:** Changing class or residency as `learners.manage` adds matching structures; old invoices are not voided. Secretary can open every learner profile. EMIS teaching vs non-teaching still uses role heuristics, not `staff_kind`. Class tuition must be day or boarding; other class fees may apply to both residences and are billed at admit/enroll with the matching residence types. Bursar may delete a type that has no confirmed/pending payments. Staff detail edits follow the invite hierarchy except secretary files.
 
 **Rollback/revisit:** A PAYE/allowance engine remains deferred. Do not add a `staff_kind` column unless a person must be classified independently of their school roles.
 

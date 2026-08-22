@@ -29,6 +29,8 @@
       <h3 style="margin-top:0">Record</h3>
       @if($student->photoUrl())
         <p><img src="{{ $student->photoUrl() }}" alt="" width="96" height="96" style="width:96px;height:96px;object-fit:cover;border-radius:12px"></p>
+      @else
+        <p><span class="learner-avatar learner-avatar--empty" style="width:96px;height:96px;border-radius:12px" aria-hidden="true"></span></p>
       @endif
       <p><strong>EMIS:</strong> {{ $student->emis_number ?: '—' }}</p>
       <p><strong>Gender:</strong> {{ \App\Support\Gender::label($student->gender) }}</p>
@@ -172,6 +174,10 @@
     <h3 style="margin-top:0">Fees</h3>
     <p style="color:var(--muted);font-size:13px;margin-top:0">Class day or boarding tuition is billed from the saved class structure. Extra fees (van, club) are applied on this profile. The cumulative balance is what this learner is meant to pay.</p>
     @if(!empty($canApplyFees))
+      <p><button type="button" class="btn" data-open-modal="apply-fee-modal">Apply extra fee</button></p>
+      <dialog class="pe-modal pe-modal--form" id="apply-fee-modal">
+        <div class="pe-modal__card">
+          <h3 style="margin-top:0">Apply extra fee</h3>
       <form method="post" action="{{ route('app.students.fees.apply', $student) }}" style="margin-bottom:18px">
         @csrf
         <div class="grid g2">
@@ -214,6 +220,11 @@
           <p style="margin-top:8px"><button class="btn ghost" type="submit">Apply saved extra</button></p>
         </form>
       @endif
+          <p style="display:flex;justify-content:flex-end;margin:12px 0 0">
+            <button class="btn ghost" type="button" data-close-modal>Close</button>
+          </p>
+        </div>
+      </dialog>
     @endif
     @if(!empty($canViewFinance))
       <h4>Amount due (cumulative)</h4>

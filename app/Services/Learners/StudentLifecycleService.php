@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Services\Academics\CurrentAcademicContext;
 use App\Services\Fees\FeeInvoiceService;
 use App\Services\Students\GuardianLinkService;
+use App\Support\Residency;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -26,9 +27,13 @@ class StudentLifecycleService
      *
      * @return array{student: Student, enrollment: ?Enrollment, warnings: list<string>, invoices: array}
      */
-    public function admitFromApplication(AdmissionApplication $application, ?int $classId = null, ?int $invitedBy = null): array
-    {
-        return DB::transaction(function () use ($application, $classId, $invitedBy) {
+    public function admitFromApplication(
+        AdmissionApplication $application,
+        ?int $classId = null,
+        ?int $invitedBy = null,
+        ?string $residency = null,
+    ): array {
+        return DB::transaction(function () use ($application, $classId, $invitedBy, $residency) {
             if ($application->student_id) {
                 $student = Student::query()->findOrFail($application->student_id);
 
@@ -59,9 +64,10 @@ class StudentLifecycleService
                 'full_name' => $application->applicant_name,
                 'class_id' => $classId,
                 'status' => 'active',
+                'residency' => Residency::normalize($residency),
             ]);
 
-            $enrollment = $this->enrollStudent($student, (int) $classId, (int) $year->id);
+            $enrollment = $this->enrollStudent($student, (int) $classId, (int) $year->id, $residency);
 
             $application->update([
                 'status' => 'enrolled',
@@ -73,7 +79,7 @@ class StudentLifecycleService
             $this->linkGuardianFromApplication($student, $application, $invitedBy, $warnings);
 
             $invoices = $this->billing->assignDefaultStructures(
-                $student,
+                $student->fresh(),
                 (int) $classId,
                 $this->academic->term($year)?->id,
             );
@@ -82,7 +88,7 @@ class StudentLifecycleService
         });
     }
 
-    public function enrollStudent(Student $student, int $classId, ?int $academicYearId = null): Enrollment
+    public function enrollStudent(Student $student, int $classId, ?int $academicYearId = null, ?string $residency = null): Enrollment
     {
         $year = $academicYearId
             ? AcademicYear::query()
@@ -97,7 +103,18 @@ class StudentLifecycleService
             ]);
         }
 
-        return $this->placement->place($student, $classId, $year, 'active');
+        if ($residency !== null) {
+            $student->forceFill(['residency' => Residency::normalize($residency)])->save();
+        }
+
+        $enrollment = $this->placement->place($student, $classId, $year, 'active');
+        $this->billing->assignDefaultStructures(
+            $student->fresh(),
+            $classId,
+            $this->academic->term($year)?->id,
+        );
+
+        return $enrollment;
     }
 
     public function transferStudent(Student $student, int $toClassId, ?int $academicYearId = null): Enrollment
@@ -191,8 +208,10 @@ class StudentLifecycleService
                     $invitedBy,
                 );
             } catch (ValidationException $attach) {
-                $warnings[] = collect($e->errors())->flatten()->first()
-                    ?: 'Guardian could not be invited automatically. Link them from the student record.';
+                $first = collect($e->errors())->flatten()->first();
+                $warnings[] = is_string($first) && $first !== ''
+                    ? $first
+                    : 'Guardian could not be invited automatically. Link them from the student record.';
             }
         }
     }

@@ -106,6 +106,17 @@ class StaffController extends Controller
 
         $canManageStaff = in_array('staff.manage', $request->user()->permissionsForSchool($school->id), true);
         $perms = $request->user()->permissionsForSchool($school->id);
+        $actor = $request->user();
+        abort_unless($actor instanceof User, 403);
+        $members = $members->map(function (array $member) use ($policy, $actor, $school, $canManageStaff) {
+            $person = $member['user'];
+            $member['can_administer'] = $canManageStaff && $person instanceof User
+                && $policy->canAdminister($actor, $person, $school->id);
+            $member['can_edit_file'] = $person instanceof User
+                && $policy->canEditStaffProfile($actor, $person, $school->id);
+
+            return $member;
+        });
 
         return view('app.staff.index', [
             'school' => $school,
@@ -233,6 +244,8 @@ class StaffController extends Controller
     {
         $school = $context->school();
         abort_unless($school, 404);
+        abort_unless($request->user() instanceof User, 403);
+        abort_unless($policy->canAdminister($request->user(), $user, $school->id), 403);
         $allowed = $policy->rolesInvitableBy($request->user(), $school->id, false);
 
         $data = $request->validate([
@@ -267,10 +280,11 @@ class StaffController extends Controller
         return back()->with('status', 'Roles updated for '.$user->full_name.'.');
     }
 
-    public function revoke(Request $request, User $user, TenantContext $context, StaffRoleService $roles)
+    public function revoke(Request $request, User $user, TenantContext $context, StaffRoleService $roles, InvitePolicy $policy)
     {
         $school = $context->school();
         abort_unless($school, 404);
+        abort_unless($policy->canAdminister($request->user(), $user, $school->id), 403);
         $roles->revoke($school, $user, $request->user());
 
         return back()->with('status', 'School access revoked for '.$user->full_name.'.');

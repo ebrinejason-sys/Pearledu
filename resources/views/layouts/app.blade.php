@@ -183,8 +183,11 @@
   .fee-tabs__link.is-active{background:var(--accent);border-color:var(--accent);color:#fff}
   .fee-tabs__link.is-active .pill{background:rgba(255,255,255,.2);color:#fff}
   .pe-modal{border:0;padding:0;background:transparent;max-width:420px;width:calc(100% - 32px)}
+  .pe-modal--wide{max-width:720px}
+  .pe-modal--form{max-width:560px}
   .pe-modal::backdrop{background:color-mix(in srgb, var(--ink) 45%, transparent)}
-  .pe-modal__card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .pe-modal__card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);max-height:min(90vh, 880px);overflow:auto}
+  .staff-card__avatar img,.staff-card__photo{width:42px;height:42px;border-radius:50%;object-fit:cover;display:block}
   .learner-name{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--accent)}
   .learner-avatar{width:32px;height:32px;border-radius:999px;object-fit:cover;background:var(--surface-2);flex-shrink:0}
   .learner-avatar--empty{display:inline-block;background:var(--brand-soft)}
@@ -284,6 +287,20 @@
       @csrf
     </form>
     <script src="{{ asset('js/idle-session.js') }}" defer></script>
+    <script>
+      document.addEventListener('click', function (e) {
+        var openBtn = e.target.closest('[data-open-modal]');
+        if (openBtn) {
+          var dlg = document.getElementById(openBtn.getAttribute('data-open-modal'));
+          if (dlg && dlg.showModal) dlg.showModal();
+        }
+        var closeBtn = e.target.closest('[data-close-modal]');
+        if (closeBtn) {
+          var dlg = closeBtn.closest('dialog');
+          if (dlg) dlg.close();
+        }
+      });
+    </script>
     @include('layouts.partials.offline-body')
   @else
     <div class="topbar">

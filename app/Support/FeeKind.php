@@ -28,4 +28,10 @@ class FeeKind
             default => 'Other fee',
         };
     }
+
+    /** Tuition/boarding must be saved per day or boarding. Other types may apply to both. */
+    public static function requiresResidenceSplit(string $kind): bool
+    {
+        return in_array($kind, [self::TUITION, self::BOARDING], true);
+    }
 }

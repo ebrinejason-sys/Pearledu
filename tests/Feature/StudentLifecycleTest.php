@@ -129,6 +129,7 @@ class StudentLifecycleTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->class->id,
             'academic_year_id' => $yearId,
+            'residency' => 'day',
         ])->assertRedirect();
 
         $this->assertSame($this->class->id, $student->fresh()->class_id);

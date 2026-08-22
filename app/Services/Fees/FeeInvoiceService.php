@@ -10,6 +10,7 @@ use App\Models\FeeStructure;
 use App\Models\Student;
 use App\Support\FeeKind;
 use App\Support\Residency;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -66,16 +67,11 @@ class FeeInvoiceService
             return ['created' => 0, 'already_existed' => 0, 'skipped' => 1];
         }
 
-        $structures = FeeStructure::query()
-            ->where('school_id', $student->school_id)
-            ->where('is_active', true)
-            ->where(function ($q) use ($classId) {
-                $q->whereNull('class_id')->orWhere('class_id', $classId);
-            })
-            ->when($termId, fn ($q) => $q->where(function ($inner) use ($termId) {
-                $inner->whereNull('term_id')->orWhere('term_id', $termId);
-            }))
-            ->get();
+        $structures = $this->classStructuresForPlacement(
+            (int) $student->school_id,
+            (int) $classId,
+            $termId,
+        );
 
         $created = 0;
         $already = 0;
@@ -102,6 +98,46 @@ class FeeInvoiceService
         }
 
         return ['created' => $created, 'already_existed' => $already, 'skipped' => $skipped];
+    }
+
+    /**
+     * Class fee types that will be billed for this class and residence (not named extras).
+     *
+     * @return Collection<int, FeeStructure>
+     */
+    public function matchingForPlacement(int $schoolId, int $classId, string $residency, ?int $termId = null)
+    {
+        $needed = Residency::normalize($residency);
+
+        return $this->classStructuresForPlacement($schoolId, $classId, $termId)
+            ->filter(function (FeeStructure $structure) use ($classId, $needed) {
+                if ($structure->class_id && (int) $structure->class_id !== $classId) {
+                    return false;
+                }
+                $row = $structure->residency ?: Residency::ANY;
+
+                return $row === Residency::ANY || $row === $needed;
+            })
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, FeeStructure>
+     */
+    private function classStructuresForPlacement(int $schoolId, int $classId, ?int $termId = null)
+    {
+        return FeeStructure::query()
+            ->where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->where('applies_to', 'class')
+            ->where(function ($q) use ($classId) {
+                $q->whereNull('class_id')->orWhere('class_id', $classId);
+            })
+            ->when($termId, fn ($q) => $q->where(function ($inner) use ($termId) {
+                $inner->whereNull('term_id')->orWhere('term_id', $termId);
+            }))
+            ->orderBy('name')
+            ->get();
     }
 
     /**

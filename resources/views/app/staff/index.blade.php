@@ -23,6 +23,9 @@
       <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Add people and choose their responsibilities. A Teacher can cover many subjects and classes — classify the load so the timetable does not collide.</p>
     </div>
     <div class="page-header__actions">
+      @if($roles->isNotEmpty())
+        <button type="button" class="btn accent" data-open-modal="staff-invite-modal">Add staff member</button>
+      @endif
       @if(!empty($canViewClock))
         <a class="btn" href="{{ route('app.staff.clock') }}">Staff clock</a>
       @endif
@@ -35,11 +38,10 @@
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
 
   <div class="grid g2">
-    <div class="card">
+    @if($roles->isNotEmpty())
+  <dialog class="pe-modal pe-modal--wide" id="staff-invite-modal">
+    <div class="pe-modal__card">
       <h2 style="margin-top:0;font-size:18px">Add staff member</h2>
-      @if($roles->isEmpty())
-        <p style="color:var(--muted)">You cannot invite anyone with your current responsibilities.</p>
-      @else
       <form method="post" action="{{ route('app.staff.store') }}" id="invite-staff-form" enctype="multipart/form-data">
         @csrf
         <fieldset style="border:0;padding:0;margin:0">
@@ -134,10 +136,14 @@
           <input id="invite-salary-notes" name="salary_notes" value="{{ old('salary_notes') }}">
         </fieldset>
         @endif
-        <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
+        <p style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn ghost" type="button" data-close-modal>Cancel</button>
+          <button class="btn" type="submit">Send invitation</button>
+        </p>
       </form>
-      @endif
     </div>
+  </dialog>
+    @endif
 
     <div class="card">
       <h2 style="margin-top:0;font-size:18px">Open invitations</h2>
@@ -163,7 +169,11 @@
       @php($user = $member['user'])
       <div class="staff-card">
         <div class="staff-card__head">
-          <span class="staff-card__avatar" aria-hidden="true">{{ $user->avatarInitial() }}</span>
+          @if($user->avatarUrl())
+            <img src="{{ $user->avatarUrl() }}" alt="" class="staff-card__photo" width="42" height="42">
+          @else
+            <span class="staff-card__avatar" aria-hidden="true">{{ $user->avatarInitial() }}</span>
+          @endif
           <div>
             <span class="staff-card__name">{{ $user->full_name }}</span>
             <span class="staff-card__meta">{{ $user->email ?? $user->phone ?? '—' }} · {{ $user->status }}</span>
@@ -176,7 +186,7 @@
             @endforeach
           </div>
         @endif
-        @if(!empty($canManageStaff) && $roles->isNotEmpty())
+        @if(!empty($member['can_administer']) && $roles->isNotEmpty())
           <form method="post" action="{{ route('app.staff.roles', $user) }}">
             @csrf @method('PUT')
             @foreach($member['role_keys'] as $existingKey)
@@ -217,7 +227,11 @@
             </div>
             <p style="margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px">
               <button type="submit" class="btn ghost">Save responsibilities</button>
-              <a class="btn ghost" href="{{ route('app.staff.show', $user) }}">Profile</a>
+              @if(!empty($member['can_edit_file']))
+                <a class="btn ghost" href="{{ route('app.staff.show', $user) }}">Edit details</a>
+              @else
+                <a class="btn ghost" href="{{ route('app.staff.show', $user) }}">Profile</a>
+              @endif
               @if(!empty($canPrintId))
                 <a class="btn ghost" href="{{ route('app.staff.id', $user) }}">ID card</a>
               @endif
@@ -227,9 +241,15 @@
           @foreach($member['roles'] as $role)
             <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
           @endforeach
-          <p style="margin:12px 0 0"><a href="{{ route('app.staff.show', $user) }}">Profile</a></p>
+          <p style="margin:12px 0 0">
+            @if(!empty($member['can_edit_file']))
+              <a href="{{ route('app.staff.show', $user) }}">Edit details</a>
+            @else
+              <a href="{{ route('app.staff.show', $user) }}">Profile</a>
+            @endif
+          </p>
         @endif
-        @if(!empty($canManageStaff) && (int) $user->id !== (int) auth()->id())
+        @if(!empty($member['can_administer']) && (int) $user->id !== (int) auth()->id())
           <form method="post" action="{{ route('app.staff.revoke', $user) }}" onsubmit="return confirm('Revoke school access for {{ $user->full_name }}?')" style="margin-top:8px">
             @csrf @method('DELETE')
             <button type="submit" class="btn ghost" style="color:var(--danger,#b42318)">Revoke</button>
@@ -270,6 +290,10 @@
       el.addEventListener('change', syncInvite);
     });
     syncInvite();
+    @if($errors->any())
+    var inviteModal = document.getElementById('staff-invite-modal');
+    if (inviteModal && inviteModal.showModal && !inviteModal.open) inviteModal.showModal();
+    @endif
 
     document.querySelectorAll('.js-member-role').forEach(function (el) {
       el.addEventListener('change', function () {

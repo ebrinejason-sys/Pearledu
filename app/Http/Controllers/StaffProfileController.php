@@ -10,6 +10,7 @@ use App\Models\StaffSalaryPayment;
 use App\Models\StaffTimePunch;
 use App\Models\TeachingAssignment;
 use App\Models\User;
+use App\Services\Authorization\InvitePolicy;
 use App\Services\Hr\StaffBadgeService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,7 @@ use Illuminate\View\View;
 
 class StaffProfileController extends Controller
 {
-    public function show(Request $request, User $user, TenantContext $ctx, StaffBadgeService $badges): View
+    public function show(Request $request, User $user, TenantContext $ctx, StaffBadgeService $badges, InvitePolicy $hierarchy): View
     {
         $school = $ctx->school();
         $actor = $request->user();
@@ -63,15 +64,16 @@ class StaffProfileController extends Controller
             'canPrintId' => in_array('staff.id.print', $perms, true),
             'canViewPayroll' => in_array('hr.payroll.view', $perms, true),
             'canManagePayroll' => in_array('hr.payroll.manage', $perms, true),
-            'canEditProfile' => $this->canEditProfile($actor, $school->id),
+            'canEditProfile' => $hierarchy->canEditStaffProfile($actor, $user, $school->id),
+            'canAdminister' => in_array('staff.manage', $perms, true) && $hierarchy->canAdminister($actor, $user, $school->id),
         ]);
     }
 
-    public function update(Request $request, User $user, TenantContext $ctx): RedirectResponse
+    public function update(Request $request, User $user, TenantContext $ctx, InvitePolicy $hierarchy): RedirectResponse
     {
         $school = $ctx->school();
         abort_unless($school && $request->user() instanceof User, 404);
-        abort_unless($this->canEditProfile($request->user(), $school->id), 403);
+        abort_unless($hierarchy->canEditStaffProfile($request->user(), $user, $school->id), 403);
         abort_unless($this->isSchoolStaff($school->id, $user), 404);
 
         $data = $request->validate([
@@ -105,11 +107,11 @@ class StaffProfileController extends Controller
         return back()->with('status', 'Staff profile saved.');
     }
 
-    public function storeDocument(Request $request, User $user, TenantContext $ctx): RedirectResponse
+    public function storeDocument(Request $request, User $user, TenantContext $ctx, InvitePolicy $hierarchy): RedirectResponse
     {
         $school = $ctx->school();
         abort_unless($school && $request->user() instanceof User, 404);
-        abort_unless($this->canEditProfile($request->user(), $school->id), 403);
+        abort_unless($hierarchy->canEditStaffProfile($request->user(), $user, $school->id), 403);
         abort_unless($this->isSchoolStaff($school->id, $user), 404);
 
         $data = $request->validate([
@@ -132,12 +134,12 @@ class StaffProfileController extends Controller
         return back()->with('status', 'Document saved on this staff file.');
     }
 
-    public function destroyDocument(User $user, StaffDocument $document, TenantContext $ctx): RedirectResponse
+    public function destroyDocument(User $user, StaffDocument $document, TenantContext $ctx, InvitePolicy $hierarchy): RedirectResponse
     {
         $school = $ctx->school();
         $actor = request()->user();
         abort_unless($school && $actor instanceof User, 404);
-        abort_unless($this->canEditProfile($actor, $school->id), 403);
+        abort_unless($hierarchy->canEditStaffProfile($actor, $user, $school->id), 403);
         abort_unless($this->isSchoolStaff($school->id, $user), 404);
 
         if ((int) $document->user_id !== (int) $user->id || (int) $document->school_id !== (int) $school->id) {
@@ -148,14 +150,6 @@ class StaffProfileController extends Controller
         $document->delete();
 
         return back()->with('status', 'Document removed.');
-    }
-
-    private function canEditProfile(User $actor, int $schoolId): bool
-    {
-        $perms = $actor->permissionsForSchool($schoolId);
-
-        return in_array('staff.manage', $perms, true)
-            || in_array('staff.profile.update', $perms, true);
     }
 
     private function isSchoolStaff(int $schoolId, User $user): bool

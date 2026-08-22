@@ -527,6 +527,10 @@ class StudentController extends Controller
         }
         $student->photo_path = $request->file('photo')->store('students/'.$student->id, 'public');
         $student->save();
+        if ($student->user) {
+            $student->user->avatar_path = $student->photo_path;
+            $student->user->save();
+        }
     }
 
     /** @return list<string> */

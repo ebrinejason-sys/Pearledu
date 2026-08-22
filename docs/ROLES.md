@@ -157,10 +157,10 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Homeroom class_id sync | `StaffRoleService` |
 | Staff role mutation | `staff.manage` routes + `StaffRoleService` (invite-only roles cannot sync/revoke) |
 | Staff ID / clock | `StaffBadgeService`, `StaffClockService` (`staff_badges`, `staff_time_punches`) |
-| Staff files | `staff.profile.update` + `staff_documents` (FORCE RLS); secretary may update files but not roles or salary |
+| Staff files | `staff.profile.update` + `staff_documents` (FORCE RLS); secretary may update any staff file; other actors only people they may invite (hierarchy) |
 | Staff messages | `StaffMessageService` (`staff_conversations` / `staff_messages`) |
 | Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) — amount on invite when the actor has payroll manage |
-| Learner fees | Class day/boarding structures auto-invoice on enroll; custom extras via `FeeInvoiceService::applyCustomFee` on the learner profile; bursar may delete a saved type (`FeeInvoiceService::deleteStructure`) which voids unpaid invoices |
+| Learner fees | Class day/boarding structures plus other class-wide types auto-invoice on admit/enroll from class + residence; named extras via `applyCustomFee` on the profile; bursar may delete a saved type |
 | Gender stats / EMIS census | `GenderStatsService::emisOverview` |
 | Homeroom profile / restream | `LearnerScope::canEditProfile` / `canRestreamTo` (`learners.profile.update`) |
 | Marks upload revoke | `MarksheetWorkflow::revokeUpload` (`assessment.lock`, after deadline) |
@@ -174,7 +174,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 
 ## Identity and demographics
 
-Staff and parent accounts must store a NIN (encrypted). Learners may have a NIN; it is optional. Learner profiles also store date of birth, religion, home address, medical notes, residency, and a photo, with related guardian(s) and guardian photos captured in the same window. Staff profiles store biodata, photo, academic documents, salary amount, teaching load (subject + classes), and a clocking ID. Gender is `male` / `female` on users and students. Leadership dashboards and class overview show M/F counts. Class teachers see M/F for their homeroom only.
+Staff and parent accounts must store a NIN (encrypted). Learners may have a NIN; it is optional. Every user and learner profile shows a photo (or a placeholder). Edit of **staff details** follows the invite hierarchy: you may change people whose roles you are allowed to invite. Secretary still keeps school-wide staff files (photo, biodata, documents) without role writes. Learner profile edits stay on `LearnerScope` (school-wide `learners.manage`, or homeroom `learners.profile.update`). Own photo and details stay on Account.
 
 Platform operators who have **entered** a school workspace may edit that school’s EMIS number and SchoolPay credentials (`platform.schools.update` + recent password). They imitate staff from the entered school’s staff list (`platform.users.impersonate`) — the existing impersonation flow, not a second one. `emis_data_entrant` can enter a workspace but cannot change integrations.
 

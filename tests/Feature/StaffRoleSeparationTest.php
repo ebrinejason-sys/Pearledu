@@ -76,12 +76,10 @@ class StaffRoleSeparationTest extends TestCase
         $bursar = User::where('email', 'bursar@standrews.test')->firstOrFail();
 
         $this->actingAsInSchool($head)
-            ->from(route('app.staff.index'))
             ->put(route('app.staff.roles', $bursar), [
                 'role_keys' => ['subject_teacher'],
             ])
-            ->assertRedirect()
-            ->assertSessionHasErrors('role_keys');
+            ->assertForbidden();
 
         $this->assertTrue($bursar->fresh()->hasRoleInSchool(Role::BURSAR, $this->school->id));
         $this->assertFalse($bursar->fresh()->hasRoleInSchool(Role::SUBJECT_TEACHER, $this->school->id));
@@ -174,5 +172,48 @@ class StaffRoleSeparationTest extends TestCase
             'class_id' => $load['class']->id,
             'periods_per_week' => 2,
         ]);
+    }
+
+    public function test_staff_profile_edit_follows_invite_hierarchy(): void
+    {
+        $head = User::where('email', 'head@standrews.test')->firstOrFail();
+        $director = User::where('email', 'director@standrews.test')->firstOrFail();
+        $bursar = User::where('email', 'bursar@standrews.test')->firstOrFail();
+        $secretary = User::where('email', 'secretary@standrews.test')->firstOrFail();
+        $teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
+
+        $this->actingAsInSchool($head)
+            ->put(route('app.staff.profile.update', $bursar), [
+                'full_name' => 'Should Fail Bursar',
+            ])
+            ->assertForbidden();
+        $this->assertNotSame('Should Fail Bursar', $bursar->fresh()->full_name);
+
+        $this->actingAsInSchool($director)
+            ->put(route('app.staff.profile.update', $head), [
+                'full_name' => $head->full_name,
+                'phone' => '0700000001',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+        $this->assertSame('0700000001', $head->fresh()->phone);
+
+        $this->actingAsInSchool($secretary)
+            ->put(route('app.staff.profile.update', $bursar), [
+                'full_name' => $bursar->full_name,
+                'phone' => '0700000002',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+        $this->assertSame('0700000002', $bursar->fresh()->phone);
+
+        $this->actingAsInSchool($head)
+            ->get(route('app.staff.show', $teacher))
+            ->assertOk()
+            ->assertSee('Edit details', false);
+        $this->actingAsInSchool($head)
+            ->get(route('app.staff.show', $bursar))
+            ->assertOk()
+            ->assertDontSee('Edit details', false);
     }
 }
