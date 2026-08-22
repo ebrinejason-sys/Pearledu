@@ -22,7 +22,7 @@ class SeedWalkthroughSchoolCommand extends Command
 
         if (app()->isProduction() && ! $force) {
             $this->error('Refusing to seed a walkthrough school in production without --force.');
-            $this->comment('To test online: php artisan school:seed-walkthrough --password=\'…\' --force');
+            $this->comment('To test online: use Schools → Demonstration school in /admin, or php artisan school:seed-walkthrough --password=\'…\' --force');
             $this->comment('Do not set SEED_TEST_SCHOOL_PASSWORD in the live .env. Purge the school from the platform console when finished.');
 
             return self::FAILURE;

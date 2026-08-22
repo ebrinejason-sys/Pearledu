@@ -12,6 +12,9 @@
     </div>
     <div class="page-header__actions">
       <a class="btn accent" href="{{ route('platform.schools.create') }}">Onboard school</a>
+      @if(auth()->user()->hasPlatformPermission('platform.schools.create'))
+        <a class="btn" href="{{ route('platform.schools.walkthrough') }}">Demonstration school</a>
+      @endif
     </div>
   </div>
 

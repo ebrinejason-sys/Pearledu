@@ -24,6 +24,7 @@
   @if($school->emis_number === \App\Services\Provisioning\WalkthroughSchoolService::EMIS_NUMBER)
     <div class="status" role="status" style="margin-bottom:16px">
       Demonstration school for online walkthrough testing (EMIS {{ $school->emis_number }}).
+      <a href="{{ route('platform.schools.walkthrough') }}">Set or reset the shared test passwords</a>.
       Purge it from this page when staff have finished clicking through roles. Do not use these stkizito.test logins as a real school.
     </div>
   @endif

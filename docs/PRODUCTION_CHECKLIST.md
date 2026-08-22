@@ -117,7 +117,9 @@ Then: Git Version Control → Update from Remote → Deploy HEAD (ongoing deploy
 
 ### Online walkthrough school (optional)
 
-To click through roles on the live host, SSH in and run **once**:
+To click through roles on the live host, sign in to `/admin` and open **Schools → Demonstration school**. Set one shared password (min 10 characters). That creates or refreshes St. Kizito and applies the password to every named test login.
+
+SSH still works if you prefer:
 
 ```bash
 cd /home/voxsignco/pearledu-app

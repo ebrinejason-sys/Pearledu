@@ -80,9 +80,9 @@
 
 **Problem:** First-school testing needed Baby–P7 filled (~100 learners) and named staff logins. `DemoTenantSeeder` stays passwordless for CI.
 
-**Decision:** Add `php artisan school:seed-walkthrough` backed by `WalkthroughSchoolService`. It calls `SchoolProvisioner`, `role_assignments`, enrollments, and `config/permissions.php`. Production refuses the command unless `--force` is passed (password on the CLI only). `SEED_TEST_SCHOOL_PASSWORD` must stay unset on the live `.env`.
+**Decision:** Add `php artisan school:seed-walkthrough` backed by `WalkthroughSchoolService`. It calls `SchoolProvisioner`, `role_assignments`, enrollments, and `config/permissions.php`. Production refuses the command unless `--force` is passed (password on the CLI only). The same seed is also available from **Schools → Demonstration school** in `/admin` (`platform.schools.create` + recent platform password). The form field is `walkthrough_password` so password-confirm resume does not strip it. `SEED_TEST_SCHOOL_PASSWORD` must stay unset on the live `.env`.
 
-**Reason:** Operators can click through each role on a laptop or on the live host without inventing a parallel RBAC or bloating PHPUnit’s demo tenant.
+**Reason:** Operators can click through each role on a laptop or on the live host without inventing a parallel RBAC, bloating PHPUnit’s demo tenant, or needing SSH just to set the shared test password.
 
 **Consequences:** Kindergarten remains an empty scaffold class. Homeroom teachers do not receive `assessment.enter`; English/Maths subject teachers do, scoped by teaching assignments. Purge EMIS `1999001` from the platform console when online testing is finished.
 

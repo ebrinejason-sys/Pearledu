@@ -126,6 +126,34 @@ class WalkthroughSchoolService
     }
 
     /**
+     * Named logins this seed creates or refreshes (same password for all).
+     *
+     * @return list<array{role: string, name: string, email: string}>
+     */
+    public function accountDirectory(): array
+    {
+        $rows = [];
+        foreach ($this->leaderProfiles() as $role => [$name, $email]) {
+            $rows[] = ['role' => $role, 'name' => $name, 'email' => $email];
+        }
+        foreach ($this->classTeacherProfiles() as [$name, $email]) {
+            $rows[] = ['role' => Role::CLASS_TEACHER, 'name' => $name, 'email' => $email];
+        }
+        foreach ($this->subjectTeacherProfiles() as $role => [$name, $email]) {
+            $rows[] = ['role' => $role, 'name' => $name, 'email' => $email];
+        }
+        $rows[] = ['role' => Role::PARENT, 'name' => 'Patricia Parent', 'email' => 'parent@stkizito.test'];
+        $rows[] = ['role' => Role::STUDENT, 'name' => 'P4 learner', 'email' => 'learner.p4@stkizito.test'];
+
+        return $rows;
+    }
+
+    public function existing(): ?School
+    {
+        return School::query()->where('emis_number', self::EMIS_NUMBER)->first();
+    }
+
+    /**
      * @return list<array{role: string, email: string, name: string}>
      */
     private function ensureStaff(School $school, string $password): array
