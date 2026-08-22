@@ -123,6 +123,16 @@ class Student extends Model
         return strtoupper(substr($this->full_name ?: '?', 0, 1));
     }
 
+    public function firstName(): string
+    {
+        $name = trim((string) $this->full_name);
+        if ($name === '') {
+            return 'Learner';
+        }
+
+        return explode(' ', $name)[0];
+    }
+
     /** @return HasMany<AttendanceRecord, $this> */
     public function attendanceRecords(): HasMany
     {

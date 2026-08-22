@@ -54,7 +54,7 @@
       @forelse($h['roster'] as $student)
         <a class="face-chip" href="{{ route('app.students.show', $student) }}">
           @include('app.partials.person-face', ['url' => $student->photoUrl(), 'initial' => $student->photoInitial(), 'name' => $student->full_name])
-          <span>{{ explode(' ', $student->full_name)[0] }}</span>
+          <span>{{ $student->firstName() }}</span>
         </a>
       @empty
         <p class="ws-hint">No learners in this class yet. Ask school admin to place them.</p>

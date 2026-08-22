@@ -174,7 +174,8 @@ class RoleWorkspaceService
             ->map(function (TimetableSlot $slot) use ($nowTime) {
                 $start = (string) ($slot->period?->starts_at ?? '');
                 $end = (string) ($slot->period?->ends_at ?? '');
-                $current = $start !== '' && $end !== '' && $nowTime >= $start && $nowTime <= $end;
+                $inWindow = $nowTime >= $start && $nowTime <= $end;
+                $current = $start !== '' && $end !== '' && $inWindow;
 
                 return [
                     'period' => $slot->period?->name ?? 'Period',
@@ -476,7 +477,7 @@ class RoleWorkspaceService
         $draft = (int) ($counts['draft'] ?? 0);
         $submitted = (int) ($counts['submitted'] ?? 0);
         $verified = (int) ($counts['verified'] ?? 0);
-        $published = $period && in_array($period->status, ['published', 'locked'], true) ? $verified : 0;
+        $published = ($period && in_array($period->status, ['published', 'locked'], true)) ? $verified : 0;
         $total = max(1, $draft + $submitted + $verified);
 
         $occupancy = null;
@@ -521,7 +522,9 @@ class RoleWorkspaceService
 
         $isDeputy = in_array(Role::DEPUTY_HEAD_TEACHER, $roleKeys, true);
         $isHead = in_array(Role::HEAD_TEACHER, $roleKeys, true);
-        $mode = $isHead && ! $isDeputy ? 'approvals' : ($isDeputy && ! $isHead ? 'logistics' : ($isHead ? 'approvals' : 'ops'));
+        $mode = ($isHead && ! $isDeputy)
+            ? 'approvals'
+            : (($isDeputy && ! $isHead) ? 'logistics' : ($isHead ? 'approvals' : 'ops'));
 
         $kpis = $this->schoolKpis($school, $permissions);
         $kpis['mode'] = $mode;
@@ -535,7 +538,7 @@ class RoleWorkspaceService
         $kpis['clock'] = $isDeputy || $mode === 'logistics' ? $this->staffClockToday($school) : null;
         $kpis['uncovered'] = $isDeputy || $mode === 'logistics' ? $this->uncoveredSlots($school) : [];
         $kpis['heatmap'] = $isDeputy || $mode === 'logistics' ? $this->absenceHeatmap($school) : [];
-        $kpis['promotions_url'] = $this->has($permissions, 'promotions.approve') && Route::has('app.promotions.index')
+        $kpis['promotions_url'] = ($this->has($permissions, 'promotions.approve') && Route::has('app.promotions.index'))
             ? route('app.promotions.index')
             : null;
         $kpis['helpdesk_url'] = Route::has('app.helpdesk.index') ? route('app.helpdesk.index') : null;
@@ -911,7 +914,7 @@ class RoleWorkspaceService
         $rows = AttendanceRecord::query()
             ->where('school_id', $school->id)
             ->whereDate('attended_on', '>=', $from)
-            ->selectRaw("class_id, attended_on::date as day, sum(case when status in ('present','late') then 1 else 0 end) as present, count(*) as marked")
+            ->selectRaw('class_id, attended_on::date as day, sum(case when status in (\'present\',\'late\') then 1 else 0 end) as present, count(*) as marked')
             ->groupByRaw('class_id, attended_on::date')
             ->orderByDesc('day')
             ->get()
@@ -974,13 +977,13 @@ class RoleWorkspaceService
         $rows = Mark::query()
             ->where('school_id', $school->id)
             ->whereHas('period', fn ($q) => $q->whereIn('status', ['published', 'locked']))
-            ->selectRaw("subject_id,
+            ->selectRaw('subject_id,
                 sum(case when score < 40 then 1 else 0 end) as u,
                 sum(case when score >= 40 and score < 50 then 1 else 0 end) as d,
                 sum(case when score >= 50 and score < 60 then 1 else 0 end) as c,
                 sum(case when score >= 60 and score < 70 then 1 else 0 end) as b,
                 sum(case when score >= 70 then 1 else 0 end) as a,
-                count(*) as total")
+                count(*) as total')
             ->groupBy('subject_id')
             ->limit(8)
             ->get();

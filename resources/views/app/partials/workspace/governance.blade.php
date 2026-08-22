@@ -58,6 +58,13 @@
           <div class="dash-stat"><div class="dash-stat__value">{{ $g['finance']['rate'] ?? 0 }}%</div><div class="dash-stat__label">Collection rate</div></div>
         </div>
       </div>
+      @if(isset($emis['nin']))
+        <h3 class="ws-sub">NIN tracking</h3>
+        <div class="workspace-kpis">
+          <div class="dash-stat"><div class="dash-stat__value">{{ $emis['nin']['with'] }}</div><div class="dash-stat__label">Learners with NINs</div></div>
+          <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">{{ $emis['nin']['without'] }}</div><div class="dash-stat__label">Learners without NINs</div></div>
+        </div>
+      @endif
     @endif
 
     @if(!empty($g['clock_summary']))

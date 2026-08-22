@@ -15,6 +15,7 @@ class HelpdeskScopeTest extends TestCase
     use RefreshDatabase;
 
     private School $school;
+
     private HelpdeskScope $scope;
 
     protected function setUp(): void

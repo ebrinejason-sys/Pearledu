@@ -10,7 +10,7 @@
       @endif
       <div>
         <p class="page-header__eyebrow">{{ $school?->name }}</p>
-        <h1 class="page-header__title">{{ $student?->full_name ? 'Good day, '.explode(' ', $student->full_name)[0] : 'My portal' }}</h1>
+        <h1 class="page-header__title">{{ $student ? 'Good day, '.$student->firstName() : 'My portal' }}</h1>
         <p class="ws-mantra">{{ !empty($isStudent) ? 'Your timetable, results, and statement.' : 'Your child’s attendance, results, fees, and timetable.' }}</p>
       </div>
     </div>
@@ -20,8 +20,10 @@
     <h2 class="ws-sub">My children</h2>
     <div class="child-cards">
       @foreach($learners as $learner)
-        @php($dot = $latestAttendance[$learner->id] ?? null)
-        <a class="child-card" href="{{ route('app.portal.home', ['student_id' => $learner->id]) }}" @if((int)$student?->id === (int)$learner->id) aria-current="true" @endif>
+        @php
+          $dot = $latestAttendance[$learner->id] ?? null;
+        @endphp
+        <a class="child-card" href="{{ route('app.portal.home', ['student_id' => $learner->id]) }}" @if($student && (int) $student->id === (int) $learner->id) aria-current="true" @endif>
           @include('app.partials.person-face', ['url' => $learner->photoUrl(), 'initial' => $learner->photoInitial(), 'name' => $learner->full_name, 'size' => 'lg'])
           <strong>{{ $learner->full_name }}</strong>
           <span>{{ $learner->schoolClass?->displayName() ?? 'Class not set' }}</span>
@@ -32,7 +34,9 @@
       @endforeach
     </div>
   @elseif($student)
-    @php($dot = $latestAttendance[$student->id] ?? null)
+    @php
+      $dot = $latestAttendance[$student->id] ?? null;
+    @endphp
     <p class="page-header__eyebrow" style="margin-bottom:12px">
       {{ $student->full_name }}@if($student->schoolClass) · {{ $student->schoolClass->displayName() }}@endif
       @if($dot)
@@ -41,7 +45,7 @@
     </p>
   @endif
 
-  @if(!$student)
+  @if(! $student)
     <div class="card"><p>No linked learner yet. Ask the school to link your account to a student.</p></div>
   @else
     <div class="portal-tiles">
