@@ -60,7 +60,7 @@ Focused learner portal. Read own timetable, attendance (`self.attendance.view`),
 
 ### 2. Parent / Guardian
 
-Portal for linked children only: results, attendance (`child.attendance.view`), timetable, announcements, fee invoices, and `fees.pay` (submissions stay pending until bursar confirmation). Selecting a child switches the whole portal. Cannot see unrelated student IDs.
+Portal for linked children only: results, attendance (`child.attendance.view`), timetable, announcements, fee invoices, and `fees.pay` (submissions stay pending until bursar confirmation). Selecting a child switches the whole portal. Cannot see unrelated student IDs. A newly invited guardian gets an **inactive** `parent` assignment until they accept the invite (status stays `invited`, so they cannot sign in).
 
 ### 3. Teacher (`subject_teacher`)
 

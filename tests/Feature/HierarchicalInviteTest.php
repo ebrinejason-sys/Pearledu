@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\User;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +22,7 @@ class HierarchicalInviteTest extends TestCase
         $this->seed(\Database\Seeders\RoleSeeder::class);
         Mail::fake();
 
+        app(TenantContext::class)->forPlatform();
         $school = School::create(['name' => 'Invite School', 'slug' => 'invite1', 'status' => 'active']);
         $bursar = User::factory()->create(['status' => 'active', 'email' => 'bursar@s.test']);
         $roleId = Role::where('key', 'bursar')->value('id');
@@ -47,6 +49,7 @@ class HierarchicalInviteTest extends TestCase
         $this->seed(\Database\Seeders\RoleSeeder::class);
         Mail::fake();
 
+        app(TenantContext::class)->forPlatform();
         $school = School::create(['name' => 'Invite School 2', 'slug' => 'invite2', 'status' => 'active']);
         $admin = User::factory()->create(['status' => 'active', 'email' => 'admin@s.test']);
         \App\Models\RoleAssignment::create([

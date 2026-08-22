@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Http\Middleware\ResolveTenant;
 use App\Mail\GuardianInvitationMail;
 use App\Models\Guardianship;
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
@@ -143,7 +145,15 @@ class StudentRecordsTest extends TestCase
 
         $invited = User::where('email', 'uncle@newguardian.test')->firstOrFail();
         $this->assertSame('invited', $invited->status);
-        $this->assertTrue($invited->hasRoleInSchool('parent', $this->school->id));
+        $this->assertFalse($invited->hasRoleInSchool('parent', $this->school->id));
+        $this->assertTrue(
+            RoleAssignment::query()
+                ->where('user_id', $invited->id)
+                ->where('school_id', $this->school->id)
+                ->where('is_active', false)
+                ->whereHas('role', fn ($q) => $q->where('key', Role::PARENT))
+                ->exists()
+        );
 
         $primary = Guardianship::where('student_id', $student->id)->where('guardian_user_id', $existing->id)->firstOrFail();
         $secondary = Guardianship::where('student_id', $student->id)->where('guardian_user_id', $invited->id)->firstOrFail();

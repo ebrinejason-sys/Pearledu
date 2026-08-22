@@ -69,6 +69,9 @@
         <span class="pill @if($provisioning !== 'ready') pill--muted @endif">
           {{ ['pending_invite' => 'Pending invite', 'invite_accepted' => 'Invite accepted', 'ready' => 'Ready'][$provisioning] ?? $provisioning }}
         </span>
+        @if($school->activated_at)
+          <span style="color:var(--muted);font-size:13px"> — Verified live since {{ $school->activated_at->diffForHumans() }}</span>
+        @endif
       </p>
 
       <div style="margin-top:28px;padding-top:18px;border-top:1px solid var(--line)">

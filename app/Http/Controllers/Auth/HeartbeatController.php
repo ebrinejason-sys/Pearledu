@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\Auth\IdleSessionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,9 @@ class HeartbeatController extends Controller
     public function store(Request $request, IdleSessionService $idle): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user, 401);
+        if (! $user instanceof User) {
+            abort(401);
+        }
 
         $idle->touch($user, true);
 

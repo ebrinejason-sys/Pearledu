@@ -37,8 +37,11 @@ class User extends Authenticatable
 
     protected function casts(): array
     {
-        return ['password' => 'hashed', 'is_platform' => 'boolean',
-            'two_factor_secret' => 'encrypted', 'two_factor_confirmed_at' => 'datetime',
+        return [
+            'password' => 'hashed',
+            'is_platform' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
             'two_factor_recovery_codes' => 'encrypted:array',
             'last_login_at' => 'datetime',
             'last_seen_at' => 'datetime',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\IdleSessionService;
 use Closure;
@@ -19,7 +20,7 @@ class EnforceIdleSession
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (! $user) {
+        if (! $user instanceof User) {
             return $next($request);
         }
 

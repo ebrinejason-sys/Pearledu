@@ -13,9 +13,9 @@ class IdentifierLoginTest extends TestCase
 
     public function test_user_can_login_with_normalized_phone(): void
     {
-        User::create([
+        $this->makeSchoolUser([
             'full_name' => 'Phone User',
-            'email' => null,
+            'email' => 'phone-user@ci.test',
             'phone' => '+256712345678',
             'password' => Hash::make('secret-pass'),
             'status' => 'active',
@@ -45,6 +45,22 @@ class IdentifierLoginTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('identifier');
+        $this->assertGuest();
+    }
+
+    public function test_school_user_without_membership_cannot_sign_in(): void
+    {
+        User::factory()->create([
+            'email' => 'orphan@ci.test',
+            'password' => Hash::make('secret-pass'),
+            'status' => 'active',
+        ]);
+
+        $this->from('/login')->post('/login', [
+            'identifier' => 'orphan@ci.test',
+            'password' => 'secret-pass',
+        ])->assertSessionHasErrors('identifier');
+
         $this->assertGuest();
     }
 }

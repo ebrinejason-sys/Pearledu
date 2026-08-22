@@ -46,7 +46,7 @@ class AuthEmailTest extends TestCase
 
     public function test_non_platform_login_is_unaffected_by_2fa(): void
     {
-        $user = User::factory()->create([
+        $user = $this->makeSchoolUser([
             'email' => 'teacher@test.local',
             'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
         ]);

@@ -289,7 +289,7 @@ class LandingPageTest extends TestCase
         $response = $this->get('http://voxsign.co.ug/');
 
         $response->assertSee('vx-logo', false);
-        $response->assertSee('voxsign-logo.svg', false);
+        $response->assertSee('class="vx-logo"', false);
         $response->assertDontSee('voxsign-logo.png');
     }
 

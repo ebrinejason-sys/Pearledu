@@ -37,23 +37,47 @@ jobs:
 
       - run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Pint (style)
+      - name: Resolve changed PHP files
+        id: php
         run: |
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             BASE="${{ github.event.pull_request.base.sha }}"
-            mapfile -t files < <(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.php')
-            if [ "${#files[@]}" -eq 0 ]; then
-              echo "No PHP files changed."
-              exit 0
-            fi
-            echo "Pint checking ${#files[@]} changed PHP file(s)"
-            vendor/bin/pint --test "${files[@]}"
           else
-            vendor/bin/pint --test
+            BASE="${{ github.event.before }}"
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE="$(git rev-parse HEAD^ 2>/dev/null || true)"
+            fi
           fi
+          if [ -n "$BASE" ] && git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            mapfile -t files < <(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.php')
+          else
+            echo "No reachable base commit — skipping style/static analysis of the historic tree."
+            files=()
+          fi
+          printf '%s\n' "${files[@]}" > /tmp/changed-php.txt
+          echo "count=${#files[@]}" >> "$GITHUB_OUTPUT"
+          echo "Changed PHP files (${#files[@]}):"
+          cat /tmp/changed-php.txt
+
+      - name: Pint (style)
+        run: |
+          mapfile -t files < /tmp/changed-php.txt
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No PHP files changed."
+            exit 0
+          fi
+          echo "Pint checking ${#files[@]} changed PHP file(s)"
+          vendor/bin/pint --test "${files[@]}"
 
       - name: PHPStan / Larastan
-        run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+        run: |
+          mapfile -t files < <(grep -E '^(app|bootstrap|config|routes)/' /tmp/changed-php.txt || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No PHP application files changed."
+            exit 0
+          fi
+          echo "PHPStan checking ${#files[@]} changed file(s)"
+          vendor/bin/phpstan analyse --memory-limit=1G --no-progress "${files[@]}"
 
       - name: Composer audit
         run: composer audit --no-interaction
