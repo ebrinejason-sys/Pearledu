@@ -102,6 +102,7 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertContains('assessment.view', $perms);
         $this->assertContains('finance.view', $perms);
         $this->assertContains('staff.manage', $perms);
+        $this->assertContains('staff.profile.update', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('assessment.manage', $perms);
         $this->assertNotContains('finance.manage', $perms);
@@ -137,11 +138,16 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertContains('staff.id.print', $perms);
         $this->assertContains('staff.attendance.mark', $perms);
         $this->assertContains('staff.messages', $perms);
+        $this->assertContains('learners.view', $perms);
+        $this->assertContains('staff.profile.update', $perms);
         $this->assertNotContains('finance.manage', $perms);
         $this->assertNotContains('finance.view', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('assessment.manage', $perms);
         $this->assertNotContains('attendance.mark', $perms);
+        $this->assertNotContains('staff.manage', $perms);
+        $this->assertNotContains('learners.manage', $perms);
+        $this->assertNotContains('hr.payroll.manage', $perms);
     }
 
     public function test_director_views_payroll_but_cannot_manage_it(): void

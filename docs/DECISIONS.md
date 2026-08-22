@@ -124,3 +124,15 @@
 
 **Rollback/revisit:** If a school needs homeroom mark entry, grant `subject_teacher` + teaching assignment rather than `assessment.enter` on `class_teacher`.
 
+## 2026-08-22 — Class+residency billing, one-window profiles, secretary files, teaching vs non-teaching staff
+
+**Problem:** Learners were not billed automatically from saved day/boarding class structures. Extras such as a van fee lived on the fees page instead of the named learner. Learner create/show did not capture biodata and guardian photos together. Staff invite did not distinguish teaching vs non-teaching, salary, documents, or clock ID at create time. Secretary could print IDs but could not look up learners or keep staff files.
+
+**Decision:** Keep `config/permissions.php` + `role_assignments`. Enrolling a learner invoices matching class+residency structures (`FeeInvoiceService::assignDefaultStructures`). Bursar applies a learner-specific extra on the profile (`applyCustomFee`); the statement balance is the cumulative amount due. Learner biodata (DOB, religion, address, medical notes) and first guardian + photos are captured on create; more guardians stay on the same profile window. Staff invite requires `staff_kind` teaching|non_teaching (UX/validation only — no new column). Teaching staff must include Teacher and/or Class Teacher and still send `teaching_assignments` (with optional periods). Non-teaching capture biodata, NIN, salary amount (`staff_salaries`), and other duties. Academic documents use `staff_documents` with FORCE RLS. Clock IDs issue on invite via `StaffBadgeService`. Secretary gains `learners.view` and `staff.profile.update` (and is `Role::SCHOOL_WIDE` for reception lookup) — still no `finance.manage`, `assessment.enter`, `staff.manage`, or `hr.payroll.manage`.
+
+**Reason:** Charge by class and residence without a second billing engine. Front office keeps files and IDs; bursar keeps money; teachers keep grades.
+
+**Consequences:** Changing class or residency as `learners.manage` adds matching structures; old invoices are not voided. Secretary can open every learner profile. EMIS teaching vs non-teaching still uses role heuristics, not `staff_kind`.
+
+**Rollback/revisit:** A PAYE/allowance engine remains deferred. Do not add a `staff_kind` column unless a person must be classified independently of their school roles.
+

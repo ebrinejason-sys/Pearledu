@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\SchoolClass;
+use App\Models\StaffDocument;
 use App\Models\StaffMessage;
 use App\Models\StaffSalary;
 use App\Models\Student;
@@ -15,7 +16,11 @@ use App\Models\User;
 use App\Services\Hr\StaffBadgeService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\ActsAsPlatformOperator;
+use Tests\Support\FakePhoto;
+use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
 class SchoolOpsUpgradeTest extends TestCase
@@ -337,5 +342,116 @@ class SchoolOpsUpgradeTest extends TestCase
             'full_name' => 'Optional Nin Learner',
             'gender' => 'female',
         ]);
+    }
+
+    public function test_secretary_looks_up_learners_and_updates_staff_files_but_cannot_mutate_roles_or_fees(): void
+    {
+        $secretary = $this->user('secretary@standrews.test');
+        $teacher = $this->user('teacher@standrews.test');
+        $admin = $this->user('admin@standrews.test');
+        $learner = Student::query()->where('school_id', $this->school->id)->firstOrFail();
+
+        $this->actingAsInSchool($secretary)->get(route('app.students.index'))->assertOk();
+        $this->actingAsInSchool($secretary)->get(route('app.students.show', $learner))->assertOk();
+        $this->actingAsInSchool($secretary)->get(route('app.students.create'))->assertForbidden();
+        $this->actingAsInSchool($secretary)->post(route('app.students.fees.apply', $learner), [
+            'name' => 'Should fail',
+            'amount' => 1000,
+            'kind' => 'other',
+        ])->assertForbidden();
+        $this->actingAsInSchool($secretary)->put(route('app.staff.roles', $teacher), [
+            'role_keys' => ['secretary'],
+        ])->assertForbidden();
+        $this->actingAsInSchool($secretary)->post(route('app.staff.payroll.salary', $teacher), [
+            'amount' => 1,
+            'effective_on' => now()->toDateString(),
+        ])->assertForbidden();
+
+        Storage::fake('public');
+        $this->actingAsInSchool($secretary)->put(route('app.staff.profile.update', $teacher), [
+            'full_name' => $teacher->full_name,
+            'phone' => '0700111222',
+            'nationality' => 'Uganda',
+            'home_address' => 'Ntinda',
+            'photo' => FakePhoto::make('staff.png'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('Ntinda', $teacher->fresh()->home_address);
+        $this->assertNotNull($teacher->fresh()->avatar_path);
+
+        $this->actingAsInSchool($secretary)->post(route('app.staff.documents.store', $teacher), [
+            'title' => 'Degree',
+            'file' => UploadedFile::fake()->create('degree.pdf', 20, 'application/pdf'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $document = StaffDocument::query()->where('user_id', $teacher->id)->firstOrFail();
+        $this->assertSame('Degree', $document->title);
+
+        $this->actingAsInSchool($secretary)->delete(route('app.staff.documents.destroy', [$teacher, $document]))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('staff_documents', ['id' => $document->id]);
+
+        $this->actingAsInSchool($admin)->get(route('app.staff.show', $teacher))->assertOk();
+    }
+
+    public function test_admin_invites_teaching_and_non_teaching_staff_with_salary_and_clock_id(): void
+    {
+        $admin = $this->user('admin@standrews.test');
+        $secretary = $this->user('secretary@standrews.test');
+        $load = TeacherInviteLoad::ensure($this->school);
+
+        $this->actingAsInSchool($admin)->post(route('app.staff.store'), [
+            'full_name' => 'Salary Teacher',
+            'email' => 'salary-teacher@standrews.test',
+            'gender' => 'male',
+            'nin' => 'CM55556666777',
+            'staff_kind' => 'teaching',
+            'role_keys' => ['subject_teacher'],
+            'teaching_assignments' => [
+                [
+                    'subject_id' => $load['subject']->id,
+                    'class_ids' => [$load['class']->id],
+                    'periods_per_week' => 6,
+                ],
+            ],
+            'salary_amount' => 900000,
+            'salary_notes' => 'Graduate scale',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $teacher = User::query()->where('email', 'salary-teacher@standrews.test')->firstOrFail();
+        $this->assertDatabaseHas('teaching_assignments', [
+            'user_id' => $teacher->id,
+            'periods_per_week' => 6,
+        ]);
+        $this->assertSame(900000, StaffSalary::query()->where('user_id', $teacher->id)->value('amount'));
+        $this->assertDatabaseHas('staff_badges', [
+            'school_id' => $this->school->id,
+            'user_id' => $teacher->id,
+        ]);
+
+        $this->actingAsInSchool($admin)->post(route('app.staff.store'), [
+            'full_name' => 'Office Clerk',
+            'email' => 'clerk@standrews.test',
+            'gender' => 'female',
+            'nin' => 'CF88889999000',
+            'date_of_birth' => '1990-04-12',
+            'nationality' => 'Uganda',
+            'home_address' => 'Entebbe',
+            'staff_kind' => 'non_teaching',
+            'role_keys' => ['secretary'],
+            'salary_amount' => 450000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $clerk = User::query()->where('email', 'clerk@standrews.test')->firstOrFail();
+        $this->assertSame('Entebbe', $clerk->home_address);
+        $this->assertSame(450000, StaffSalary::query()->where('user_id', $clerk->id)->value('amount'));
+
+        $this->actingAsInSchool($secretary)->post(route('app.staff.store'), [
+            'full_name' => 'Blocked Invite',
+            'email' => 'blocked-invite@standrews.test',
+            'gender' => 'male',
+            'nin' => 'CM00001111222',
+            'staff_kind' => 'non_teaching',
+            'role_keys' => ['secretary'],
+        ])->assertForbidden();
     }
 }

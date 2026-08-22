@@ -17,12 +17,15 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\TeachingAssignment;
 use App\Models\User;
+use App\Services\Fees\StudentLedgerService;
 use App\Services\Tenancy\TenantContext;
 use App\Support\AssessmentSet;
 use App\Support\FeeKind;
 use App\Support\Residency;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Tests\Support\FakePhoto;
 use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
@@ -401,6 +404,7 @@ class SchoolOpsFeesAssessmentTest extends TestCase
             'email' => 'noload@standrews.test',
             'gender' => 'male',
             'nin' => 'CM12345678901',
+            'staff_kind' => 'teaching',
             'role_keys' => ['subject_teacher'],
         ])->assertRedirect()->assertSessionHasErrors('teaching_assignments');
 
@@ -409,6 +413,7 @@ class SchoolOpsFeesAssessmentTest extends TestCase
             'email' => 'loaded@standrews.test',
             'gender' => 'female',
             'nin' => 'CF98765432109',
+            'staff_kind' => 'teaching',
             'role_keys' => ['subject_teacher'],
             'teaching_assignments' => $load['teaching_assignments'],
         ])->assertRedirect()->assertSessionHasNoErrors();
@@ -466,5 +471,112 @@ class SchoolOpsFeesAssessmentTest extends TestCase
             ->assertSee('Learners', false)
             ->assertSee('Teaching staff', false)
             ->assertSee('NIN tracking', false);
+    }
+
+    public function test_creating_a_day_learner_invoices_only_the_day_class_structure(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+        $class = $load['class'];
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Auto day tuition',
+            'amount' => 150000,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::DAY,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Auto boarding tuition',
+            'amount' => 400000,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::BOARDING,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
+            'full_name' => 'Day Auto Learner',
+            'status' => 'active',
+            'class_id' => $class->id,
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $student = Student::query()->where('full_name', 'Day Auto Learner')->firstOrFail();
+        $day = FeeStructure::query()->where('name', 'Auto day tuition')->firstOrFail();
+        $board = FeeStructure::query()->where('name', 'Auto boarding tuition')->firstOrFail();
+        $this->assertTrue(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $day->id)->exists());
+        $this->assertFalse(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $board->id)->exists());
+    }
+
+    public function test_bursar_applies_custom_van_fee_on_learner_profile_and_teacher_cannot(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Aisha class tuition',
+            'amount' => 200000,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::DAY,
+            'applies_to' => 'class',
+            'class_id' => $load['class']->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
+            'full_name' => 'Aisha Van',
+            'status' => 'active',
+            'class_id' => $load['class']->id,
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $aisha = Student::query()->where('full_name', 'Aisha Van')->firstOrFail();
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.students.fees.apply', $aisha), [
+            'name' => 'Van for Aisha',
+            'amount' => 80000,
+            'kind' => FeeKind::TRANSPORT,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAsInSchool($this->teacher)->post(route('app.students.fees.apply', $aisha), [
+            'name' => 'Should fail',
+            'amount' => 1,
+            'kind' => FeeKind::OTHER,
+        ])->assertForbidden();
+
+        $statement = app(StudentLedgerService::class)->statement($aisha->fresh());
+        $this->assertSame(280000.0, $statement['balance']);
+        $this->assertTrue(FeeStructure::query()->where('name', 'Van for Aisha')->where('applies_to', 'learners')->exists());
+    }
+
+    public function test_admin_creates_learner_with_guardian_and_photos_in_one_window(): void
+    {
+        Storage::fake('public');
+        $photo = FakePhoto::make('aisha.png');
+        $guardianPhoto = FakePhoto::make('parent.png');
+
+        $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
+            'full_name' => 'Aisha Create',
+            'status' => 'active',
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+            'date_of_birth' => '2014-03-02',
+            'religion' => 'Muslim',
+            'home_address' => 'Kampala',
+            'photo' => $photo,
+            'guardian_full_name' => 'Aisha Parent',
+            'guardian_email' => 'aisha.parent@standrews.test',
+            'guardian_nin' => 'CF11112222333',
+            'guardian_relationship' => 'mother',
+            'guardian_photo' => $guardianPhoto,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $student = Student::query()->where('full_name', 'Aisha Create')->firstOrFail();
+        $this->assertSame('Muslim', $student->religion);
+        $this->assertNotNull($student->photo_path);
+        $guardian = User::query()->where('email', 'aisha.parent@standrews.test')->firstOrFail();
+        $this->assertNotNull($guardian->avatar_path);
+        $this->assertTrue(Guardianship::query()->where('student_id', $student->id)->where('guardian_user_id', $guardian->id)->exists());
     }
 }

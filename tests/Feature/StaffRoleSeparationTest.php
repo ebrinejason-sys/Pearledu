@@ -55,6 +55,7 @@ class StaffRoleSeparationTest extends TestCase
             'email' => 'invited-teacher@standrews.test',
             'gender' => 'female',
             'nin' => 'CF12345678901',
+            'staff_kind' => 'teaching',
             'role_keys' => ['subject_teacher'],
             'teaching_assignments' => $load['teaching_assignments'],
         ])->assertRedirect()->assertSessionHasNoErrors();

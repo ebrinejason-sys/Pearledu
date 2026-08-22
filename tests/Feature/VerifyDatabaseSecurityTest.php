@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Console\Commands\VerifyDatabaseSecurity;
+use App\Services\Tenancy\TenantContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,7 @@ class VerifyDatabaseSecurityTest extends TestCase
         $this->assertContains('helpdesk_tickets', $tables);
         $this->assertContains('lms_submissions', $tables);
         $this->assertContains('cbt_attempts', $tables);
+        $this->assertContains('staff_documents', $tables);
         $this->assertGreaterThan(30, count($tables));
     }
 
@@ -49,7 +52,7 @@ class VerifyDatabaseSecurityTest extends TestCase
         $this->seed();
 
         $schoolA = DB::table('schools')->where('slug', 'like', 'pearledu%')->value('id');
-        app(\App\Services\Tenancy\TenantContext::class)->forPlatform();
+        app(TenantContext::class)->forPlatform();
 
         $schoolB = DB::table('schools')->insertGetId([
             'name' => 'Other School',
@@ -89,7 +92,7 @@ class VerifyDatabaseSecurityTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         DB::table('marks')->insert([
             'school_id' => $schoolA,

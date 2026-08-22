@@ -45,7 +45,7 @@ Jane has one account. Navigation and dashboards are composed from the union of t
 | `class_teacher` | Class Teacher | Class Teacher | Homeroom `role_assignments.class_id` |
 | `director_of_studies` | Director of Studies | DOS / Dean of Studies / Dean of Academics | School-wide academic |
 | `bursar` | Bursar | Bursar | School-wide finance + salary records |
-| `secretary` | Secretary | Secretary | Front office: printable staff IDs and staff clock |
+| `secretary` | Secretary | Secretary | Front office: learner lookup, staff files, printable IDs, clock |
 | `deputy_head_teacher` | Deputy Head Teacher | Operational deputy | School-wide operations, no grade/finance writes, no promotions |
 | `head_teacher` | Head Teacher | Headteacher / Head of School | School-wide view + staff/ops; no grade/finance writes |
 | `director` | Director | Director | School-wide read; staff appointments; no grade/finance/attendance writes |
@@ -89,7 +89,7 @@ Executive/governance dashboard: EMIS-style census (learners M/F, teaching vs non
 
 ### Secretary
 
-Front office: staff directory, printable staff ID cards (photo, name, roles on the front; badge barcode on the back), barcode clock in/out (`staff.attendance.mark`), staff messages. No finance or grade writes. Not invitable by bursars or teachers.
+Front office: school-wide learner directory lookup (`learners.view`, no create/archive), staff files (photo, biodata, academic documents via `staff.profile.update`), printable staff ID cards (photo, name, roles on the front; badge barcode on the back), barcode clock in/out (`staff.attendance.mark`), staff messages. No finance, payroll, grade, or staff-role writes. Not invitable by bursars or teachers.
 
 ### Deputy Head Teacher
 
@@ -135,7 +135,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Class teacher | homeroom R + bio/photo/restream + parent invite | homeroom R + revoke upload after deadline | homeroom W | — | messages | — | — |
 | DOS | view + enrollment | all CRUD + verify | all W | — | invite teachers + messages | all CRUD | — |
 | Bursar | financial names on invoices | — | — | all CRUD | messages + payroll W | — | — |
-| Secretary | — | — | staff clock W | — | directory R + ID print | — | — |
+| Secretary | all R | — | staff clock W | — | directory R + files W + ID print | — | — |
 | Head Teacher | all RW | all R | all W + staff clock | all R | staff RW + payroll R | — | — |
 | Deputy Head | all RW | all R | all W + staff clock | all R | staff RW + payroll R | — | — |
 | Director | all R | all R | learner R + staff clock R | all R + class defaulters | staff RW + payroll R | — | — |
@@ -157,8 +157,10 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Homeroom class_id sync | `StaffRoleService` |
 | Staff role mutation | `staff.manage` routes + `StaffRoleService` (invite-only roles cannot sync/revoke) |
 | Staff ID / clock | `StaffBadgeService`, `StaffClockService` (`staff_badges`, `staff_time_punches`) |
+| Staff files | `staff.profile.update` + `staff_documents` (FORCE RLS); secretary may update files but not roles or salary |
 | Staff messages | `StaffMessageService` (`staff_conversations` / `staff_messages`) |
-| Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) |
+| Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) — amount on invite when the actor has payroll manage |
+| Learner fees | Class day/boarding structures auto-invoice on enroll; custom extras via `FeeInvoiceService::applyCustomFee` on the learner profile |
 | Gender stats / EMIS census | `GenderStatsService::emisOverview` |
 | Homeroom profile / restream | `LearnerScope::canEditProfile` / `canRestreamTo` (`learners.profile.update`) |
 | Marks upload revoke | `MarksheetWorkflow::revokeUpload` (`assessment.lock`, after deadline) |
@@ -170,7 +172,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 
 ## Identity and demographics
 
-Staff and parent accounts must store a NIN (encrypted). Learners may have a NIN; it is optional. Gender is `male` / `female` on users and students. Leadership dashboards and class overview show M/F counts. Class teachers see M/F for their homeroom only.
+Staff and parent accounts must store a NIN (encrypted). Learners may have a NIN; it is optional. Learner profiles also store date of birth, religion, home address, medical notes, residency, and a photo, with related guardian(s) and guardian photos captured in the same window. Staff profiles store biodata, photo, academic documents, salary amount, teaching load (subject + classes), and a clocking ID. Gender is `male` / `female` on users and students. Leadership dashboards and class overview show M/F counts. Class teachers see M/F for their homeroom only.
 
 Platform operators who have **entered** a school workspace may edit that school’s EMIS number and SchoolPay credentials (`platform.schools.update` + recent password). They imitate staff from the entered school’s staff list (`platform.users.impersonate`) — the existing impersonation flow, not a second one. `emis_data_entrant` can enter a workspace but cannot change integrations.
 

@@ -27,6 +27,9 @@ class User extends Authenticatable
         'email',
         'phone',
         'gender',
+        'date_of_birth',
+        'nationality',
+        'home_address',
         'nin',
         'password',
         'status',
@@ -49,12 +52,18 @@ class User extends Authenticatable
             'two_factor_recovery_codes' => 'encrypted:array',
             'last_login_at' => 'datetime',
             'last_seen_at' => 'datetime',
+            'date_of_birth' => 'date',
         ];
     }
 
     public function roleAssignments(): HasMany
     {
         return $this->hasMany(RoleAssignment::class);
+    }
+
+    public function staffDocuments(): HasMany
+    {
+        return $this->hasMany(StaffDocument::class, 'user_id');
     }
 
     public function teachingAssignments(): HasMany

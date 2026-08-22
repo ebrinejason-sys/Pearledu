@@ -25,7 +25,7 @@
       @if($roles->isEmpty())
         <p style="color:var(--muted)">You cannot invite anyone with your current responsibilities.</p>
       @else
-      <form method="post" action="{{ route('app.staff.store') }}" id="invite-staff-form">
+      <form method="post" action="{{ route('app.staff.store') }}" id="invite-staff-form" enctype="multipart/form-data">
         @csrf
         <fieldset style="border:0;padding:0;margin:0">
           <legend style="font-size:13px;color:var(--muted);padding:0">Personal information</legend>
@@ -48,14 +48,38 @@
           <label for="invite-nin">National ID (NIN) <span aria-hidden="true">*</span></label>
           <input id="invite-nin" name="nin" value="{{ old('nin') }}" required autocomplete="off" minlength="10" maxlength="20">
           @error('nin')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-dob">Date of birth</label>
+          <input id="invite-dob" type="date" name="date_of_birth" value="{{ old('date_of_birth') }}">
+          @error('date_of_birth')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-nationality">Nationality</label>
+          <input id="invite-nationality" name="nationality" value="{{ old('nationality', 'Uganda') }}">
+          <label for="invite-address">Home address</label>
+          <input id="invite-address" name="home_address" value="{{ old('home_address') }}">
+          <label for="invite-photo">Photo</label>
+          <input id="invite-photo" type="file" name="photo" accept="image/*" capture="user">
+          @error('photo')<div class="err" role="alert">{{ $message }}</div>@enderror
+        </fieldset>
+
+        <fieldset style="border:0;padding:0;margin:16px 0 0">
+          <legend style="font-size:13px;color:var(--muted);padding:0">Teaching or non-teaching</legend>
+          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Teaching staff need a subject and class load. Non-teaching staff keep biodata, ID, salary, and other duties.</p>
+          <label class="check" style="margin:0 12px 8px 0">
+            <input type="radio" name="staff_kind" value="teaching" class="js-staff-kind" @checked(old('staff_kind', 'teaching') === 'teaching')>
+            <span>Teaching staff</span>
+          </label>
+          <label class="check" style="margin:0 0 8px">
+            <input type="radio" name="staff_kind" value="non_teaching" class="js-staff-kind" @checked(old('staff_kind') === 'non_teaching')>
+            <span>Non-teaching staff</span>
+          </label>
+          @error('staff_kind')<div class="err" role="alert">{{ $message }}</div>@enderror
         </fieldset>
 
         <fieldset style="border:0;padding:0;margin:16px 0 0">
           <legend style="font-size:13px;color:var(--muted);padding:0">Responsibilities</legend>
-          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Tick every role this person should hold in this school.</p>
+          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Tick every role this person should hold in this school. Teaching staff must include Teacher and/or Class Teacher.</p>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
             @foreach($roles as $role)
-              <label class="check" style="margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-sm)">
+              <label class="check js-role-wrap{{ in_array($role->key, ['subject_teacher', 'class_teacher'], true) ? ' js-teaching-role' : '' }}" style="margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-sm)">
                 <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-role-key" @checked(collect(old('role_keys', []))->contains($role->key))>
                 <span>{{ $role->label }}</span>
               </label>
@@ -98,11 +122,23 @@
                   @endforeach
                 </div>
               </fieldset>
+              <label>Periods per week</label>
+              <input type="number" min="1" max="40" name="teaching_assignments[0][periods_per_week]" value="3">
             </div>
           </div>
           <button type="button" class="btn ghost" id="add-teach-row">Add another subject</button>
           @error('teaching_assignments')<div class="err" role="alert">{{ $message }}</div>@enderror
         </div>
+        @if(!empty($canSetSalary))
+        <fieldset style="border:0;padding:0;margin:16px 0 0">
+          <legend style="font-size:13px;color:var(--muted);padding:0">Salary</legend>
+          <label for="invite-salary">Monthly amount (UGX)</label>
+          <input id="invite-salary" type="number" min="0" name="salary_amount" value="{{ old('salary_amount') }}">
+          @error('salary_amount')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-salary-notes">Notes</label>
+          <input id="invite-salary-notes" name="salary_notes" value="{{ old('salary_notes') }}">
+        </fieldset>
+        @endif
         <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
       </form>
       @endif
@@ -206,7 +242,18 @@
 @section('head')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    function staffKind() {
+      var el = document.querySelector('#invite-staff-form input[name="staff_kind"]:checked');
+      return el ? el.value : '';
+    }
     function syncInviteHomeroom() {
+      var kind = staffKind();
+      document.querySelectorAll('#invite-staff-form .js-teaching-role').forEach(function (wrap) {
+        wrap.hidden = kind === 'non_teaching';
+        if (kind === 'non_teaching') {
+          wrap.querySelectorAll('input').forEach(function (cb) { cb.checked = false; });
+        }
+      });
       var field = document.getElementById('homeroom-field');
       if (!field) return;
       var checked = Array.from(document.querySelectorAll('#invite-staff-form .js-role-key:checked')).some(function (el) {
@@ -215,12 +262,12 @@
       field.hidden = !checked;
       var teach = document.getElementById('teaching-field');
       if (teach) {
-        teach.hidden = !Array.from(document.querySelectorAll('#invite-staff-form .js-role-key:checked')).some(function (el) {
+        teach.hidden = kind !== 'teaching' || !Array.from(document.querySelectorAll('#invite-staff-form .js-role-key:checked')).some(function (el) {
           return el.value === 'subject_teacher';
         });
       }
     }
-    document.querySelectorAll('#invite-staff-form .js-role-key').forEach(function (el) {
+    document.querySelectorAll('#invite-staff-form .js-role-key, #invite-staff-form .js-staff-kind').forEach(function (el) {
       el.addEventListener('change', syncInviteHomeroom);
     });
     syncInviteHomeroom();
