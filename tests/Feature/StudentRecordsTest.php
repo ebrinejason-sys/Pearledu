@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ class StudentRecordsTest extends TestCase
     use RefreshDatabase;
 
     private School $school;
+
     private User $admin;
 
     protected function setUp(): void
@@ -177,7 +179,7 @@ class StudentRecordsTest extends TestCase
         $outsider = User::create([
             'full_name' => 'Outsider Person',
             'email' => 'outsider@elsewhere.test',
-            'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
+            'password' => Hash::make('password1234'),
             'status' => 'active',
         ]);
 

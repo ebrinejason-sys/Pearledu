@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Mail\SchoolOnboardingRequestReceived;
 use App\Models\PricingPlan;
 use Database\Seeders\PricingPlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PearlEduLandingPageTest extends TestCase
@@ -176,7 +178,7 @@ class PearlEduLandingPageTest extends TestCase
 
     public function test_onboarding_form_submission_sends_notification_email(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $response = $this->post('http://pearledu.voxsign.test/onboard', [
             'school_name' => 'Test Academy',
@@ -190,7 +192,7 @@ class PearlEduLandingPageTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('status');
 
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\SchoolOnboardingRequestReceived::class, function ($mail) {
+        Mail::assertSent(SchoolOnboardingRequestReceived::class, function ($mail) {
             return $mail->schoolName === 'Test Academy'
                 && $mail->contactName === 'Jane Doe'
                 && $mail->email === 'jane@example.com';
@@ -199,7 +201,7 @@ class PearlEduLandingPageTest extends TestCase
 
     public function test_onboarding_form_validates_required_fields(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $response = $this->post('http://pearledu.voxsign.test/onboard', [
             'school_name' => '',
@@ -209,7 +211,7 @@ class PearlEduLandingPageTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['school_name', 'contact_name', 'email']);
-        \Illuminate\Support\Facades\Mail::assertNothingSent();
+        Mail::assertNothingSent();
     }
 
     public function test_login_page_still_reachable_on_pearledu_host(): void

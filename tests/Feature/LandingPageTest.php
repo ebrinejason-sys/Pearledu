@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ContactFormConfirmation;
+use App\Mail\ContactFormReceived;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class LandingPageTest extends TestCase
@@ -156,7 +159,7 @@ class LandingPageTest extends TestCase
 
     public function test_contact_form_sends_admin_notification_and_submitter_confirmation(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $response = $this->post('/contact', [
             'name' => 'Test User',
@@ -168,14 +171,14 @@ class LandingPageTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('status');
 
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactFormReceived::class, function ($mail) {
+        Mail::assertSent(ContactFormReceived::class, function ($mail) {
             return $mail->hasTo(config('mail.contact_inbox'))
                 && $mail->name === 'Test User'
                 && $mail->email === 'test@example.com'
                 && $mail->message === 'Hello VoxSign';
         });
 
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactFormConfirmation::class, function ($mail) {
+        Mail::assertSent(ContactFormConfirmation::class, function ($mail) {
             return $mail->hasTo('test@example.com')
                 && $mail->name === 'Test User'
                 && $mail->hasFrom(config('mail.from.address'), 'VoxSign');
@@ -184,7 +187,7 @@ class LandingPageTest extends TestCase
 
     public function test_contact_form_still_validates_required_fields(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $response = $this->post('/contact', [
             'name' => '',
@@ -194,7 +197,7 @@ class LandingPageTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['name', 'email', 'message']);
-        \Illuminate\Support\Facades\Mail::assertNothingSent();
+        Mail::assertNothingSent();
     }
 
     public function test_two_divisions_section_introduces_accessibility_and_institutions(): void
