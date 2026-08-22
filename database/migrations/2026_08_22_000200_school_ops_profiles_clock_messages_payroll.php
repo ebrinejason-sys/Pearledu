@@ -9,6 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        DB::statement('ALTER TABLE roles DROP CONSTRAINT IF EXISTS roles_key_check');
+        DB::statement("ALTER TABLE roles ADD CONSTRAINT roles_key_check CHECK (key IN (
+            'platform_admin','platform_ops','emis_data_entrant','support_agent',
+            'school_admin','director','head_teacher','deputy_head_teacher','director_of_studies',
+            'bursar','secretary','class_teacher','subject_teacher','parent','student'
+        ))");
+
         Schema::table('users', function (Blueprint $table) {
             $table->string('gender', 16)->nullable()->after('phone');
             $table->text('nin')->nullable()->after('gender');
@@ -135,5 +142,12 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn(['gender', 'nin']);
         });
+
+        DB::statement('ALTER TABLE roles DROP CONSTRAINT IF EXISTS roles_key_check');
+        DB::statement("ALTER TABLE roles ADD CONSTRAINT roles_key_check CHECK (key IN (
+            'platform_admin','platform_ops','emis_data_entrant','support_agent',
+            'school_admin','director','head_teacher','deputy_head_teacher','director_of_studies',
+            'bursar','class_teacher','subject_teacher','parent','student'
+        ))");
     }
 };
