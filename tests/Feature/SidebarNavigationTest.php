@@ -37,8 +37,10 @@ class SidebarNavigationTest extends TestCase
         $response = $this->actingAsInSchool($admin)->get(route('app.home'));
 
         $response->assertOk();
+        $response->assertSee('Manage school data');
         $response->assertSee('Learners');
-        $response->assertSee('Students');
+        $response->assertSee('View Learners');
+        $response->assertSee('Human Resource');
         $response->assertSee('Communication');
         $response->assertSee('SMS');
         $response->assertSee('Account settings');

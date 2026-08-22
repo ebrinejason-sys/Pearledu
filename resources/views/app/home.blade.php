@@ -12,7 +12,7 @@
       </div>
       <div class="page-header__actions">
         @if(in_array('learners.manage', $permissions, true) || in_array('learners.view', $permissions, true))
-          <a class="btn" href="{{ route('app.students.index') }}">Students</a>
+          <a class="btn" href="{{ route('app.students.index') }}">View Learners</a>
         @endif
         @if(in_array('finance.manage', $permissions, true) || in_array('finance.view', $permissions, true))
           <a class="btn accent" href="{{ route('app.fees.index') }}">Fees</a>

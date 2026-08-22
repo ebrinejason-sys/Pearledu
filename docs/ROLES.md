@@ -170,7 +170,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Class defaulters | `DefaulterNoticeService` (print + notify class teacher via staff messages) |
 | Idle logout | `EnforceIdleSession` + `users.last_seen_at` (remember-me cannot skip) |
 | Role dashboards | `RoleWorkspaceService` |
-| Nav / shortcuts | `NavigationBuilder`, `SchoolDashboardService` (not a security boundary) |
+| Nav / shortcuts | Nested EMIS-style IA in `NavigationBuilder` (Manage school data → Learners / Human Resource / Finance). `SchoolDashboardService` shortcuts. Not a security boundary. |
 
 ## Identity and demographics
 

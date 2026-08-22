@@ -83,7 +83,7 @@ class SchoolDashboardTest extends TestCase
         $response->assertSee('Learners by class', false);
         $response->assertSee('Fee collections', false);
         $response->assertSee('Quick access', false);
-        $response->assertSee('Students', false);
+        $response->assertSee('View Learners', false);
         $response->assertSee('dash-access', false);
         $response->assertSee('Your access', false);
 
@@ -101,12 +101,24 @@ class SchoolDashboardTest extends TestCase
 
         foreach ($nav['sections'] as $section) {
             foreach ($section['items'] as $item) {
-                $this->assertNotEmpty($item['url'], 'Dead nav item: '.$item['label']);
-                $this->assertTrue(
-                    Route::has($item['route']),
-                    'Missing route for nav item '.$item['label'].' ('.$item['route'].')'
-                );
+                $this->assertNavItemRoutesExist($item);
             }
         }
+    }
+
+    /** @param  array<string, mixed>  $item */
+    private function assertNavItemRoutesExist(array $item): void
+    {
+        foreach ($item['children'] ?? [] as $child) {
+            $this->assertNavItemRoutesExist($child);
+        }
+        if (! empty($item['children'])) {
+            return;
+        }
+        $this->assertNotEmpty($item['url'], 'Dead nav item: '.$item['label']);
+        $this->assertTrue(
+            Route::has($item['route']),
+            'Missing route for nav item '.$item['label'].' ('.$item['route'].')'
+        );
     }
 }

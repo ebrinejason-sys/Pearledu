@@ -101,6 +101,7 @@ class NavigationBuilder
                 'name' => $school->name,
                 'slug' => $school->slug,
                 'term_label' => $this->termLabel($zone === 'school'),
+                'year_label' => $this->yearLabel($zone === 'school'),
             ] : null,
         ];
     }
@@ -126,17 +127,65 @@ class NavigationBuilder
                 ])),
             ],
             [
-                'key' => 'learners',
-                'label' => 'Learners',
+                'key' => 'school_data',
+                'label' => 'Manage school data',
                 'items' => array_values(array_filter([
-                    $on('learners') && $this->hasAny($permissions, ['learners.manage', 'learners.view'])
-                        ? $this->item('Students', 'app.students.index', icon: 'students', active: request()->routeIs('app.students.*'))
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('My institution', 'app.settings.school', icon: 'platform', active: request()->routeIs('app.settings.*'))
                         : null,
-                    $on('admissions') && $this->has($permissions, 'admissions.manage')
-                        ? $this->item('Admissions', 'app.admissions.index', icon: 'admissions', active: request()->routeIs('app.admissions.*'))
+                    $this->nest('Learners', 'students', [
+                        $on('learners') && $this->hasAny($permissions, ['learners.manage', 'learners.view'])
+                            ? $this->item('View Learners', 'app.students.index', icon: 'students', active: request()->routeIs('app.students.*'))
+                            : null,
+                        $on('admissions') && $this->has($permissions, 'admissions.manage')
+                            ? $this->item('Admissions', 'app.admissions.index', icon: 'admissions', active: request()->routeIs('app.admissions.*'))
+                            : null,
+                        $this->hasAny($permissions, ['learners.manage', 'enrollment.manage'])
+                            ? $this->item('Enrollments', 'app.enrollments.index', icon: 'enrollments', active: request()->routeIs('app.enrollments.*'))
+                            : null,
+                        $this->has($permissions, 'promotions.approve')
+                            ? $this->item('Promotions', 'app.promotions.index', icon: 'promotions', active: request()->routeIs('app.promotions.*'))
+                            : null,
+                    ]),
+                    $this->nest('Human Resource', 'staff', [
+                        $this->hasAny($permissions, ['staff.manage', 'staff.invite.teacher', 'staff.view'])
+                            ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.index') || request()->routeIs('app.staff.show') || request()->routeIs('app.staff.id'))
+                            : null,
+                        $this->hasAny($permissions, ['staff.attendance.view', 'staff.attendance.mark'])
+                            ? $this->item('Staff clock', 'app.staff.clock', icon: 'attendance', active: request()->routeIs('app.staff.clock*'))
+                            : null,
+                        $this->hasAny($permissions, ['hr.payroll.view', 'hr.payroll.manage'])
+                            ? $this->item('Salaries', 'app.staff.payroll', icon: 'hr', active: request()->routeIs('app.staff.payroll*'))
+                            : null,
+                    ]),
+                    $this->nest('Finance', 'fees', [
+                        $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
+                            ? $this->item('Fee types', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.index') || request()->routeIs('app.fees.structures*'))
+                            : null,
+                        $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
+                            ? $this->item('Invoices', 'app.fees.invoices', icon: 'fees', active: request()->routeIs('app.fees.invoices') || request()->routeIs('app.fees.overdue'))
+                            : null,
+                        $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
+                            ? $this->item('Cleared', 'app.fees.cleared', icon: 'fees', active: request()->routeIs('app.fees.cleared'))
+                            : null,
+                        $on('fees') && $this->hasAny($permissions, ['finance.reconcile', 'finance.manage'])
+                            ? $this->item('Reconciliation', 'app.fees.invoices', icon: 'fees', active: request()->routeIs('app.fees.invoices') && request()->query('status') === 'demanded')
+                            : null,
+                    ]),
+                    $this->has($permissions, 'school.manage')
+                        ? $this->item('Setup wizard', 'app.setup.index', icon: 'add', active: request()->routeIs('app.setup.*'))
                         : null,
-                    $this->hasAny($permissions, ['learners.manage', 'enrollment.manage'])
-                        ? $this->item('Enrollments', 'app.enrollments.index', icon: 'enrollments', active: request()->routeIs('app.enrollments.*'))
+                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage'])
+                        ? $this->item('Classes & streams', 'app.classes.index', icon: 'classes', active: request()->routeIs('app.classes.*') && ! request()->routeIs('app.classes.overview'))
+                        : null,
+                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage'])
+                        ? $this->item('Subjects', 'app.subjects.index', icon: 'subjects', active: request()->routeIs('app.subjects.*'))
+                        : null,
+                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage'])
+                        ? $this->item('Academic years', 'app.years.index', icon: 'years', active: request()->routeIs('app.years.*'))
+                        : null,
+                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage', 'timetable.manage'])
+                        ? $this->item('Teaching assignments', 'app.teaching.index', icon: 'teaching', active: request()->routeIs('app.teaching.index') || request()->routeIs('app.teaching.store') || request()->routeIs('app.teaching.destroy'))
                         : null,
                 ])),
             ],
@@ -165,24 +214,6 @@ class NavigationBuilder
                 ])),
             ],
             [
-                'key' => 'finance',
-                'label' => 'Finance',
-                'items' => array_values(array_filter([
-                    $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
-                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.index') || request()->routeIs('app.fees.structures*'))
-                        : null,
-                    $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
-                        ? $this->item('Invoices', 'app.fees.invoices', icon: 'fees', active: request()->routeIs('app.fees.invoices') || request()->routeIs('app.fees.overdue'))
-                        : null,
-                    $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
-                        ? $this->item('Cleared', 'app.fees.cleared', icon: 'fees', active: request()->routeIs('app.fees.cleared'))
-                        : null,
-                    $on('fees') && $this->hasAny($permissions, ['finance.reconcile', 'finance.manage'])
-                        ? $this->item('Reconciliation', 'app.fees.invoices', icon: 'fees', active: request()->routeIs('app.fees.invoices') && request()->query('status') === 'demanded')
-                        : null,
-                ])),
-            ],
-            [
                 'key' => 'communications',
                 'label' => 'Communication',
                 'items' => array_values(array_filter([
@@ -197,39 +228,6 @@ class NavigationBuilder
                         : null,
                     $this->has($permissions, 'announcements.view') && ! $this->has($permissions, 'announcements.manage')
                         ? $this->item('Announcements', 'app.portal.announcements', icon: 'announcements', active: request()->routeIs('app.portal.announcements'))
-                        : null,
-                ])),
-            ],
-            [
-                'key' => 'administration',
-                'label' => 'Administration',
-                'items' => array_values(array_filter([
-                    $this->has($permissions, 'school.manage')
-                        ? $this->item('Setup wizard', 'app.setup.index', icon: 'add', active: request()->routeIs('app.setup.*'))
-                        : null,
-                    $this->has($permissions, 'school.manage')
-                        ? $this->item('School identity', 'app.settings.school', icon: 'platform', active: request()->routeIs('app.settings.*'))
-                        : null,
-                    $this->hasAny($permissions, ['staff.manage', 'staff.invite.teacher', 'staff.view'])
-                        ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.index') || request()->routeIs('app.staff.show') || request()->routeIs('app.staff.id')) : null,
-                    $this->hasAny($permissions, ['staff.attendance.view', 'staff.attendance.mark'])
-                        ? $this->item('Staff clock', 'app.staff.clock', icon: 'attendance', active: request()->routeIs('app.staff.clock*')) : null,
-                    $this->hasAny($permissions, ['hr.payroll.view', 'hr.payroll.manage'])
-                        ? $this->item('Salaries', 'app.staff.payroll', icon: 'hr', active: request()->routeIs('app.staff.payroll*')) : null,
-                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage'])
-                        ? $this->item('Classes & streams', 'app.classes.index', icon: 'classes', active: request()->routeIs('app.classes.*'))
-                        : null,
-                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage'])
-                        ? $this->item('Subjects', 'app.subjects.index', icon: 'subjects', active: request()->routeIs('app.subjects.*'))
-                        : null,
-                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage'])
-                        ? $this->item('Academic years', 'app.years.index', icon: 'years', active: request()->routeIs('app.years.*'))
-                        : null,
-                    $this->hasAny($permissions, ['school.manage', 'curriculum.manage', 'timetable.manage'])
-                        ? $this->item('Teaching assignments', 'app.teaching.index', icon: 'teaching', active: request()->routeIs('app.teaching.index') || request()->routeIs('app.teaching.store') || request()->routeIs('app.teaching.destroy'))
-                        : null,
-                    $this->has($permissions, 'promotions.approve')
-                        ? $this->item('Promotions', 'app.promotions.index', icon: 'promotions', active: request()->routeIs('app.promotions.*'))
                         : null,
                 ])),
             ],
@@ -264,9 +262,6 @@ class NavigationBuilder
                     $on('clinic') && $this->has($permissions, 'clinic.manage')
                         ? $this->item('Clinic', 'app.clinic.index', icon: 'clinic', active: request()->routeIs('app.clinic.*'))
                         : null,
-                    $this->hasAny($permissions, ['helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage'])
-                        ? $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*'))
-                        : null,
                 ])),
             ],
             [
@@ -288,6 +283,15 @@ class NavigationBuilder
                     $isPlatformOperator ? $this->item('Platform console', 'platform.dashboard', icon: 'platform') : null,
                 ])),
             ],
+            [
+                'key' => 'help',
+                'label' => 'Help-Center',
+                'items' => array_values(array_filter([
+                    $this->hasAny($permissions, ['helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage'])
+                        ? $this->item('Helpdesk', 'app.helpdesk.index', icon: 'helpdesk', active: request()->routeIs('app.helpdesk.*'))
+                        : null,
+                ])),
+            ],
         ];
     }
 
@@ -304,6 +308,20 @@ class NavigationBuilder
         }
 
         return trim(($term?->name ?? '').' '.($year?->name ?? ''));
+    }
+
+    private function yearLabel(bool $forSchoolZone): ?string
+    {
+        if (! $forSchoolZone) {
+            return null;
+        }
+
+        $name = $this->academic->year()?->name;
+        if (! filled($name)) {
+            return null;
+        }
+
+        return 'Academic year '.$name;
     }
 
     /** @return list<array{key: string, label: string, items: list<array>}> */
@@ -402,21 +420,88 @@ class NavigationBuilder
     }
 
     /**
+     * Collapsible group. Dropped when every child is hidden by permission or a dead route.
+     *
+     * @param  list<array<string, mixed>|null>  $children
+     * @return array<string, mixed>|null
+     */
+    private function nest(string $label, string $icon, array $children): ?array
+    {
+        $kids = array_values(array_filter($children, static fn ($child) => is_array($child)));
+        if ($kids === []) {
+            return null;
+        }
+
+        $active = false;
+        foreach ($kids as $child) {
+            if (! empty($child['active'])) {
+                $active = true;
+                break;
+            }
+        }
+
+        return [
+            'label' => $label,
+            'route' => '',
+            'url' => null,
+            'active' => $active,
+            'highlight' => false,
+            'icon' => $icon,
+            'children' => $kids,
+        ];
+    }
+
+    /**
      * Drop nav entries whose routes are missing so the sidebar never shows dead ends.
+     * Nested groups stay when they still have a live child.
      *
      * @param  list<array{key: string, label: string, items: list<array>}>  $sections
      * @return list<array{key: string, label: string, items: list<array>}>
      */
     private function withoutDeadLinks(array $sections): array
     {
-        return array_map(static function (array $section) {
+        return array_map(function (array $section) {
             $section['items'] = array_values(array_filter(
-                $section['items'] ?? [],
-                static fn ($item) => is_array($item) && ! empty($item['url'])
+                array_map(fn ($item) => $this->pruneNavItem($item), $section['items'] ?? []),
+                static fn ($item) => $item !== null
             ));
 
             return $section;
         }, $sections);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function pruneNavItem(mixed $item): ?array
+    {
+        if (! is_array($item)) {
+            return null;
+        }
+
+        $children = [];
+        foreach ($item['children'] ?? [] as $child) {
+            $kept = $this->pruneNavItem($child);
+            if ($kept !== null) {
+                $children[] = $kept;
+            }
+        }
+
+        if ($children !== []) {
+            $item['children'] = $children;
+            foreach ($children as $child) {
+                if (! empty($child['active'])) {
+                    $item['active'] = true;
+                    break;
+                }
+            }
+
+            return $item;
+        }
+
+        unset($item['children']);
+
+        return empty($item['url']) ? null : $item;
     }
 
     private function has(array $permissions, string $perm): bool

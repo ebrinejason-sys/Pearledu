@@ -128,6 +128,18 @@ class StudentController extends Controller
             || in_array('finance.manage', $user->permissionsForSchool($schoolId), true);
         $canApplyFees = in_array('finance.manage', $user->permissionsForSchool($schoolId), true)
             || in_array('fees.invoice.create', $user->permissionsForSchool($schoolId), true);
+        $profileTab = (string) request()->query('tab', 'basic');
+        if (! in_array($profileTab, ['basic', 'guardians', 'fees', 'login'], true)) {
+            $profileTab = 'basic';
+        }
+        $errorBag = request()->session()->get('errors');
+        if (is_object($errorBag) && method_exists($errorBag, 'has')
+            && ($errorBag->has('fee_structure_id') || $errorBag->has('name') || $errorBag->has('amount'))) {
+            $profileTab = 'fees';
+        }
+        if ($profileTab === 'fees' && ! $canViewFinance && ! $canApplyFees) {
+            $profileTab = 'basic';
+        }
         $statement = $canViewFinance ? $this->ledger->statement($student) : ['lines' => [], 'balance' => 0];
         $feeKinds = FeeKind::keys();
         $applyableStructures = collect();
@@ -164,7 +176,8 @@ class StudentController extends Controller
 
         return view('app.students.show', compact(
             'student', 'statement', 'canManageLearners', 'canEditProfile', 'canLinkGuardians',
-            'canViewFinance', 'canApplyFees', 'feeKinds', 'applyableStructures', 'invoicedStructureIds'
+            'canViewFinance', 'canApplyFees', 'feeKinds', 'applyableStructures', 'invoicedStructureIds',
+            'profileTab'
         ));
     }
 
@@ -378,7 +391,9 @@ class StudentController extends Controller
                 ->findOrFail($data['fee_structure_id']);
             $invoice = $this->invoices->invoiceStudent($student, $structure, $data['due_on'] ?? null);
 
-            return back()->with('status', 'Fee applied. Invoice '.$invoice->reference.' · balance UGX '.number_format((float) $invoice->balance).'.');
+            return redirect()
+                ->route('app.students.show', ['student' => $student, 'tab' => 'fees'])
+                ->with('status', 'Fee applied. Invoice '.$invoice->reference.' · balance UGX '.number_format((float) $invoice->balance).'.');
         }
 
         $data = $request->validate([
@@ -389,7 +404,9 @@ class StudentController extends Controller
         ]);
         $invoice = $this->invoices->applyCustomFee($student, $data);
 
-        return back()->with('status', 'Custom fee applied to '.$student->full_name.'. Invoice '.$invoice->reference.'.');
+        return redirect()
+            ->route('app.students.show', ['student' => $student, 'tab' => 'fees'])
+            ->with('status', 'Custom fee applied to '.$student->full_name.'. Invoice '.$invoice->reference.'.');
     }
 
     private function maybeInviteFirstGuardian(Request $request, Student $student): void

@@ -856,13 +856,13 @@ class SchoolOpsFeesAssessmentTest extends TestCase
         $pta = FeeStructure::query()->where('name', 'Late PTA')->firstOrFail();
         $boarding = FeeStructure::query()->where('name', 'Boarding only extra')->firstOrFail();
 
-        $this->actingAsInSchool($this->bursar)->get(route('app.students.show', $student))
+        $this->actingAsInSchool($this->bursar)->get(route('app.students.show', ['student' => $student, 'tab' => 'fees']))
             ->assertOk()
             ->assertSee('Attach fee type', false)
             ->assertSee('Late PTA', false)
             ->assertSee('Boarding only extra', false);
 
-        $this->actingAsInSchool($this->director)->get(route('app.students.show', $student))
+        $this->actingAsInSchool($this->director)->get(route('app.students.show', ['student' => $student, 'tab' => 'fees']))
             ->assertOk()
             ->assertDontSee('Attach fee type', false);
 

@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Students')
+@section('title', 'Learners')
 @section('content')
   <div class="page-header">
     <div>

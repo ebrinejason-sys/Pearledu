@@ -10,7 +10,7 @@ School users share one dashboard and a “More” bucket of admin links. LMS/CBT
 
 - New RBAC tables or replacing PermissionResolver
 - Separate apps per role
-- Pixel-copy of MoES EMIS
+- Pixel-copy of MoES EMIS (coat of arms, DashLite, Infrastructure / P.E modules)
 - Payroll, fee-defaulter portal lock, director break-glass
 
 ## Expected behavior

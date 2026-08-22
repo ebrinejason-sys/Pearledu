@@ -90,9 +90,7 @@ class StaffRoleSeparationTest extends TestCase
         $teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
         $this->actingAsInSchool($teacher);
 
-        $labels = collect(app(NavigationBuilder::class)->build($teacher)['sections'])
-            ->flatMap(fn ($section) => collect($section['items'])->pluck('label'))
-            ->all();
+        $labels = $this->navLabels(app(NavigationBuilder::class)->build($teacher));
 
         $this->assertContains('My classes', $labels);
         $this->assertNotContains('SMS', $labels);
@@ -106,13 +104,11 @@ class StaffRoleSeparationTest extends TestCase
         $bursar = User::where('email', 'bursar@standrews.test')->firstOrFail();
         $this->actingAsInSchool($bursar);
 
-        $labels = collect(app(NavigationBuilder::class)->build($bursar)['sections'])
-            ->flatMap(fn ($section) => collect($section['items'])->pluck('label'))
-            ->all();
+        $labels = $this->navLabels(app(NavigationBuilder::class)->build($bursar));
 
-        $this->assertContains('Fees', $labels);
+        $this->assertContains('Fee types', $labels);
         $this->assertContains('SMS', $labels);
-        $this->assertContains('Students', $labels);
+        $this->assertContains('View Learners', $labels);
         $this->assertNotContains('Assessment', $labels);
         $this->assertNotContains('My classes', $labels);
     }

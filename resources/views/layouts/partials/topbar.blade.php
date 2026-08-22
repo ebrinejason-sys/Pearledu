@@ -1,25 +1,3 @@
-@if(!empty($nav['impersonation']))
-  <div class="impersonation-banner" role="status">
-    <div class="impersonation-banner__text">
-      <strong>Imitation mode{{ !empty($nav['impersonation']['read_only']) ? ' (read-only)' : ' (elevated write)' }}</strong>
-      — viewing as {{ $nav['impersonation']['target_name'] }}
-      @if($nav['impersonation']['school_name'])
-        at {{ $nav['impersonation']['school_name'] }}
-      @endif
-      <span class="impersonation-banner__meta">
-        Operator: {{ $nav['impersonation']['operator_name'] }}
-        @if(!empty($nav['impersonation']['reason']))
-          · Reason: {{ $nav['impersonation']['reason'] }}
-        @endif
-      </span>
-    </div>
-    <form method="post" action="{{ route('impersonation.stop') }}">
-      @csrf
-      <button type="submit" class="impersonation-banner__btn">End imitation</button>
-    </form>
-  </div>
-@endif
-
 <header class="app-header">
   <div class="app-header__row">
     <button type="button" class="sidebar-toggle sidebar-toggle--mobile" aria-label="Open menu" aria-expanded="false" aria-controls="app-sidebar" id="sidebar-open-btn">
@@ -27,15 +5,19 @@
       <span class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Menu</span>
     </button>
 
-    @include('layouts.partials.brand', [
-      'brandHref' => ($nav['zone'] ?? '') === 'platform' ? route('platform.dashboard') : route('app.home'),
-    ])
+    <span class="topbar__brand">
+      @include('layouts.partials.brand', [
+        'brandHref' => ($nav['zone'] ?? '') === 'platform' ? route('platform.dashboard') : route('app.home'),
+      ])
+    </span>
 
     @if(!empty($nav['school']) && ($nav['zone'] ?? '') === 'platform')
       <span class="context-pill" title="School workspace">Workspace · {{ $nav['school']['name'] }}</span>
     @elseif(!empty($nav['school']))
       <span class="context-pill" title="Current school">{{ $nav['school']['name'] }}</span>
-      @if(!empty($nav['school']['term_label']))
+      @if(!empty($nav['school']['year_label']))
+        <span class="year-chip" title="Current academic year">{{ $nav['school']['year_label'] }}</span>
+      @elseif(!empty($nav['school']['term_label']))
         <span class="context-pill context-pill--platform" title="Current term">{{ $nav['school']['term_label'] }}</span>
       @endif
     @elseif(($nav['zone'] ?? '') === 'platform')

@@ -84,25 +84,43 @@
   .sidebar-toggle--desktop:hover{background:var(--sidebar-hover);opacity:1}
   .sidebar-toggle--desktop svg{width:18px;height:18px;flex-shrink:0;transition:transform .15s}
 
-  .app-shell{display:flex;align-items:flex-start}
+  .app-shell{display:flex;align-items:stretch;min-height:100vh}
+  .app-col{flex:1;min-width:0;display:flex;flex-direction:column}
   .sidebar-backdrop{display:none}
-  .sidebar{width:230px;flex-shrink:0;background:var(--sidebar);color:var(--sidebar-ink);min-height:calc(100vh - 61px);position:sticky;top:61px;display:flex;flex-direction:column;justify-content:space-between;transition:width .15s}
-  .sidebar__nav{padding:16px 10px;overflow-y:auto}
+  .sidebar{width:248px;flex-shrink:0;background:var(--sidebar);color:var(--sidebar-ink);min-height:100vh;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .15s}
+  .sidebar__head{background:var(--accent);color:#fff;min-height:61px;padding:10px 14px;display:flex;align-items:center;flex-shrink:0}
+  .sidebar__head .brand{color:#fff}
+  .sidebar__head .brand__wordmark{color:#fff}
+  .sidebar__head .brand__wordmark b{color:#fff}
+  .sidebar__nav{padding:16px 10px;overflow-y:auto;flex:1}
   .sidebar__section{margin-bottom:18px}
   .sidebar__section-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--sidebar-ink);opacity:.6;margin:0 0 6px;padding:0 10px}
   .sidebar__list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
   .sidebar__link{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:var(--radius);color:var(--sidebar-ink);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden}
   .sidebar__link:hover{background:var(--sidebar-hover)}
   .sidebar__link.active{background:var(--sidebar-active);color:var(--on-brand)}
+  .sidebar__link--open{background:var(--sidebar-hover)}
   .sidebar__link--cta{color:var(--accent)}
   .sidebar__icon{display:flex;flex-shrink:0}
   .sidebar__icon svg{width:19px;height:19px}
   .sidebar__label{overflow:hidden;text-overflow:ellipsis}
+  .sidebar__chevron{margin-left:auto;display:flex;opacity:.7;flex-shrink:0}
+  .sidebar__chevron svg{width:14px;height:14px;transition:transform .15s}
+  .sidebar__group > summary{list-style:none;cursor:pointer}
+  .sidebar__group > summary::-webkit-details-marker{display:none}
+  .sidebar__group[open] > summary .sidebar__chevron svg{transform:rotate(90deg)}
+  .sidebar__sub{list-style:none;margin:0;padding:2px 0 6px 0;display:flex;flex-direction:column;gap:1px}
+  .sidebar__link--sub{font-size:13px;font-weight:500;padding-left:41px}
   .sidebar__footer{padding:10px;border-top:1px solid color-mix(in srgb, var(--sidebar-ink) 18%, transparent);display:flex;flex-direction:column;gap:2px}
+  .year-chip{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--accent);border-radius:999px;padding:8px 14px;white-space:nowrap}
+  .topbar__brand{display:none}
 
   body.sidebar-collapsed .sidebar{width:60px}
   body.sidebar-collapsed .sidebar__section-label,
-  body.sidebar-collapsed .sidebar__label{display:none}
+  body.sidebar-collapsed .sidebar__label,
+  body.sidebar-collapsed .sidebar__chevron,
+  body.sidebar-collapsed .sidebar__sub,
+  body.sidebar-collapsed .sidebar__head .brand__wordmark{display:none}
   body.sidebar-collapsed .sidebar__link{justify-content:center}
   body.sidebar-collapsed .sidebar-toggle--desktop{justify-content:center}
   body.sidebar-collapsed .sidebar-toggle--desktop svg{transform:rotate(180deg)}
@@ -115,12 +133,17 @@
     .user-menu__meta{display:none}
     .page-header__title{font-size:22px}
     .sidebar-toggle--mobile{display:flex}
-    .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:60;transform:translateX(-100%);width:230px}
+    .topbar__brand{display:inline-flex}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:60;transform:translateX(-100%);width:248px}
     body.sidebar-open .sidebar{transform:translateX(0)}
     body.sidebar-open .sidebar-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50}
-    body.sidebar-collapsed .sidebar{width:230px}
+    body.sidebar-collapsed .sidebar{width:248px}
     body.sidebar-collapsed .sidebar__section-label,
-    body.sidebar-collapsed .sidebar__label{display:block}
+    body.sidebar-collapsed .sidebar__label,
+    body.sidebar-collapsed .sidebar__chevron,
+    body.sidebar-collapsed .sidebar__sub,
+    body.sidebar-collapsed .sidebar__head .brand__wordmark{display:block}
+    body.sidebar-collapsed .sidebar__sub{display:flex}
     body.sidebar-collapsed .sidebar__link{justify-content:flex-start}
     .sidebar-toggle--desktop{display:none}
   }
@@ -191,6 +214,28 @@
   .learner-name{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--accent)}
   .learner-avatar{width:32px;height:32px;border-radius:999px;object-fit:cover;background:var(--surface-2);flex-shrink:0}
   .learner-avatar--empty{display:inline-block;background:var(--brand-soft)}
+  .lp{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;align-items:start}
+  .lp-rail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .lp-rail__who{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:12px}
+  .lp-rail__photo{width:96px;height:96px;border-radius:12px;object-fit:cover;background:var(--surface-2)}
+  .lp-rail__name{font-weight:800;font-size:15px;line-height:1.3}
+  .lp-rail__meta{font-size:13px;color:var(--muted)}
+  .lp-nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+  .lp-nav a{display:block;padding:10px 8px;border-radius:var(--radius-sm);color:var(--ink);font-weight:600;font-size:14px}
+  .lp-nav a.is-active{color:var(--brand);background:var(--brand-soft)}
+  .lp-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .lp-tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin:0 0 16px}
+  .lp-tabs span,.lp-tabs a{padding:8px 0;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent}
+  .lp-tabs .is-active{color:var(--brand);border-bottom-color:var(--brand)}
+  .lp-dl{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:0}
+  .lp-dl dt{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:12px 12px 12px 0;border-bottom:1px solid var(--line);font-weight:700}
+  .lp-dl dd{margin:0;padding:12px 0;border-bottom:1px solid var(--line);font-weight:600}
+  @media(max-width:800px){
+    .lp{grid-template-columns:1fr}
+    .lp-dl{grid-template-columns:1fr}
+    .lp-dl dt{padding-bottom:2px;border-bottom:0}
+    .lp-dl dd{padding-top:2px}
+  }
   .nin-missing{color:var(--danger);font-weight:700;font-size:13px}
   .role-picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:8px 0 12px}
   .role-pick{display:flex;flex-direction:column;gap:4px;margin:0;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);cursor:pointer;color:var(--ink)}
@@ -244,19 +289,54 @@
     @php
       $nav = $nav ?? app(\App\Services\Navigation\NavigationBuilder::class)->build(auth()->user());
       $crumbSection = null;
+      $crumbGroup = null;
       $crumbItem = null;
       foreach ($nav['sections'] ?? [] as $section) {
           foreach ($section['items'] ?? [] as $item) {
-              if (! empty($item['active'])) {
+              $matchedChild = null;
+              foreach ($item['children'] ?? [] as $child) {
+                  if (! empty($child['active'])) {
+                      $matchedChild = $child;
+                      break;
+                  }
+              }
+              if ($matchedChild) {
                   $crumbSection = $section['label'] ?? null;
+                  $crumbGroup = $item['label'] ?? null;
+                  $crumbItem = $matchedChild['label'] ?? null;
+              } elseif (! empty($item['active']) && empty($item['children'])) {
+                  $crumbSection = $section['label'] ?? null;
+                  $crumbGroup = null;
                   $crumbItem = $item['label'] ?? null;
               }
           }
       }
     @endphp
-    @include('layouts.partials.topbar', ['nav' => $nav])
+    @if(!empty($nav['impersonation']))
+      <div class="impersonation-banner" role="status">
+        <div class="impersonation-banner__text">
+          <strong>Imitation mode{{ !empty($nav['impersonation']['read_only']) ? ' (read-only)' : ' (elevated write)' }}</strong>
+          — viewing as {{ $nav['impersonation']['target_name'] }}
+          @if($nav['impersonation']['school_name'])
+            at {{ $nav['impersonation']['school_name'] }}
+          @endif
+          <span class="impersonation-banner__meta">
+            Operator: {{ $nav['impersonation']['operator_name'] }}
+            @if(!empty($nav['impersonation']['reason']))
+              · Reason: {{ $nav['impersonation']['reason'] }}
+            @endif
+          </span>
+        </div>
+        <form method="post" action="{{ route('impersonation.stop') }}">
+          @csrf
+          <button type="submit" class="impersonation-banner__btn">End imitation</button>
+        </form>
+      </div>
+    @endif
     <div class="app-shell">
       @include('layouts.partials.sidebar', ['nav' => $nav])
+      <div class="app-col">
+      @include('layouts.partials.topbar', ['nav' => $nav])
       <main id="main-content" class="wrap" tabindex="-1">
         @if(($nav['zone'] ?? '') === 'school' && $crumbItem && ! request()->routeIs('app.home'))
           <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -265,6 +345,9 @@
               @if($crumbSection && $crumbSection !== 'Home')
                 <li>{{ $crumbSection }}</li>
               @endif
+              @if($crumbGroup)
+                <li>{{ $crumbGroup }}</li>
+              @endif
               <li aria-current="page">{{ $crumbItem }}</li>
             </ol>
           </nav>
@@ -272,6 +355,7 @@
         @if(session('status'))<div class="status" role="status">{{ session('status') }}</div>@endif
         @yield('content')
       </main>
+      </div>
     </div>
     <div id="idle-session-dialog" class="idle-dialog" hidden role="alertdialog" aria-labelledby="idle-session-title" aria-describedby="idle-session-desc">
       <div class="idle-dialog__card">

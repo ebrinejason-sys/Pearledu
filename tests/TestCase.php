@@ -64,4 +64,29 @@ abstract class TestCase extends BaseTestCase
 
         return $user;
     }
+
+    /**
+     * Flatten sidebar labels including nested groups (Learners → View Learners).
+     *
+     * @param  array<string, mixed>  $nav
+     * @return list<string>
+     */
+    protected function navLabels(array $nav): array
+    {
+        $labels = [];
+        foreach ($nav['sections'] ?? [] as $section) {
+            foreach ($section['items'] ?? [] as $item) {
+                if (! empty($item['label'])) {
+                    $labels[] = $item['label'];
+                }
+                foreach ($item['children'] ?? [] as $child) {
+                    if (! empty($child['label'])) {
+                        $labels[] = $child['label'];
+                    }
+                }
+            }
+        }
+
+        return $labels;
+    }
 }
