@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title','Marks · '.$school->name)
 @section('content')
   <div class="page-header">
