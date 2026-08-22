@@ -1,11 +1,26 @@
 @extends('layouts.app')
 @section('title','Staff · '.$school->name)
+@php
+  $roleHints = [
+    'subject_teacher' => 'What they teach, and to which class. Used to build the timetable.',
+    'class_teacher' => 'Homeroom for one class — attendance, parents, pastoral.',
+    'director_of_studies' => 'Years, subjects, timetable, and marksheets.',
+    'head_teacher' => 'School operations. No fee or mark writes.',
+    'deputy_head_teacher' => 'Operations alongside the Head Teacher.',
+    'director' => 'Census and oversight. No transactional writes.',
+    'bursar' => 'Fees, receipts, and payroll amounts.',
+    'secretary' => 'Staff IDs, clock, and front office.',
+    'school_admin' => 'Full school operations.',
+    'parent' => 'Linked children only.',
+    'student' => 'Own learner portal.',
+  ];
+@endphp
 @section('content')
   <div class="page-header">
     <div>
       <p class="page-header__eyebrow">People</p>
       <h1 class="page-header__title">Staff members</h1>
-      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Add people and choose their responsibilities. One person may be a teacher and a class teacher at the same time.</p>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Add people and choose their responsibilities. A Teacher can cover many subjects and classes — classify the load so the timetable does not collide.</p>
     </div>
     <div class="page-header__actions">
       @if(!empty($canViewClock))
@@ -52,12 +67,13 @@
 
         <fieldset style="border:0;padding:0;margin:16px 0 0">
           <legend style="font-size:13px;color:var(--muted);padding:0">Responsibilities</legend>
-          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Tick every role this person should hold in this school.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
+          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Tick every role this person should hold. One person may be a teacher and a class teacher at the same time.</p>
+          <div class="role-picks">
             @foreach($roles as $role)
-              <label class="check" style="margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-sm)">
+              <label class="role-pick">
                 <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-role-key" @checked(collect(old('role_keys', []))->contains($role->key))>
-                <span>{{ $role->label }}</span>
+                <strong>{{ $role->label }}</strong>
+                <span>{{ $roleHints[$role->key] ?? 'School responsibility' }}</span>
               </label>
             @endforeach
           </div>
@@ -76,32 +92,12 @@
           @error('class_id')<div class="err" role="alert">{{ $message }}</div>@enderror
         </div>
         <div id="teaching-field" hidden>
-          <label>Teaching load <span aria-hidden="true">*</span></label>
-          <p style="color:var(--muted);font-size:13px;margin:0 0 8px">Required when Teacher is selected. One person can teach different subjects to different classes so the timetable does not collide.</p>
-          <div id="teaching-rows">
-            <div class="js-teach-row" style="border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px">
-              <label>Subject</label>
-              <select name="teaching_assignments[0][subject_id]">
-                <option value="">Select subject</option>
-                @foreach($subjects ?? [] as $subject)
-                  <option value="{{ $subject->id }}">{{ $subject->name }}</option>
-                @endforeach
-              </select>
-              <fieldset style="border:0;padding:0;margin:8px 0 0">
-                <legend style="font-size:13px;color:var(--muted)">Classes</legend>
-                <div style="display:flex;flex-wrap:wrap;gap:8px">
-                  @foreach($classes as $c)
-                    <label class="check" style="margin:0">
-                      <input type="checkbox" name="teaching_assignments[0][class_ids][]" value="{{ $c->id }}">
-                      <span>{{ $c->displayName() }}</span>
-                    </label>
-                  @endforeach
-                </div>
-              </fieldset>
-            </div>
-          </div>
-          <button type="button" class="btn ghost" id="add-teach-row">Add another subject</button>
-          @error('teaching_assignments')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <h3 style="font-size:15px;margin:16px 0 0">Teaching load</h3>
+          @include('app.teaching._load-builder', [
+            'builderId' => 'invite-load',
+            'subjects' => $subjects ?? collect(),
+            'classes' => $classes,
+          ])
         </div>
         <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
       </form>
@@ -113,143 +109,130 @@
       @if($openInvites->isEmpty())
         <p style="color:var(--muted);margin:0">No open invites.</p>
       @else
-        <table>
-          <thead><tr><th>Person</th><th>Role</th><th>Expires</th></tr></thead>
-          <tbody>
+        <div class="staff-grid">
           @foreach($openInvites as $invite)
-            <tr>
-              <td>
-                <strong>{{ $invite->user?->full_name ?? '—' }}</strong><br>
-                <span style="color:var(--muted);font-size:12px">{{ $invite->email ?: $invite->phone }}</span>
-              </td>
-              <td><span class="pill">{{ $invite->role_key }}</span></td>
-              <td>{{ $invite->expires_at->diffForHumans() }}</td>
-            </tr>
+            <div class="staff-card" style="margin:0;padding:12px">
+              <strong>{{ $invite->user?->full_name ?? '—' }}</strong>
+              <span class="staff-card__meta">{{ $invite->email ?: $invite->phone }}</span>
+              <p style="margin:8px 0 0"><span class="pill">{{ $invite->role_key }}</span> · {{ $invite->expires_at->diffForHumans() }}</p>
+            </div>
           @endforeach
-          </tbody>
-        </table>
+        </div>
       @endif
     </div>
   </div>
 
-  <div class="card">
-    <h2 style="margin-top:0;font-size:18px">Active members</h2>
-    <table>
-      <thead><tr><th>Name</th><th>Contact</th><th>Responsibilities</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-      @forelse($members as $member)
-        @php($user = $member['user'])
-        <tr>
-          <td><strong>{{ $user->full_name }}</strong></td>
-          <td>{{ $user->email ?? $user->phone ?? '—' }}</td>
-          <td>
-            @if(!empty($canManageStaff) && $roles->isNotEmpty())
-              <form method="post" action="{{ route('app.staff.roles', $user) }}" style="display:grid;gap:8px">
-                @csrf @method('PUT')
-                @foreach($member['role_keys'] as $existingKey)
-                  @unless($roles->contains('key', $existingKey))
-                    <input type="hidden" name="role_keys[]" value="{{ $existingKey }}">
-                  @endunless
-                @endforeach
-                <div style="display:flex;flex-wrap:wrap;gap:8px">
-                  @foreach($member['roles'] as $role)
-                    @unless($roles->contains('key', $role['key']))
-                      <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
-                    @endunless
-                  @endforeach
-                  @foreach($roles as $role)
-                    <label class="check" style="margin:0;font-size:13px">
-                      <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-member-role" data-user="{{ $user->id }}" @checked(collect($member['role_keys'])->contains($role->key))>
-                      <span>{{ $role->label }}</span>
-                    </label>
-                  @endforeach
-                </div>
-                <div class="js-member-homeroom" data-user="{{ $user->id }}" @if(!collect($member['role_keys'])->contains('class_teacher')) hidden @endif>
-                  <label>Homeroom class</label>
-                  <select name="class_id">
-                    <option value="">Select class</option>
-                    @foreach($classes as $c)
-                      <option value="{{ $c->id }}" @selected((string) $member['homeroom_class_id'] === (string) $c->id)>{{ $c->displayName() }}</option>
-                    @endforeach
-                  </select>
-                </div>
-                <button type="submit" class="btn ghost">Save responsibilities</button>
-              </form>
-            @else
+  <h2 style="font-size:18px;margin:8px 0 12px">Active members</h2>
+  <div class="staff-grid">
+    @forelse($members as $member)
+      @php($user = $member['user'])
+      <div class="staff-card">
+        <div class="staff-card__head">
+          <span class="staff-card__avatar" aria-hidden="true">{{ $user->avatarInitial() }}</span>
+          <div>
+            <span class="staff-card__name">{{ $user->full_name }}</span>
+            <span class="staff-card__meta">{{ $user->email ?? $user->phone ?? '—' }} · {{ $user->status }}</span>
+          </div>
+        </div>
+        @if(!empty($member['teaching_load']))
+          <div class="teach-chips" style="margin:0 0 12px">
+            @foreach($member['teaching_load'] as $load)
+              <span class="pill">{{ $load['subject'] }} · {{ $load['class'] }} · {{ $load['periods'] }}/wk</span>
+            @endforeach
+          </div>
+        @endif
+        @if(!empty($canManageStaff) && $roles->isNotEmpty())
+          <form method="post" action="{{ route('app.staff.roles', $user) }}">
+            @csrf @method('PUT')
+            @foreach($member['role_keys'] as $existingKey)
+              @unless($roles->contains('key', $existingKey))
+                <input type="hidden" name="role_keys[]" value="{{ $existingKey }}">
+              @endunless
+            @endforeach
+            <div class="role-picks">
               @foreach($member['roles'] as $role)
-                <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
+                @unless($roles->contains('key', $role['key']))
+                  <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
+                @endunless
               @endforeach
-            @endif
-          </td>
-          <td>{{ $user->status }}</td>
-          <td>
-            <a href="{{ route('app.staff.show', $user) }}">Profile</a>
-            @if(!empty($canPrintId))
-              · <a href="{{ route('app.staff.id', $user) }}">ID card</a>
-            @endif
-            @if(!empty($canManageStaff) && (int) $user->id !== (int) auth()->id())
-              <form method="post" action="{{ route('app.staff.revoke', $user) }}" onsubmit="return confirm('Revoke school access for {{ $user->full_name }}?')" style="margin-top:8px">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn ghost" style="color:var(--danger,#b42318)">Revoke</button>
-              </form>
-            @endif
-          </td>
-        </tr>
-      @empty
-        <tr><td colspan="5" style="color:var(--muted)">No members yet.</td></tr>
-      @endforelse
-      </tbody>
-    </table>
+              @foreach($roles as $role)
+                <label class="role-pick">
+                  <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-member-role" data-user="{{ $user->id }}" @checked(collect($member['role_keys'])->contains($role->key))>
+                  <strong>{{ $role->label }}</strong>
+                </label>
+              @endforeach
+            </div>
+            <div class="js-member-homeroom" data-user="{{ $user->id }}" @if(!collect($member['role_keys'])->contains('class_teacher')) hidden @endif>
+              <label>Homeroom class</label>
+              <select name="class_id">
+                <option value="">Select class</option>
+                @foreach($classes as $c)
+                  <option value="{{ $c->id }}" @selected((string) $member['homeroom_class_id'] === (string) $c->id)>{{ $c->displayName() }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="js-member-teach" data-user="{{ $user->id }}" @if(!collect($member['role_keys'])->contains('subject_teacher')) hidden @endif>
+              <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Add or extend teaching load (subject + classes + periods/week). Existing rows stay unless you replace them from Teaching assignments.</p>
+              @include('app.teaching._load-builder', [
+                'builderId' => 'member-load-'.$user->id,
+                'subjects' => $subjects ?? collect(),
+                'classes' => $classes,
+                'hint' => 'New rows are added to this teacher. One person may teach many subjects to many classes.',
+              ])
+            </div>
+            <p style="margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px">
+              <button type="submit" class="btn ghost">Save responsibilities</button>
+              <a class="btn ghost" href="{{ route('app.staff.show', $user) }}">Profile</a>
+              @if(!empty($canPrintId))
+                <a class="btn ghost" href="{{ route('app.staff.id', $user) }}">ID card</a>
+              @endif
+            </p>
+          </form>
+        @else
+          @foreach($member['roles'] as $role)
+            <span class="pill">{{ $role['label'] }}@if(!empty($role['class'])) · {{ $role['class'] }}@endif</span>
+          @endforeach
+          <p style="margin:12px 0 0"><a href="{{ route('app.staff.show', $user) }}">Profile</a></p>
+        @endif
+        @if(!empty($canManageStaff) && (int) $user->id !== (int) auth()->id())
+          <form method="post" action="{{ route('app.staff.revoke', $user) }}" onsubmit="return confirm('Revoke school access for {{ $user->full_name }}?')" style="margin-top:8px">
+            @csrf @method('DELETE')
+            <button type="submit" class="btn ghost" style="color:var(--danger,#b42318)">Revoke</button>
+          </form>
+        @endif
+      </div>
+    @empty
+      <div class="card" style="margin:0"><p style="color:var(--muted);margin:0">No members yet.</p></div>
+    @endforelse
   </div>
 @endsection
 
 @section('head')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    function syncInviteHomeroom() {
-      var field = document.getElementById('homeroom-field');
-      if (!field) return;
-      var checked = Array.from(document.querySelectorAll('#invite-staff-form .js-role-key:checked')).some(function (el) {
-        return el.value === 'class_teacher';
-      });
-      field.hidden = !checked;
+    function checkedRoles(selector) {
+      return Array.from(document.querySelectorAll(selector)).filter(function (el) { return el.checked; }).map(function (el) { return el.value; });
+    }
+    function syncInvite() {
+      var keys = checkedRoles('#invite-staff-form .js-role-key');
+      var homeroom = document.getElementById('homeroom-field');
       var teach = document.getElementById('teaching-field');
-      if (teach) {
-        teach.hidden = !Array.from(document.querySelectorAll('#invite-staff-form .js-role-key:checked')).some(function (el) {
-          return el.value === 'subject_teacher';
-        });
-      }
+      if (homeroom) homeroom.hidden = keys.indexOf('class_teacher') === -1;
+      if (teach) teach.hidden = keys.indexOf('subject_teacher') === -1;
     }
     document.querySelectorAll('#invite-staff-form .js-role-key').forEach(function (el) {
-      el.addEventListener('change', syncInviteHomeroom);
+      el.addEventListener('change', syncInvite);
     });
-    syncInviteHomeroom();
-
-    var addBtn = document.getElementById('add-teach-row');
-    var rows = document.getElementById('teaching-rows');
-    if (addBtn && rows) {
-      addBtn.addEventListener('click', function () {
-        var first = rows.querySelector('.js-teach-row');
-        if (!first) return;
-        var clone = first.cloneNode(true);
-        var idx = rows.querySelectorAll('.js-teach-row').length;
-        clone.querySelectorAll('[name]').forEach(function (el) {
-          el.name = el.name.replace(/teaching_assignments\[\d+]/, 'teaching_assignments[' + idx + ']');
-          if (el.type === 'checkbox') el.checked = false;
-          if (el.tagName === 'SELECT') el.selectedIndex = 0;
-        });
-        rows.appendChild(clone);
-      });
-    }
+    syncInvite();
 
     document.querySelectorAll('.js-member-role').forEach(function (el) {
       el.addEventListener('change', function () {
-        var box = document.querySelector('.js-member-homeroom[data-user="' + el.getAttribute('data-user') + '"]');
-        if (!box) return;
-        var any = Array.from(document.querySelectorAll('.js-member-role[data-user="' + el.getAttribute('data-user') + '"]')).some(function (cb) {
-          return cb.value === 'class_teacher' && cb.checked;
-        });
-        box.hidden = !any;
+        var uid = el.getAttribute('data-user');
+        var keys = checkedRoles('.js-member-role[data-user="' + uid + '"]');
+        var box = document.querySelector('.js-member-homeroom[data-user="' + uid + '"]');
+        var teach = document.querySelector('.js-member-teach[data-user="' + uid + '"]');
+        if (box) box.hidden = keys.indexOf('class_teacher') === -1;
+        if (teach) teach.hidden = keys.indexOf('subject_teacher') === -1;
       });
     });
   });

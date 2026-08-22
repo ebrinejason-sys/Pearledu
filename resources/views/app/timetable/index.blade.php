@@ -117,14 +117,14 @@
     @if($assignments->isEmpty())
       <p style="color:var(--muted)">No active teaching assignments for the current year. <a href="{{ route('app.teaching.index') }}">Assign staff first</a>.</p>
     @else
-      <ul style="margin:0 0 12px;padding-left:1.2rem;color:var(--muted);font-size:13px">
-        @foreach($assignments->take(8) as $a)
-          <li>{{ $a->teacher?->full_name }} · {{ $a->schoolClass?->displayName() }} · {{ $a->subject?->name }} · {{ (int) $a->periods_per_week }}/wk</li>
+      <div class="teach-chips" style="margin:0 0 12px">
+        @foreach($assignments->take(12) as $a)
+          <span class="pill">{{ $a->teacher?->full_name }} · {{ $a->subject?->name }} · {{ $a->schoolClass?->displayName() }} · {{ (int) $a->periods_per_week }}/wk</span>
         @endforeach
-        @if($assignments->count() > 8)
-          <li>+ {{ $assignments->count() - 8 }} more…</li>
+        @if($assignments->count() > 12)
+          <span class="pill pill--muted">+ {{ $assignments->count() - 12 }} more</span>
         @endif
-      </ul>
+      </div>
     @endif
     <form method="post" action="{{ route('app.timetable.generate') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
       @csrf

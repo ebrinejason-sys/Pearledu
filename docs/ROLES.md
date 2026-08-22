@@ -65,7 +65,7 @@ Portal for linked children only: results, attendance (`child.attendance.view`), 
 
 ### 3. Teacher (`subject_teacher`)
 
-**My classes** workspace: today's lessons and which subject they teach to which class. Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. Inviting a Teacher requires that load (subject + classes) so timetable generation does not collide. Cannot edit another subject merely because they teach the class. Cannot send school-wide SMS.
+**My classes** workspace: today's lessons and which subject they teach to which class. Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. Inviting a Teacher, or granting Teacher to existing staff who have no current-year load, requires classified load: subject + one or more classes + `periods_per_week` (default 3). One person may hold many subject→class rows — not a single entry per staff member. Those rows are the same `teaching_assignments` the timetable generator already uses (year, optional term, optional start/end dates). Cannot edit another subject merely because they teach the class. Cannot send school-wide SMS.
 
 ### 4. Class Teacher
 
@@ -163,6 +163,8 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Homeroom profile / restream | `LearnerScope::canEditProfile` / `canRestreamTo` (`learners.profile.update`) |
 | Marks upload revoke | `MarksheetWorkflow::revokeUpload` (`assessment.lock`, after deadline) |
 | Teaching load on invite | `StaffInvitationService` requires `teaching_assignments` when inviting Teacher |
+| Teaching load on role grant | `StaffRoleService` + `TeachingLoadService` require classified load when granting Teacher if none exists for the current year |
+| Teaching occupancy matrix | `TeachingLoadService::occupancy` (class × subject; warn when two teachers share a cell) |
 | Class defaulters | `DefaulterNoticeService` (print + notify class teacher via staff messages) |
 | Idle logout | `EnforceIdleSession` + `users.last_seen_at` (remember-me cannot skip) |
 | Role dashboards | `RoleWorkspaceService` |

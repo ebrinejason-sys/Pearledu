@@ -124,3 +124,15 @@
 
 **Rollback/revisit:** If a school needs homeroom mark entry, grant `subject_teacher` + teaching assignment rather than `assessment.enter` on `class_teacher`.
 
+## 2026-08-22 — Teaching load classification for timetable (many rows per staff)
+
+**Problem:** Teacher invites captured a crude subject/class pair, existing staff could be given Teacher with no load, and the teaching page was a single-row form. Timetable generation then collided because `periods_per_week` and multiple subject→class rows were not classified at role creation.
+
+**Decision:** Keep the existing `teaching_assignments` table. `TeachingLoadService` expands one staff member into many `(subject, class)` rows with `periods_per_week` (1–20, default 3), optional term, and optional effective dates. Invite, existing-staff Teacher grants, and the teaching page all use the same builder. Occupancy is a class × subject matrix; two teachers on the same cell is a warning, not a new uniqueness rule. Class teacher still does not receive `assessment.enter`.
+
+**Reason:** The generator already sorts by `periods_per_week` and forbids teacher/class double-booking. Classification belongs on the role, not a parallel load table.
+
+**Consequences:** Granting Teacher without current-year load fails until subject + class (+ periods) are set. One person may teach English to P5 East and Biology to S3 West in the same save.
+
+**Rollback/revisit:** Tighten shared-cell collisions to a hard reject only if schools ask the generator to pick a single owner.
+

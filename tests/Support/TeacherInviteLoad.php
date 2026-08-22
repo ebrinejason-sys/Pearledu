@@ -17,7 +17,7 @@ class TeacherInviteLoad
      *   year: AcademicYear,
      *   class: SchoolClass,
      *   subject: Subject,
-     *   teaching_assignments: list<array{subject_id:int, class_ids: list<int>}>
+     *   teaching_assignments: list<array{subject_id:int, class_ids: list<int>, periods_per_week?: int}>
      * }
      */
     public static function ensure(School $school): array
@@ -57,6 +57,7 @@ class TeacherInviteLoad
                 [
                     'subject_id' => (int) $subject->id,
                     'class_ids' => [(int) $class->id],
+                    'periods_per_week' => 3,
                 ],
             ],
         ];

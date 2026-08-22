@@ -44,10 +44,18 @@
       <div class="grid g2" style="margin-bottom:16px">
         <div class="card">
           <h2 style="margin-top:0;font-size:18px">Enrollment by class &amp; sex</h2>
+          @php($enrollMax = max(1, (int) collect($emis['enrollment'])->max('total')))
           @forelse($emis['enrollment'] as $row)
+            @php
+              $malePct = (int) round(100 * ((int) $row['male']) / $enrollMax);
+              $femalePct = (int) round(100 * ((int) $row['female']) / $enrollMax);
+            @endphp
             <div class="dash-bar" style="margin-bottom:10px">
               <div class="dash-bar__meta"><span>{{ $row['label'] }}</span><strong>{{ $row['male'] }}M / {{ $row['female'] }}F</strong></div>
-              <div class="dash-bar__track"><span style="width:{{ min(100, $row['total'] > 0 ? 100 : 0) }}%"></span></div>
+              <div class="dash-bar__track dash-bar__track--split" title="{{ $row['total'] }} learners">
+                <span class="m" style="width:{{ $malePct }}%"></span>
+                <span class="f" style="width:{{ $femalePct }}%"></span>
+              </div>
             </div>
           @empty
             <p style="color:var(--muted);margin:0">No enrollment yet.</p>

@@ -32,15 +32,15 @@
       @endforelse
     </div>
 
-    <div class="grid g2">
+    <div class="load-cards">
       @forelse($workspace['classes'] as $row)
-        <div class="card">
+        <div class="load-card">
           <h2 style="margin-top:0;font-size:18px">{{ $row['class'] }}</h2>
-          <ul style="margin:0;padding-left:18px">
+          <div class="teach-chips">
             @foreach($row['subjects'] as $subject)
-              <li style="margin-bottom:6px">{{ $subject }}</li>
+              <span class="pill pill--active">{{ $subject }}</span>
             @endforeach
-          </ul>
+          </div>
           <p style="margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px">
             <a class="btn accent" href="{{ route('app.assessment.marks', ['class_id' => $row['class_id']]) }}">Enter marks</a>
             <a class="btn ghost" href="{{ route('app.attendance.index', ['class_id' => $row['class_id']]) }}">Attendance</a>

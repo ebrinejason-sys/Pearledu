@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Middleware\ResolveTenant;
 use App\Models\Role;
 use App\Models\School;
+use App\Models\Subject;
 use App\Models\User;
 use App\Services\Navigation\NavigationBuilder;
 use App\Services\Tenancy\TenantContext;
@@ -115,5 +116,62 @@ class StaffRoleSeparationTest extends TestCase
         $this->assertNotContains('Assessment', $labels);
         $this->assertNotContains('My classes', $labels);
         $this->assertNotContains('Students', $labels);
+    }
+
+    public function test_granting_teacher_to_existing_staff_requires_classified_load(): void
+    {
+        $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
+        $secretary = User::where('email', 'secretary@standrews.test')->firstOrFail();
+        $load = TeacherInviteLoad::ensure($this->school);
+        $science = Subject::create([
+            'school_id' => $this->school->id,
+            'name' => 'Integrated Science',
+            'code' => 'SCI-LOAD-'.$this->school->id,
+        ]);
+
+        $this->actingAsInSchool($admin)
+            ->from(route('app.staff.index'))
+            ->put(route('app.staff.roles', $secretary), [
+                'role_keys' => ['secretary', 'subject_teacher'],
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('teaching_assignments');
+
+        $this->assertFalse($secretary->fresh()->hasRoleInSchool(Role::SUBJECT_TEACHER, $this->school->id));
+        $this->assertTrue($secretary->fresh()->hasRoleInSchool(Role::SECRETARY, $this->school->id));
+
+        $this->actingAsInSchool($admin)
+            ->put(route('app.staff.roles', $secretary), [
+                'role_keys' => ['secretary', 'subject_teacher'],
+                'teaching_assignments' => [
+                    [
+                        'subject_id' => $load['subject']->id,
+                        'class_ids' => [(int) $load['class']->id],
+                        'periods_per_week' => 5,
+                    ],
+                    [
+                        'subject_id' => $science->id,
+                        'class_ids' => [(int) $load['class']->id],
+                        'periods_per_week' => 2,
+                    ],
+                ],
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($secretary->fresh()->hasRoleInSchool(Role::SUBJECT_TEACHER, $this->school->id));
+        $this->assertTrue($secretary->fresh()->hasRoleInSchool(Role::SECRETARY, $this->school->id));
+        $this->assertDatabaseHas('teaching_assignments', [
+            'user_id' => $secretary->id,
+            'subject_id' => $load['subject']->id,
+            'class_id' => $load['class']->id,
+            'periods_per_week' => 5,
+        ]);
+        $this->assertDatabaseHas('teaching_assignments', [
+            'user_id' => $secretary->id,
+            'subject_id' => $science->id,
+            'class_id' => $load['class']->id,
+            'periods_per_week' => 2,
+        ]);
     }
 }

@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\Role;
 use App\Models\RoleAssignment;
+use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\TeachingAssignment;
 use App\Models\Term;
 use App\Models\User;
+use App\Services\Academics\TeachingLoadService;
 use App\Services\Tenancy\TenantContext;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +23,7 @@ class TeachingAssignmentController extends Controller
     /** Roles that may receive a teaching assignment. */
     private const TEACHING_CAPABLE = Role::TEACHING_CAPABLE;
 
-    public function index(TenantContext $context)
+    public function index(TenantContext $context, TeachingLoadService $load)
     {
         $school = $context->school();
         abort_unless($school, 404);
@@ -47,16 +50,25 @@ class TeachingAssignmentController extends Controller
         $years = AcademicYear::query()->orderByDesc('starts_on')->get();
         $terms = Term::query()->orderBy('sequence')->get();
         $currentYearId = $years->firstWhere('is_current')?->id ?? $years->first()?->id;
+        $occupancy = $load->occupancy($school, $currentYearId ? (int) $currentYearId : null);
+        $maxTeacherPeriods = max(1, ...array_map(
+            fn (array $card) => (int) $card['total_periods'],
+            $occupancy['teacherCards'] !== [] ? $occupancy['teacherCards'] : [['total_periods' => 1]],
+        ));
 
         return view('app.teaching.index', compact(
-            'school', 'assignments', 'teachers', 'subjects', 'classes', 'years', 'terms', 'currentYearId'
+            'school', 'assignments', 'teachers', 'subjects', 'classes', 'years', 'terms', 'currentYearId', 'occupancy', 'maxTeacherPeriods'
         ));
     }
 
-    public function store(Request $request, TenantContext $context)
+    public function store(Request $request, TenantContext $context, TeachingLoadService $load)
     {
         $school = $context->school();
         abort_unless($school, 404);
+
+        if ($request->exists('teaching_assignments')) {
+            return $this->storeLoad($request, $school, $load);
+        }
 
         $data = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
@@ -130,6 +142,50 @@ class TeachingAssignmentController extends Controller
         $assignment->delete();
 
         return back()->with('status', 'Teaching assignment removed.');
+    }
+
+    private function storeLoad(Request $request, School $school, TeachingLoadService $load): RedirectResponse
+    {
+        $data = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'academic_year_id' => [
+                'required',
+                'integer',
+                Rule::exists('academic_years', 'id')->where('school_id', $school->id),
+            ],
+            'term_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('terms', 'id')->where('school_id', $school->id),
+            ],
+            'starts_on' => 'nullable|date',
+            'ends_on' => 'nullable|date|after_or_equal:starts_on',
+            'teaching_assignments' => 'required|array|min:1',
+            'teaching_assignments.*.subject_id' => 'nullable|integer',
+            'teaching_assignments.*.class_ids' => 'nullable|array',
+            'teaching_assignments.*.class_ids.*' => 'integer',
+            'teaching_assignments.*.periods_per_week' => 'nullable|integer|min:1|max:20',
+        ]);
+
+        $this->assertTeachingCapable((int) $data['user_id'], $school->id);
+
+        $teacher = User::query()->findOrFail((int) $data['user_id']);
+        $count = $load->sync(
+            $school,
+            $teacher,
+            $data['teaching_assignments'] ?? [],
+            (int) $data['academic_year_id'],
+            ! empty($data['term_id']) ? (int) $data['term_id'] : null,
+            true,
+            [
+                'starts_on' => $data['starts_on'] ?? null,
+                'ends_on' => $data['ends_on'] ?? null,
+            ],
+        );
+
+        return back()->with('status', $count === 1
+            ? 'Teaching assignment saved.'
+            : $count.' teaching assignments saved.');
     }
 
     private function assertTeachingCapable(int $userId, int $schoolId): void

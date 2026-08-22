@@ -189,6 +189,48 @@
   .learner-avatar{width:32px;height:32px;border-radius:999px;object-fit:cover;background:var(--surface-2);flex-shrink:0}
   .learner-avatar--empty{display:inline-block;background:var(--brand-soft)}
   .nin-missing{color:var(--danger);font-weight:700;font-size:13px}
+  .role-picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:8px 0 12px}
+  .role-pick{display:flex;flex-direction:column;gap:4px;margin:0;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);cursor:pointer;color:var(--ink)}
+  .role-pick:has(input:checked){border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--surface));box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent)}
+  .role-pick strong{font-size:14px}
+  .role-pick span{font-size:12px;color:var(--muted);font-weight:500;line-height:1.35}
+  .role-pick input{margin-top:0}
+  .teach-builder{margin:8px 0 0}
+  .teach-builder__hint,.teach-row__hint{margin:0 0 10px;font-size:13px;color:var(--muted)}
+  .teach-builder__actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px}
+  .teach-builder__summary{margin:0;font-size:13px;font-weight:600;color:var(--brand)}
+  .teach-row{border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:color-mix(in srgb, var(--accent) 6%, var(--surface))}
+  .teach-row__head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .teach-row__badge{width:26px;height:26px;border-radius:999px;background:var(--brand);color:var(--on-brand);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+  .teach-row__remove{margin-left:auto;background:transparent;border:0;color:var(--danger);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .teach-row__classes{border:0;padding:0;margin:10px 0 0}
+  .teach-row__classes legend{font-size:13px;color:var(--muted);padding:0}
+  .teach-row__periods{max-width:160px;margin-top:8px}
+  .teach-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .teach-chip{display:inline-flex;align-items:center;gap:8px;margin:0;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:13px;font-weight:600;color:var(--ink)}
+  .teach-chip:has(input:checked){border-color:var(--accent);background:var(--accent);color:#fff}
+  .teach-chip-mini{display:inline-flex;flex-direction:column;gap:2px;padding:6px 8px;border-radius:10px;background:var(--brand-soft);color:var(--brand);font-size:12px;font-weight:700;line-height:1.2}
+  .staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .staff-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .staff-card__head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .staff-card__avatar{width:42px;height:42px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+  .staff-card__name{display:block;font-weight:800}
+  .staff-card__meta{display:block;font-size:12px;color:var(--muted)}
+  .teach-matrix-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--radius)}
+  .teach-matrix{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}
+  .teach-matrix th,.teach-matrix td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px;vertical-align:top;min-width:110px}
+  .teach-matrix th:first-child,.teach-matrix td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;min-width:140px;font-weight:700}
+  .teach-matrix thead th{background:var(--surface-2,#f4f6f8);font-size:12px;text-transform:none;letter-spacing:0}
+  .teach-matrix td.has-load{background:color-mix(in srgb, var(--accent) 12%, var(--surface))}
+  .teach-matrix td.is-collision{background:var(--warning-soft);box-shadow:inset 0 0 0 2px var(--warning)}
+  .teach-matrix td.is-empty{background:repeating-linear-gradient(-45deg,transparent,transparent 6px,color-mix(in srgb,var(--line) 35%,transparent) 6px,color-mix(in srgb,var(--line) 35%,transparent) 7px)}
+  .load-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .load-card{border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:var(--surface)}
+  .load-card__bar{height:8px;border-radius:999px;background:var(--surface-2,#eef2f4);overflow:hidden;margin:8px 0 10px}
+  .load-card__bar span{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--accent))}
+  .dash-bar__track--split{display:flex}
+  .dash-bar__track--split .m{background:var(--brand)}
+  .dash-bar__track--split .f{background:var(--accent)}
   @media print {.no-print,.sidebar,.topbar,.fee-tabs,.emis-filter{display:none !important}}
 </style>
 @yield('head')
