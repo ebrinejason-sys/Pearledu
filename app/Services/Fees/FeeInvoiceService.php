@@ -235,6 +235,13 @@ class FeeInvoiceService
                 $this->void($invoice);
             }
 
+            // Composite tenant FK is (school_id, fee_structure_id) ON DELETE SET NULL.
+            // Null only the structure id so invoices keep their school and ledger history.
+            FeeInvoice::query()
+                ->where('school_id', $structure->school_id)
+                ->where('fee_structure_id', $structure->id)
+                ->update(['fee_structure_id' => null]);
+
             $structure->learners()->detach();
             $structure->delete();
         });
