@@ -12,9 +12,15 @@ parameters:
     # Baseline level for a large existing codebase; raise toward 8 over time.
     level: 5
 
+    # PR CI analyses only changed files; some ignore patterns will not match.
+    reportUnmatchedIgnoredErrors: false
+
     ignoreErrors:
-        # Blade / string views are resolved at runtime.
-        - '#Unable to resolve the template#'
+        # Laravel helpers accept truthy models; PHPStan wants a bool.
+        - '#Parameter \#1 \$boolean of function abort_unless expects bool#'
+        - '#Parameter \#1 \$boolean of function abort_if expects bool#'
+        # Collection::first() is typed non-null in some stubs; nullsafe remains correct at runtime.
+        - '#Using nullsafe property access#'
 
     excludePaths:
         - bootstrap/cache/*

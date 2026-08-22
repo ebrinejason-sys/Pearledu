@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\RequireRecentPlatformAuth;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\TwoFactorService;
@@ -89,14 +90,21 @@ class LoginController extends Controller
     {
         $request->session()->regenerate();
         $user = Auth::user();
-        $user->forceFill(['last_login_at' => now()])->save();
-        $audit->record('auth.login', $user);
-
-        if ($user && $user->isPlatformOperator()) {
-            \App\Http\Middleware\RequireRecentPlatformAuth::markConfirmed($request);
+        if (! $user instanceof User) {
+            return;
         }
 
-        if ($user && ! $user->isPlatformOperator() && ($school = $user->primarySchool())) {
+        $user->forceFill([
+            'last_login_at' => now(),
+            'last_seen_at' => now(),
+        ])->save();
+        $audit->record('auth.login', $user);
+
+        if ($user->isPlatformOperator()) {
+            RequireRecentPlatformAuth::markConfirmed($request);
+        }
+
+        if (! $user->isPlatformOperator() && ($school = $user->primarySchool())) {
             session([TenantContext::SESSION_SCHOOL_ID => $school->tenantId()]);
             $context->forSchool($school->tenantId());
             if (! $school->activated_at) {

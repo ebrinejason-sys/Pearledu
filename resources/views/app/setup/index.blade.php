@@ -5,7 +5,7 @@
     <div>
       <p class="page-header__eyebrow">Welcome to PearlEdu</p>
       <h2 class="page-header__title">Get this school ready</h2>
-      <p style="margin:6px 0 0;color:var(--muted);font-size:14px">{{ $percent }}% complete. Empty account → configured school → imported learners → invoiced fees → staff invited.</p>
+      <p style="margin:6px 0 0;color:var(--muted);font-size:14px">{{ $percent }}% complete. Identity → calendar → classes → staff with the right jobs → teaching assignments → fees. Each person should only see the work they are responsible for.</p>
     </div>
   </div>
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif

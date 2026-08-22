@@ -32,8 +32,12 @@ return [
     |
     */
 
-    // Idle timeout in minutes. After this with no requests, the next visit requires login.
+    // Idle timeout in minutes. After this with no activity, the next visit requires login.
+    // Enforced in EnforceIdleSession (remember-me cannot skip it).
     'lifetime' => (int) env('SESSION_LIFETIME', 30),
+
+    // Seconds-before-expiry warning in the UI. Must be less than lifetime.
+    'idle_warning_minutes' => (int) env('SESSION_IDLE_WARNING_MINUTES', 2),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

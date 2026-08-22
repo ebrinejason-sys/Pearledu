@@ -33,7 +33,7 @@ class AssessmentController extends Controller
         abort_unless($school, 404);
 
         $user = request()->user();
-        abort_unless($user && $this->scope->canViewAnywhere($user, $school->id), 403);
+        abort_unless($user && $this->scope->canManage($user, $school->id), 403);
 
         $periods = AssessmentPeriod::query()->with('term')->orderByDesc('id')->get();
         $terms = Term::query()->orderBy('sequence')->get();

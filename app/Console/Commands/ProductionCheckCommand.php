@@ -109,6 +109,17 @@ class ProductionCheckCommand extends Command
         if (! config('session.encrypt')) {
             $this->warnings[] = 'SESSION_ENCRYPT is off — prefer true for school MIS sessions.';
         }
+
+        $lifetime = (int) config('session.lifetime', 30);
+        if ($lifetime > 120) {
+            $this->failOrWarn(
+                app()->isProduction(),
+                "SESSION_LIFETIME is {$lifetime} minutes — prefer 15–30 so idle staff are signed out on shared computers."
+            );
+        }
+        if ($lifetime < 5) {
+            $this->warnings[] = "SESSION_LIFETIME is {$lifetime} minutes — too short; staff will be signed out while working.";
+        }
     }
 
     private function checkMail(): void
@@ -174,6 +185,13 @@ class ProductionCheckCommand extends Command
             $this->failOrWarn(
                 app()->isProduction(),
                 'SEED_DEMO_TENANT is enabled — must be false in production.'
+            );
+        }
+
+        if (filled(config('app.seed_test_school_password'))) {
+            $this->failOrWarn(
+                app()->isProduction(),
+                'SEED_TEST_SCHOOL_PASSWORD is set — walkthrough seed passwords must not exist on a live server.'
             );
         }
     }

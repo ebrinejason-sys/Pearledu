@@ -18,6 +18,7 @@
   .vx-auth-card input::placeholder{color:color-mix(in srgb, var(--on-brand) 50%, transparent)}
   .vx-auth-remember{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:color-mix(in srgb, var(--on-brand) 80%, transparent);cursor:pointer}
   .vx-auth-remember input{width:auto}
+  .vx-auth-idle-note{margin:6px 0 0;font-size:12px;line-height:1.4;color:color-mix(in srgb, var(--on-brand) 65%, transparent)}
   .vx-auth-links{margin:16px 0 0;font-size:13px}
   .vx-auth-links a{color:var(--on-brand);text-decoration:underline;text-underline-offset:3px}
   .vx-auth-divider{margin:22px 0 16px;border:0;border-top:1px solid color-mix(in srgb, var(--on-brand) 14%, transparent)}

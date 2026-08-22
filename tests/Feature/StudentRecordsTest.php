@@ -5,11 +5,14 @@ namespace Tests\Feature;
 use App\Http\Middleware\ResolveTenant;
 use App\Mail\GuardianInvitationMail;
 use App\Models\Guardianship;
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -18,6 +21,7 @@ class StudentRecordsTest extends TestCase
     use RefreshDatabase;
 
     private School $school;
+
     private User $admin;
 
     protected function setUp(): void
@@ -143,7 +147,15 @@ class StudentRecordsTest extends TestCase
 
         $invited = User::where('email', 'uncle@newguardian.test')->firstOrFail();
         $this->assertSame('invited', $invited->status);
-        $this->assertTrue($invited->hasRoleInSchool('parent', $this->school->id));
+        $this->assertFalse($invited->hasRoleInSchool('parent', $this->school->id));
+        $this->assertTrue(
+            RoleAssignment::query()
+                ->where('user_id', $invited->id)
+                ->where('school_id', $this->school->id)
+                ->where('is_active', false)
+                ->whereHas('role', fn ($q) => $q->where('key', Role::PARENT))
+                ->exists()
+        );
 
         $primary = Guardianship::where('student_id', $student->id)->where('guardian_user_id', $existing->id)->firstOrFail();
         $secondary = Guardianship::where('student_id', $student->id)->where('guardian_user_id', $invited->id)->firstOrFail();
@@ -167,7 +179,7 @@ class StudentRecordsTest extends TestCase
         $outsider = User::create([
             'full_name' => 'Outsider Person',
             'email' => 'outsider@elsewhere.test',
-            'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
+            'password' => Hash::make('password1234'),
             'status' => 'active',
         ]);
 

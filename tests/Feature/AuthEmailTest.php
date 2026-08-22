@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\Auth\ResetPasswordMail;
+use App\Mail\Auth\TwoFactorEmailCodeMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -46,9 +47,9 @@ class AuthEmailTest extends TestCase
 
     public function test_non_platform_login_is_unaffected_by_2fa(): void
     {
-        $user = User::factory()->create([
+        $user = $this->makeSchoolUser([
             'email' => 'teacher@test.local',
-            'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
+            'password' => Hash::make('password1234'),
         ]);
 
         $response = $this->post('/login', [
@@ -62,11 +63,11 @@ class AuthEmailTest extends TestCase
 
     public function test_platform_login_is_redirected_to_2fa_challenge_and_emails_otp(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $user = User::factory()->platform()->create([
             'email' => 'newadmin@test.local',
-            'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
+            'password' => Hash::make('password1234'),
         ]);
 
         $response = $this->post('/login', [
@@ -77,18 +78,18 @@ class AuthEmailTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/login/2fa/challenge');
         $response->assertSessionHas('2fa_pending_user_id', $user->id);
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class, function ($mail) use ($user) {
+        Mail::assertSent(TwoFactorEmailCodeMail::class, function ($mail) use ($user) {
             return $mail->hasTo($user->email);
         });
     }
 
     public function test_platform_login_is_redirected_to_2fa_challenge_when_enrolled(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $user = User::factory()->platform()->create([
             'email' => 'enrolledadmin@test.local',
-            'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
+            'password' => Hash::make('password1234'),
             'two_factor_secret' => 'ADUMMYSECRETKEYFORTESTS',
             'two_factor_confirmed_at' => now(),
         ]);
@@ -100,16 +101,16 @@ class AuthEmailTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect('/login/2fa/challenge');
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\Auth\TwoFactorEmailCodeMail::class);
+        Mail::assertSent(TwoFactorEmailCodeMail::class);
     }
 
     public function test_platform_login_regenerates_session_id_before_storing_pending_2fa_state(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $user = User::factory()->platform()->create([
             'email' => 'rotate@test.local',
-            'password' => \Illuminate\Support\Facades\Hash::make('password1234'),
+            'password' => Hash::make('password1234'),
         ]);
 
         $sessionCookieName = config('session.cookie');

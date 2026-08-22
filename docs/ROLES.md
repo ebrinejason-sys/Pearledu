@@ -60,15 +60,15 @@ Focused learner portal. Read own timetable, attendance (`self.attendance.view`),
 
 ### 2. Parent / Guardian
 
-Portal for linked children only: results, attendance (`child.attendance.view`), timetable, announcements, fee invoices, and `fees.pay` (submissions stay pending until bursar confirmation). Selecting a child switches the whole portal. Cannot see unrelated student IDs.
+Portal for linked children only: results, attendance (`child.attendance.view`), timetable, announcements, fee invoices, and `fees.pay` (submissions stay pending until bursar confirmation). Selecting a child switches the whole portal. Cannot see unrelated student IDs. A newly invited guardian gets an **inactive** `parent` assignment until they accept the invite (status stays `invited`, so they cannot sign in).
 
 ### 3. Teacher (`subject_teacher`)
 
-**My Teaching** workspace: today's lessons, assigned classes/subjects, attendance, marks, LMS, CBT authoring. Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. Cannot edit another subject merely because they teach the class.
+**My Teaching** workspace: today's lessons, assigned classes/subjects, attendance, marks, LMS, CBT authoring. Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. Cannot edit another subject merely because they teach the class. Cannot send school-wide SMS.
 
 ### 4. Class Teacher
 
-**My Class** homeroom: roster, daily attendance, parent contacts, invite/link parents for that class (`users.invite.parent`). Cannot enter marks unless also assigned as a teacher. Staff role edits must store and preserve `role_assignments.class_id`.
+**My Class** homeroom: roster, daily attendance, parent contacts, invite/link parents for that class (`users.invite.parent`). Cannot enter marks unless also assigned as a teacher. Cannot send school-wide SMS. Staff role edits must store and preserve `role_assignments.class_id`.
 
 ### 5. Director of Studies (DOS)
 
@@ -102,7 +102,7 @@ Same operational shape as Head Teacher except promotions stay with the Head Teac
 | Class Teacher | Parent (for learners they can view) |
 | Bursar / Teacher | — |
 
-Route access matches policy: DOS can open Staff to send teacher invites; class teachers invite parents from the learner profile, not the staff directory.
+Route access matches policy: DOS can open Staff to send teacher invites; class teachers invite parents from the learner profile, not the staff directory. **Editing or revoking existing staff roles requires `staff.manage`.** `staff.invite.teacher` is invite-only — DOS cannot change a Head Teacher’s responsibilities or strip a bursar.
 
 ## Assessment workflow
 
@@ -149,6 +149,8 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | CBT authoring | `CbtScope` |
 | Invite matrix | `InvitePolicy` |
 | Homeroom class_id sync | `StaffRoleService` |
+| Staff role mutation | `staff.manage` routes + `StaffRoleService` (invite-only roles cannot sync/revoke) |
+| Idle logout | `EnforceIdleSession` + `users.last_seen_at` (remember-me cannot skip) |
 | Role dashboards | `RoleWorkspaceService` |
 | Nav / shortcuts | `NavigationBuilder`, `SchoolDashboardService` (not a security boundary) |
 

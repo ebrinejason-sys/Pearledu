@@ -3,11 +3,13 @@
 namespace App\Services\Schools;
 
 use App\Models\AcademicYear;
+use App\Models\AssessmentPeriod;
 use App\Models\FeeStructure;
 use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\TeachingAssignment;
 
 class SchoolSetupService
 {
@@ -59,6 +61,18 @@ class SchoolSetupService
                 'label' => 'Invite staff',
                 'done' => $staffCount > 1,
                 'route' => 'app.staff.index',
+            ],
+            [
+                'key' => 'teaching',
+                'label' => 'Assign teachers to classes',
+                'done' => TeachingAssignment::query()->where('school_id', $school->id)->exists(),
+                'route' => 'app.teaching.index',
+            ],
+            [
+                'key' => 'assessment',
+                'label' => 'Create an assessment period',
+                'done' => AssessmentPeriod::query()->where('school_id', $school->id)->exists(),
+                'route' => 'app.assessment.index',
             ],
             [
                 'key' => 'fees',

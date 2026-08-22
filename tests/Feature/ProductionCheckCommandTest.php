@@ -69,6 +69,34 @@ class ProductionCheckCommandTest extends TestCase
             ->assertFailed();
     }
 
+    public function test_production_check_fails_when_walkthrough_password_set_in_production(): void
+    {
+        $this->app['env'] = 'production';
+        config([
+            'app.env' => 'production',
+            'app.debug' => false,
+            'app.key' => 'base64:'.base64_encode(str_repeat('a', 32)),
+            'app.url' => 'https://pearledu.voxsign.co.ug',
+            'session.secure' => true,
+            'session.domain' => '.voxsign.co.ug',
+            'session.encrypt' => true,
+            'mail.default' => 'smtp',
+            'mail.from.address' => 'no-reply@voxsign.co.ug',
+            'mail.mailers.smtp.password' => 'secret',
+            'sms.driver' => 'fake',
+            'tenancy.base_domain' => 'voxsign.co.ug',
+            'tenancy.pearledu_landing_host' => 'pearledu.voxsign.co.ug',
+            'tenancy.landing_hosts' => ['voxsign.co.ug', 'www.voxsign.co.ug'],
+            'app.seed_demo_tenant' => false,
+            'app.seed_test_school_password' => 'Walkthrough-12',
+            'schoolpay.base_url' => 'https://schoolpay.co.ug/paymentapi',
+        ]);
+
+        $this->artisan('app:production-check', ['--skip-db' => true])
+            ->expectsOutputToContain('SEED_TEST_SCHOOL_PASSWORD is set')
+            ->assertFailed();
+    }
+
     public function test_production_check_warns_when_demo_seed_enabled_locally(): void
     {
         config([

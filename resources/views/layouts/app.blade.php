@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', config('app.name'))</title>
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@auth
+<meta name="idle-lifetime" content="{{ (int) config('session.lifetime') * 60 }}">
+<meta name="idle-warning" content="{{ (int) config('session.idle_warning_minutes', 2) * 60 }}">
+<meta name="idle-heartbeat" content="{{ route('session.heartbeat') }}">
+<meta name="idle-login" content="{{ route('login') }}">
+@endauth
 @include('layouts.partials.favicons')
 @if(!empty($themeFontUrl))
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -152,6 +159,12 @@
   .pill--success{background:var(--success-soft);color:var(--success)}
   .pill--warning{background:var(--warning-soft);color:var(--warning)}
   .pill--danger{background:var(--danger-soft);color:var(--danger)}
+  .idle-dialog[hidden]{display:none}
+  .idle-dialog:not([hidden]){display:flex;position:fixed;inset:0;z-index:80;align-items:center;justify-content:center;padding:20px;background:color-mix(in srgb, var(--ink) 45%, transparent)}
+  .idle-dialog__card{max-width:420px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .idle-dialog__card h2{margin:0 0 8px;font-size:20px;font-family:var(--font-display)}
+  .idle-dialog__card p{margin:0 0 16px;color:var(--muted);font-size:14px}
+  .idle-dialog__actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 </style>
 @yield('head')
 </head>
@@ -190,6 +203,20 @@
         @yield('content')
       </main>
     </div>
+    <div id="idle-session-dialog" class="idle-dialog" hidden role="alertdialog" aria-labelledby="idle-session-title" aria-describedby="idle-session-desc">
+      <div class="idle-dialog__card">
+        <h2 id="idle-session-title">Still there?</h2>
+        <p id="idle-session-desc">You will be signed out in <strong id="idle-session-countdown">120</strong> seconds because this session has been idle. This protects learner and fee records on a shared computer.</p>
+        <div class="idle-dialog__actions">
+          <button type="button" class="btn ghost" id="idle-session-leave">Sign out now</button>
+          <button type="button" class="btn" id="idle-session-stay">Stay signed in</button>
+        </div>
+      </div>
+    </div>
+    <form id="idle-session-logout" method="post" action="{{ route('logout') }}" hidden>
+      @csrf
+    </form>
+    <script src="{{ asset('js/idle-session.js') }}" defer></script>
   @else
     <div class="topbar">
       @include('layouts.partials.brand', ['brandHref' => url('/login')])

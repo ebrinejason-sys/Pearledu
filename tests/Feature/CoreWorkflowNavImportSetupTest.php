@@ -82,7 +82,11 @@ class CoreWorkflowNavImportSetupTest extends TestCase
 
     public function test_setup_wizard_and_action_center_render(): void
     {
-        $this->actingAs($this->admin)->get(route('app.setup.index'))->assertOk()->assertSee('Get this school ready');
+        $this->actingAs($this->admin)->get(route('app.setup.index'))
+            ->assertOk()
+            ->assertSee('Get this school ready')
+            ->assertSee('Assign teachers to classes')
+            ->assertSee('Create an assessment period');
         $this->actingAs($this->admin)->get(route('app.home'))->assertOk()->assertSee('Needs your attention', false);
     }
 

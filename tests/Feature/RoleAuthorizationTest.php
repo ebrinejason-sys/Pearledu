@@ -169,4 +169,28 @@ class RoleAuthorizationTest extends TestCase
         $this->actingAsInSchool($director)->get(route('app.students.show', $student))->assertOk();
         $this->actingAsInSchool($director)->get(route('app.students.edit', $student))->assertForbidden();
     }
+
+    public function test_head_teacher_cannot_open_assessment_period_admin(): void
+    {
+        $head = User::where('email', 'head@standrews.test')->firstOrFail();
+
+        $this->actingAsInSchool($head)->get(route('app.assessment.index'))->assertForbidden();
+        $this->actingAsInSchool($head)->get(route('app.assessment.broadsheet'))->assertOk();
+    }
+
+    public function test_class_teacher_cannot_open_assessment_period_admin(): void
+    {
+        $classTeacher = User::where('email', 'classteacher@standrews.test')->firstOrFail();
+
+        $this->actingAsInSchool($classTeacher)->get(route('app.assessment.index'))->assertForbidden();
+    }
+
+    public function test_teacher_cannot_open_school_wide_sms(): void
+    {
+        $teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
+        $bursar = User::where('email', 'bursar@standrews.test')->firstOrFail();
+
+        $this->actingAsInSchool($teacher)->get(route('app.sms'))->assertForbidden();
+        $this->actingAsInSchool($bursar)->get(route('app.sms'))->assertOk();
+    }
 }

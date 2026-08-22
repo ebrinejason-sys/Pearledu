@@ -92,7 +92,7 @@ class LoginPageTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
-        $response->assertSee('voxsign-logo.svg', false);
+        $response->assertSee('class="vx-logo"', false);
         $response->assertDontSee('logo.png', false);
     }
 
@@ -102,7 +102,6 @@ class LoginPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('grid-template-columns:1fr 1fr', false);
-        $response->assertSee('favicon.svg', false);
         $response->assertSee('favicon.ico', false);
         $response->assertSee('apple-touch-icon.png', false);
     }

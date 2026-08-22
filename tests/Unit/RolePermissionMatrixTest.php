@@ -46,6 +46,8 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertNotContains('finance.manage', $perms);
         $this->assertNotContains('assessment.manage', $perms);
         $this->assertNotContains('learners.manage', $perms);
+        $this->assertNotContains('sms.send', $perms);
+        $this->assertNotContains('staff.manage', $perms);
     }
 
     public function test_class_teacher_cannot_enter_marks_or_manage_finance(): void
@@ -54,6 +56,7 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertContains('assessment.view', $perms);
         $this->assertContains('attendance.mark', $perms);
         $this->assertContains('learners.view', $perms);
+        $this->assertNotContains('sms.send', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('finance.manage', $perms);
         $this->assertNotContains('learners.manage', $perms);

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Mail\SchoolOnboardingRequestReceived;
 use App\Models\PricingPlan;
 use Database\Seeders\PricingPlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PearlEduLandingPageTest extends TestCase
@@ -31,7 +33,7 @@ class PearlEduLandingPageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('vx-logo', false);
-        $response->assertSee('voxsign-logo.svg', false);
+        $response->assertSee('class="vx-logo"', false);
         $response->assertSee('pe-brand-name', false);
         $response->assertSee('By VoxSign Technologies', false);
     }
@@ -41,7 +43,7 @@ class PearlEduLandingPageTest extends TestCase
         $response = $this->get('http://pearledu.voxsign.test/');
 
         $response->assertStatus(200);
-        $response->assertSee('href="#how-it-works"', false);
+        $response->assertSee('href="#modules"', false);
         $response->assertSee('href="#pricing"', false);
         $response->assertSee('href="#faq"', false);
         $response->assertSee('href="#onboard"', false);
@@ -63,11 +65,10 @@ class PearlEduLandingPageTest extends TestCase
         $response = $this->get('http://pearledu.voxsign.test/');
 
         $response->assertStatus(200);
-        $response->assertSee('School management,', false);
-        $response->assertSee('without the spreadsheets.', false);
-        $response->assertSee('pe-band pe-hero', false);
-        $response->assertSee('pe-mock-bar', false);
-        $response->assertSee('pe-mock-stats', false);
+        $response->assertSee('School Management Platform (PearlEdu)', false);
+        $response->assertSee('pe-hero', false);
+        $response->assertSee('pe-hero-art', false);
+        $response->assertSee('Staff login', false);
     }
 
     public function test_how_it_works_section_describes_features_with_icons(): void
@@ -75,12 +76,12 @@ class PearlEduLandingPageTest extends TestCase
         $response = $this->get('http://pearledu.voxsign.test/');
 
         $response->assertStatus(200);
-        $response->assertSee('How it works', false);
+        $response->assertSee('What PearlEdu manages for your school', false);
         $response->assertSee('Attendance', false);
         $response->assertSee('Grading', false);
         $response->assertSee('Fees', false);
-        $response->assertSee('Communication', false);
-        $response->assertSee('pe-card-icon', false);
+        $response->assertSee('Parent communication', false);
+        $response->assertSee('pe-module-icon', false);
         $response->assertSee('<svg', false);
     }
 
@@ -89,10 +90,10 @@ class PearlEduLandingPageTest extends TestCase
         $response = $this->get('http://pearledu.voxsign.test/');
 
         $response->assertStatus(200);
-        $response->assertSee('pe-feature-row', false);
-        $response->assertSee('pe-mock-bars', false);   // grading chart
-        $response->assertSee('pe-bubble', false);      // communication thread
-        $response->assertSee('MTN MoMo', false);       // fees mockup
+        $response->assertSee('pe-module-grid', false);
+        $response->assertSee('Staff &amp; roles', false);
+        $response->assertSee('Secure school data', false);
+        $response->assertSee('mobile money', false);
     }
 
     public function test_pricing_section_renders_seeded_plans_from_database(): void
@@ -151,13 +152,13 @@ class PearlEduLandingPageTest extends TestCase
         $response->assertSee('mobile money', false);
     }
 
-    public function test_testimonials_section_renders(): void
+    public function test_stats_band_renders(): void
     {
         $response = $this->get('http://pearledu.voxsign.test/');
 
         $response->assertStatus(200);
-        $response->assertSee('pe-quote', false);
-        $response->assertSee('Head teacher', false);
+        $response->assertSee('pe-stats', false);
+        $response->assertSee('Unified school system', false);
     }
 
     public function test_onboarding_form_renders_with_required_fields_and_csrf(): void
@@ -177,7 +178,7 @@ class PearlEduLandingPageTest extends TestCase
 
     public function test_onboarding_form_submission_sends_notification_email(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $response = $this->post('http://pearledu.voxsign.test/onboard', [
             'school_name' => 'Test Academy',
@@ -191,7 +192,7 @@ class PearlEduLandingPageTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('status');
 
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\SchoolOnboardingRequestReceived::class, function ($mail) {
+        Mail::assertSent(SchoolOnboardingRequestReceived::class, function ($mail) {
             return $mail->schoolName === 'Test Academy'
                 && $mail->contactName === 'Jane Doe'
                 && $mail->email === 'jane@example.com';
@@ -200,7 +201,7 @@ class PearlEduLandingPageTest extends TestCase
 
     public function test_onboarding_form_validates_required_fields(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $response = $this->post('http://pearledu.voxsign.test/onboard', [
             'school_name' => '',
@@ -210,7 +211,7 @@ class PearlEduLandingPageTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['school_name', 'contact_name', 'email']);
-        \Illuminate\Support\Facades\Mail::assertNothingSent();
+        Mail::assertNothingSent();
     }
 
     public function test_login_page_still_reachable_on_pearledu_host(): void
