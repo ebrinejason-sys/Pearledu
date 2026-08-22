@@ -1,5 +1,5 @@
 /* PearlEdu offline shell. Bump CACHE when this file changes. */
-const CACHE = 'pearledu-offline-v1';
+const CACHE = 'pearledu-offline-v2';
 const PRECACHE = [
   '/js/offline-first.js',
   '/js/idle-session.js',

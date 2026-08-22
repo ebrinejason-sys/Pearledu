@@ -293,7 +293,9 @@ class LandingPageTest extends TestCase
 
         $response->assertSee('vx-logo', false);
         $response->assertSee('class="vx-logo"', false);
+        $response->assertSee('viewBox="30 30 340 340"', false);
         $response->assertDontSee('voxsign-logo.png');
+        $response->assertDontSee('voxsign-logo.svg');
     }
 
     public function test_mobile_nav_has_hamburger_toggle(): void
