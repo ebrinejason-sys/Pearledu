@@ -44,7 +44,9 @@
       <div class="grid g2" style="margin-bottom:16px">
         <div class="card">
           <h2 style="margin-top:0;font-size:18px">Enrollment by class &amp; sex</h2>
-          @php($enrollMax = max(1, (int) collect($emis['enrollment'])->max('total')))
+          @php
+            $enrollMax = max(1, (int) collect($emis['enrollment'])->max('total'));
+          @endphp
           @forelse($emis['enrollment'] as $row)
             @php
               $malePct = (int) round(100 * ((int) $row['male']) / $enrollMax);
