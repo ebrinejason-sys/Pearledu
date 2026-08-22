@@ -23,9 +23,9 @@ use App\Support\AssessmentSet;
 use App\Support\FeeKind;
 use App\Support\Residency;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\FakePhoto;
 use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
@@ -553,8 +553,8 @@ class SchoolOpsFeesAssessmentTest extends TestCase
     public function test_admin_creates_learner_with_guardian_and_photos_in_one_window(): void
     {
         Storage::fake('public');
-        $photo = UploadedFile::fake()->image('aisha.jpg', 80, 80);
-        $guardianPhoto = UploadedFile::fake()->image('parent.jpg', 80, 80);
+        $photo = FakePhoto::make('aisha.png');
+        $guardianPhoto = FakePhoto::make('parent.png');
 
         $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
             'full_name' => 'Aisha Create',

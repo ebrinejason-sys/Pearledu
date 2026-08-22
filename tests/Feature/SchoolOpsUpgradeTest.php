@@ -19,6 +19,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\ActsAsPlatformOperator;
+use Tests\Support\FakePhoto;
 use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
@@ -372,7 +373,7 @@ class SchoolOpsUpgradeTest extends TestCase
             'phone' => '0700111222',
             'nationality' => 'Uganda',
             'home_address' => 'Ntinda',
-            'photo' => UploadedFile::fake()->image('staff.jpg', 40, 40),
+            'photo' => FakePhoto::make('staff.png'),
         ])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame('Ntinda', $teacher->fresh()->home_address);
         $this->assertNotNull($teacher->fresh()->avatar_path);
