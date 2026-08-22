@@ -89,6 +89,7 @@ class RolePermissionMatrixTest extends TestCase
         $perms = $this->roles()['bursar'];
         $this->assertContains('finance.manage', $perms);
         $this->assertContains('fees.payment.reverse', $perms);
+        $this->assertContains('fees.payment.reject', $perms);
         $this->assertContains('fees.invoice.void', $perms);
         $this->assertContains('learners.view', $perms);
         $this->assertNotContains('assessment.view', $perms);
@@ -107,6 +108,8 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('assessment.manage', $perms);
         $this->assertNotContains('finance.manage', $perms);
+        $this->assertNotContains('fees.payment.reverse', $perms);
+        $this->assertNotContains('fees.payment.reject', $perms);
     }
 
     public function test_director_is_read_heavy_without_operational_writes(): void
@@ -117,6 +120,8 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertContains('attendance.view', $perms);
         $this->assertContains('learners.view', $perms);
         $this->assertNotContains('finance.manage', $perms);
+        $this->assertNotContains('fees.payment.reverse', $perms);
+        $this->assertNotContains('fees.payment.reject', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('attendance.mark', $perms);
         $this->assertNotContains('attendance.manage', $perms);
@@ -130,6 +135,7 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertContains('finance.view', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('finance.manage', $perms);
+        $this->assertNotContains('fees.payment.reverse', $perms);
         $this->assertNotContains('promotions.approve', $perms);
     }
 

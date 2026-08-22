@@ -24,16 +24,19 @@ class FeeInvoice extends Model
         return $this->belongsTo(Student::class);
     }
 
+    /** @return BelongsTo<FeeStructure, $this> */
     public function structure(): BelongsTo
     {
         return $this->belongsTo(FeeStructure::class, 'fee_structure_id');
     }
 
+    /** @return HasMany<FeePayment, $this> */
     public function payments(): HasMany
     {
         return $this->hasMany(FeePayment::class, 'invoice_id');
     }
 
+    /** @return HasMany<FeeAdjustment, $this> */
     public function adjustments(): HasMany
     {
         return $this->hasMany(FeeAdjustment::class, 'invoice_id');

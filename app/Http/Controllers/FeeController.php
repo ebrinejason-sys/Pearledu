@@ -112,7 +112,7 @@ class FeeController extends Controller
 
         $invoiceQuery = FeeInvoice::query()
             ->where('school_id', $school->id)
-            ->with(['student.schoolClass', 'structure', 'payments' => fn ($p) => $p->where('status', 'confirmed')->orderByDesc('id')])
+            ->with(['student.schoolClass', 'structure', 'payments' => fn ($p) => $p->where('status', 'confirmed')->whereNull('reverses_payment_id')->orderByDesc('id')])
             ->when($classId, fn ($query) => $query->whereHas('student', fn ($s) => $s->where('class_id', $classId)))
             ->when($termId, fn ($query) => $query->whereHas('structure', fn ($s) => $s->where('term_id', $termId)))
             ->when($q !== '', function ($query) use ($q) {
@@ -450,11 +450,18 @@ class FeeController extends Controller
         return back()->with('status', 'Payment confirmed. Invoice balance updated.');
     }
 
-    public function rejectPayment(FeePayment $payment, TenantContext $ctx, FeePaymentService $svc, Request $request)
+    public function rejectPayment(FeePayment $payment, TenantContext $ctx, FeePaymentService $svc, Request $request, AuditLogger $audit)
     {
         $school = $ctx->school();
         abort_unless($school && (int) $payment->school_id === (int) $school->id, 404);
-        $svc->reject($payment, (int) $request->user()->id);
+        $data = $request->validate([
+            'reason' => 'required|string|min:8|max:500',
+        ]);
+        $svc->reject($payment, (int) $request->user()->id, $data['reason']);
+        $audit->record('fees.payment.rejected', $payment, [
+            'amount' => $payment->amount,
+            'reason' => $data['reason'],
+        ], actor: $request->user());
 
         return back()->with('status', 'Payment rejected. Invoice balance unchanged.');
     }
@@ -463,10 +470,13 @@ class FeeController extends Controller
     {
         $school = $ctx->school();
         abort_unless($school && (int) $payment->school_id === (int) $school->id, 404);
-        $svc->reverse($payment, (int) $request->user()->id, $request->input('reason'));
+        $data = $request->validate([
+            'reason' => 'required|string|min:8|max:500',
+        ]);
+        $svc->reverse($payment, (int) $request->user()->id, $data['reason']);
         $audit->record('fees.payment.reversed', $payment, [
             'amount' => $payment->amount,
-            'reason' => $request->input('reason'),
+            'reason' => $data['reason'],
         ], actor: $request->user());
 
         return back()->with('status', 'Payment reversed. Invoice balance restored.');

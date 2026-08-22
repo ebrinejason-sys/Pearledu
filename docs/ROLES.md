@@ -77,7 +77,7 @@ Academic operating system: years, terms, classes, subjects, teaching assignments
 
 ### 6. Bursar
 
-Finance workspace: fee types (a class amount for day and a separate amount for boarding; named extras such as van saved for a specific learner and applied on their profile), delete or archive of saved types, invoicing, payments, printable/emailable receipts, SchoolPay reconciliation, discounts, reversals, reports. Demanded, cleared, and overdue invoices are separate pages; recording a payment is a popup on the demanded ledger. Opens learner profiles (`learners.view`, school-wide) to attach a saved fee type or a one-off extra. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades, learner attendance, or learner identity writes. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
+Finance workspace: fee types (a class amount for day and a separate amount for boarding; named extras such as van saved for a specific learner and applied on their profile), delete or archive of saved types, invoicing, payments, printable/emailable receipts, SchoolPay reconciliation, discounts, reversals, reports. Demanded, cleared, and overdue invoices are separate pages; recording a payment is a popup on the demanded ledger. **Reverse** (confirmed) and **reject** (pending parent submissions) are bursar actions: a reason of at least 8 characters is required, stored on `fee_payments.decision_reason`, and written to the audit trail (`fees.payment.reversed` / `fees.payment.rejected`). Director, head, deputy, DOS, and teachers cannot POST these routes. School admin remains break-glass via `finance.manage`. Opens learner profiles (`learners.view`, school-wide) to attach a saved fee type or a one-off extra. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades, learner attendance, or learner identity writes. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
 
 ### 7. Head Teacher
 
@@ -160,7 +160,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Staff files | `staff.profile.update` + `staff_documents` (FORCE RLS); secretary may update any staff file; other actors only people they may invite (hierarchy) |
 | Staff messages | `StaffMessageService` (`staff_conversations` / `staff_messages`) |
 | Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) — amount on invite when the actor has payroll manage |
-| Learner fees | Class day/boarding structures plus other class-wide types auto-invoice on admit/enroll from class + residence; bursar attaches any saved type (or a one-off extra) on the learner profile; bursar may delete a saved type |
+| Learner fees | Class day/boarding structures plus other class-wide types auto-invoice on admit/enroll from class + residence; bursar attaches any saved type (or a one-off extra) on the learner profile; bursar may delete a saved type; bursar reverses/rejects **payments** with a stored reason + audit log |
 | Gender stats / EMIS census | `GenderStatsService::emisOverview` |
 | Homeroom profile / restream | `LearnerScope::canEditProfile` / `canRestreamTo` (`learners.profile.update`) |
 | Marks upload revoke | `MarksheetWorkflow::revokeUpload` (`assessment.lock`, after deadline) |

@@ -160,4 +160,17 @@
 
 **Rollback/revisit:** Pixel-copy of DashLite/MoES chrome stays out of scope.
 
+## 2026-08-22 — Payment reverse and reject require a bursar reason
+
+**Problem:** Confirmed payments could be reversed with an optional reason stuffed into `provider_ref`. Pending parent submissions could be rejected with no reason and no audit row. The demanded ledger had Confirm but no Reject/Reverse dialogs. Leadership must not undo money.
+
+**Decision:** Keep `fees.payment.reverse` / `fees.payment.reject` (OR `finance.manage` for school-admin break-glass). Both POSTs require `reason` (8–500 characters). Store it on `fee_payments.decision_reason` (FORCE RLS already on the table). Write `fees.payment.reversed` / `fees.payment.rejected` to the audit trail. Ledger and receipt dialogs collect the reason. Director, head, deputy, DOS, and teachers stay forbidden.
+
+**Reason:** A payment change without a documented why is not auditable. UI hiding is not the security boundary — the permission middleware is.
+
+**Consequences:** Existing reject/reverse callers must send a reason. Reversal no longer overwrites `provider_ref`. Learner statements show reversed payments and the reversal reason.
+
+**Rollback/revisit:** Do not grant reverse/reject to director or head. School admin remains break-glass only.
+
+
 
