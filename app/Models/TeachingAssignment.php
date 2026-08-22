@@ -31,6 +31,7 @@ class TeachingAssignment extends Model
         'periods_per_week' => 'integer',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');

@@ -23,7 +23,7 @@ class SchoolClass extends Model
     /**
      * Parallel streams of the same class name and level (e.g. P.5 East / P.5 West).
      *
-     * @return Collection<int, self>
+     * @return Collection<int, static>
      */
     public function siblingStreams()
     {
