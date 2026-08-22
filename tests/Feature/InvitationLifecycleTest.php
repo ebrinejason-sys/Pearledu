@@ -15,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
 class InvitationLifecycleTest extends TestCase
@@ -38,10 +39,12 @@ class InvitationLifecycleTest extends TestCase
             'password' => Hash::make('password12345'),
         ]);
 
+        $load = TeacherInviteLoad::ensure($school);
         $result = app(StaffInvitationService::class)->invite($school, [
             'full_name' => $existing->full_name,
             'email' => $existing->email,
             'role_keys' => ['subject_teacher'],
+            'teaching_assignments' => $load['teaching_assignments'],
         ], $admin, false);
 
         $roleId = Role::where('key', 'subject_teacher')->value('id');
@@ -97,10 +100,12 @@ class InvitationLifecycleTest extends TestCase
             'role_keys' => ['bursar'],
         ], $admin, false);
 
+        $load = TeacherInviteLoad::ensure($school);
         app(StaffInvitationService::class)->invite($school, [
             'full_name' => 'Multi Role',
             'email' => 'multi@roles.test',
             'role_keys' => ['subject_teacher'],
+            'teaching_assignments' => $load['teaching_assignments'],
         ], $admin, false);
 
         app(InvitationService::class)->accept(
@@ -134,10 +139,12 @@ class InvitationLifecycleTest extends TestCase
         $school = School::where('slug', 'like', 'pearledu%')->firstOrFail();
         $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
 
+        $load = TeacherInviteLoad::ensure($school);
         $result = app(StaffInvitationService::class)->invite($school, [
             'full_name' => 'Batch Person',
             'email' => 'batch@roles.test',
             'role_keys' => ['deputy_head_teacher', 'subject_teacher'],
+            'teaching_assignments' => $load['teaching_assignments'],
         ], $admin, false);
 
         $this->assertCount(2, $result['invitations']);

@@ -112,3 +112,15 @@
 
 **Rollback/revisit:** A full payroll engine (leave, PAYE) remains deferred. Expand class-level SMS later without restoring school-wide `sms.send` on teachers.
 
+## 2026-08-22 — Fee types, exam sets, scoped homeroom edits, teaching load on invite
+
+**Problem:** Bursars needed day vs boarding structures, extra fees (van) for a named group, and printable/emailable receipts without mixing every ledger onto one page. Class teachers needed exam-set oversight and the ability to lock late mark uploads, plus homeroom bio/photo/restream, without inheriting grade or school-wide learner writes. Teacher invites that omitted subject and class made timetable collisions invisible until generate time.
+
+**Decision:** Keep `config/permissions.php` + `role_assignments`. Fee structures gain `kind`, `residency`, and `applies_to` (class or learner group via `fee_structure_students` with FORCE RLS). Invoices, cleared, and overdue are their own pages; record payment is a modal. Receipts print and email through `FeeReceiptService`. Assessment periods gain BOT/MOT/EOT/custom `kind` and `entry_deadline`. Class teacher receives `assessment.lock` (revoke after deadline) and `learners.profile.update` (homeroom bio/photo/sibling-stream restream only) — still no `assessment.enter` or `learners.manage`. Inviting `subject_teacher` requires `teaching_assignments` (subject + classes in the current year). Subject-teacher assessment lives under **My classes**. Director home uses `GenderStatsService::emisOverview` for EMIS-style census cards. Theme accent is teal on navy to match that census UI.
+
+**Reason:** Least privilege and the existing union architecture. Homeroom lock is pastoral oversight, not mark entry. Teaching load at invite is the same `teaching_assignments` row the timetable already uses.
+
+**Consequences:** Existing Teacher invites without a subject/class fail validation. Class teachers can restream only between streams of the same class name and level. Subject teachers can still upload after the deadline until the class teacher revokes.
+
+**Rollback/revisit:** If a school needs homeroom mark entry, grant `subject_teacher` + teaching assignment rather than `assessment.enter` on `class_teacher`.
+

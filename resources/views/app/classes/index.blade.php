@@ -60,6 +60,12 @@
               <td><code>{{ $class->code }}</code></td>
               <td>{{ $class->students_count }}</td>
               <td>
+                <form method="post" action="{{ route('app.classes.update', $class) }}" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+                  @csrf
+                  @method('PUT')
+                  <input name="stream" value="{{ $class->stream }}" placeholder="Stream" style="width:110px">
+                  <button class="btn ghost" type="submit">Save stream</button>
+                </form>
                 <form method="post" action="{{ route('app.classes.destroy', $class) }}" onsubmit="return confirm('Delete {{ $class->displayName() }}?')">
                   @csrf
                   @method('DELETE')

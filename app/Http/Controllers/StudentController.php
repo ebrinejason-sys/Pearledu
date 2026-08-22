@@ -12,9 +12,11 @@ use App\Services\Students\GuardianLinkService;
 use App\Services\Students\StudentAccountLinkService;
 use App\Services\Tenancy\TenantContext;
 use App\Support\Gender;
+use App\Support\Residency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class StudentController extends Controller
 {
@@ -32,6 +34,9 @@ class StudentController extends Controller
         $q = trim((string) $request->query('q', ''));
         $classFilter = $request->integer('class_id') ?: null;
         $genderFilter = (string) $request->query('gender', '');
+        $statusFilter = (string) $request->query('status', '');
+        $ninFilter = (string) $request->query('nin', '');
+        $nationalityFilter = trim((string) $request->query('nationality', ''));
         $schoolId = $this->context->schoolId();
         abort_unless($schoolId && $request->user(), 403);
 
@@ -46,6 +51,10 @@ class StudentController extends Controller
             ->when(is_array($classIds), fn ($query) => $query->whereIn('class_id', $classIds))
             ->when($classFilter, fn ($query) => $query->where('class_id', $classFilter))
             ->when(in_array($genderFilter, Gender::keys(), true), fn ($query) => $query->where('gender', $genderFilter))
+            ->when(in_array($statusFilter, $this->statuses(), true), fn ($query) => $query->where('status', $statusFilter))
+            ->when($ninFilter === 'yes', fn ($query) => $query->whereNotNull('nin')->where('nin', '!=', ''))
+            ->when($ninFilter === 'no', fn ($query) => $query->where(fn ($inner) => $inner->whereNull('nin')->orWhere('nin', '')))
+            ->when($nationalityFilter !== '', fn ($query) => $query->where('nationality', 'ilike', $nationalityFilter))
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('full_name', 'ilike', '%'.$q.'%')
@@ -57,12 +66,16 @@ class StudentController extends Controller
             ->withQueryString();
 
         $canManageLearners = $this->learners->canMutateAnywhere($request->user(), $schoolId);
+        $canEditProfile = $this->learners->canEditListed($request->user(), $schoolId);
         $classes = $this->classesForSchool();
         if (is_array($classIds)) {
             $classes = $classes->whereIn('id', $classIds)->values();
         }
 
-        return view('app.students.index', compact('students', 'q', 'canManageLearners', 'classes', 'classFilter', 'genderFilter'));
+        return view('app.students.index', compact(
+            'students', 'q', 'canManageLearners', 'canEditProfile', 'classes',
+            'classFilter', 'genderFilter', 'statusFilter', 'ninFilter', 'nationalityFilter'
+        ));
     }
 
     public function create()
@@ -76,6 +89,8 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $data['residency'] = Residency::normalize($data['residency'] ?? null);
+        $data['nationality'] = $data['nationality'] ?? 'Uganda';
         $classId = $data['class_id'] ?? null;
         unset($data['class_id'], $data['photo']);
         $student = Student::create($data);
@@ -98,39 +113,63 @@ class StudentController extends Controller
 
         $student->load(['schoolClass', 'guardianships.guardian', 'user', 'enrollments.academicYear', 'enrollments.schoolClass']);
         $canManageLearners = $this->learners->canMutateStudent($user, $schoolId, $student);
+        $canEditProfile = $this->learners->canEditProfile($user, $schoolId, $student);
         $canLinkGuardians = $this->learners->canLinkGuardian($user, $schoolId, $student);
         $canViewFinance = in_array('finance.view', $user->permissionsForSchool($schoolId), true)
             || in_array('finance.manage', $user->permissionsForSchool($schoolId), true);
         $statement = $canViewFinance ? $this->ledger->statement($student) : ['lines' => [], 'balance' => 0];
 
         return view('app.students.show', compact(
-            'student', 'statement', 'canManageLearners', 'canLinkGuardians', 'canViewFinance'
+            'student', 'statement', 'canManageLearners', 'canEditProfile', 'canLinkGuardians', 'canViewFinance'
         ));
     }
 
     public function edit(Student $student)
     {
         $this->assertTenantOwned($student);
-        $this->assertCanMutate($student);
+        $this->assertCanEditProfile($student);
+        $user = request()->user();
+        $schoolId = $this->context->schoolId();
+        $full = $user && $schoolId && $this->learners->canMutateStudent($user, $schoolId, $student);
+        $classes = $full
+            ? $this->classesForSchool()
+            : $this->restreamClasses($student);
 
         return view('app.students.edit', [
             'student' => $student,
-            'classes' => $this->classesForSchool(),
+            'classes' => $classes,
             'statuses' => $this->statuses(),
+            'profileOnly' => ! $full,
         ]);
     }
 
     public function update(Request $request, Student $student)
     {
         $this->assertTenantOwned($student);
-        $this->assertCanMutate($student);
-        $data = $this->validated($request, $student);
+        $this->assertCanEditProfile($student);
+        $user = $request->user();
+        $schoolId = $this->context->schoolId();
+        $full = $user && $schoolId && $this->learners->canMutateStudent($user, $schoolId, $student);
+        $data = $this->validated($request, $student, $full);
         $classId = $data['class_id'] ?? null;
         unset($data['class_id'], $data['photo']);
+        if (! $full) {
+            unset($data['status'], $data['emis_number'], $data['schoolpay_payment_code']);
+            if ($classId && ! $this->learners->canRestreamTo($user, (int) $schoolId, $student, (int) $classId)) {
+                abort(403);
+            }
+        }
         $student->update($data);
         $this->storePhoto($request, $student);
         if ($classId && (int) $student->fresh()->class_id !== (int) $classId) {
-            $this->lifecycle->enrollStudent($student->fresh(), (int) $classId);
+            try {
+                $this->lifecycle->enrollStudent($student->fresh(), (int) $classId);
+            } catch (ValidationException $e) {
+                if ($full) {
+                    throw $e;
+                }
+                $student->update(['class_id' => $classId]);
+            }
         }
 
         return redirect()
@@ -277,7 +316,24 @@ class StudentController extends Controller
         abort_unless($user && $schoolId && $this->learners->canMutateStudent($user, $schoolId, $student), 403);
     }
 
-    private function validated(Request $request, ?Student $student = null): array
+    private function assertCanEditProfile(Student $student): void
+    {
+        $user = request()->user();
+        $schoolId = $this->context->schoolId();
+        abort_unless($user && $schoolId && $this->learners->canEditProfile($user, $schoolId, $student), 403);
+    }
+
+    private function restreamClasses(Student $student)
+    {
+        $current = $student->schoolClass;
+        if (! $current) {
+            return collect();
+        }
+
+        return collect([$current])->concat($current->siblingStreams())->unique('id')->values();
+    }
+
+    private function validated(Request $request, ?Student $student = null, bool $full = true): array
     {
         $schoolId = $this->context->schoolId();
 
@@ -296,8 +352,10 @@ class StudentController extends Controller
                 'integer',
                 Rule::exists('school_classes', 'id')->where(fn ($q) => $q->where('school_id', $schoolId)),
             ],
-            'status' => ['required', Rule::in($this->statuses())],
+            'status' => [$full ? 'required' : 'nullable', Rule::in($this->statuses())],
             'gender' => ['nullable', Rule::in(Gender::keys())],
+            'residency' => ['nullable', Rule::in(Residency::learnerKeys())],
+            'nationality' => 'nullable|string|max:80',
             'photo' => 'nullable|image|max:2048',
             'lin' => 'nullable|string|max:120',
             'nin' => 'nullable|string|max:120',
@@ -312,7 +370,7 @@ class StudentController extends Controller
         ]);
 
         // Empty strings → null so unique(emis) and encryption stay clean
-        foreach (['emis_number', 'lin', 'nin', 'class_id', 'schoolpay_payment_code'] as $key) {
+        foreach (['emis_number', 'lin', 'nin', 'class_id', 'schoolpay_payment_code', 'nationality'] as $key) {
             if (array_key_exists($key, $data) && $data[$key] === '') {
                 $data[$key] = null;
             }

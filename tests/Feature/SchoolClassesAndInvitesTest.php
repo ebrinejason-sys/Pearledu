@@ -11,6 +11,7 @@ use App\Services\Sms\Gateway\SmsGateway;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
 class SchoolClassesAndInvitesTest extends TestCase
@@ -53,11 +54,13 @@ class SchoolClassesAndInvitesTest extends TestCase
         $school = School::where('slug', 'like', 'pearledu%')->firstOrFail();
         $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
 
+        $load = TeacherInviteLoad::ensure($school);
         $result = app(StaffInvitationService::class)->invite($school, [
             'full_name' => 'SMS Soft Fail',
             'email' => 'softfail@invite.test',
             'phone' => '0700123456',
             'role_keys' => ['subject_teacher'],
+            'teaching_assignments' => $load['teaching_assignments'],
         ], $admin, false);
 
         $this->assertTrue($result['delivery']['email']);

@@ -48,6 +48,8 @@ class LearnerScopeTest extends TestCase
         $this->assertTrue($this->scope->canViewStudent($classTeacher, $this->school->id, $inClass));
         $this->assertFalse($this->scope->canViewStudent($classTeacher, $this->school->id, $other));
         $this->assertFalse($this->scope->canMutateStudent($classTeacher, $this->school->id, $inClass));
+        $this->assertTrue($this->scope->canEditProfile($classTeacher, $this->school->id, $inClass));
+        $this->assertFalse($this->scope->canEditProfile($classTeacher, $this->school->id, $other));
         $this->assertSame([$classA->id], $this->scope->viewableClassIds($classTeacher, $this->school->id));
     }
 

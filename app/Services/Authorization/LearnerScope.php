@@ -8,6 +8,7 @@ use App\Models\User;
 /**
  * learners.manage = create/update/archive (school-wide for SCHOOL_WIDE roles).
  * learners.view = profile read, scoped to assigned classes for teachers.
+ * learners.profile.update = homeroom bio/photo/restream only (not archive or school-wide).
  */
 class LearnerScope
 {
@@ -22,6 +23,12 @@ class LearnerScope
     public function canMutateAnywhere(User $user, int $schoolId): bool
     {
         return $this->has($user, $schoolId, 'learners.manage');
+    }
+
+    public function canEditListed(User $user, int $schoolId): bool
+    {
+        return $this->canMutateAnywhere($user, $schoolId)
+            || $this->has($user, $schoolId, 'learners.profile.update');
     }
 
     /**
@@ -62,6 +69,51 @@ class LearnerScope
     {
         return $this->canMutateAnywhere($user, $schoolId)
             && $this->canViewStudent($user, $schoolId, $student);
+    }
+
+    /**
+     * Homeroom teachers may update bio/photo/restream for their assigned class only.
+     */
+    public function canEditProfile(User $user, int $schoolId, Student $student): bool
+    {
+        if ($this->canMutateStudent($user, $schoolId, $student)) {
+            return true;
+        }
+
+        if (! $this->has($user, $schoolId, 'learners.profile.update')) {
+            return false;
+        }
+
+        if ((int) $student->school_id !== $schoolId) {
+            return false;
+        }
+
+        $homeroom = $this->assigned->classTeacherClassIds($user, $schoolId);
+        $classId = $student->class_id !== null ? (int) $student->class_id : 0;
+
+        return $classId !== 0 && in_array($classId, $homeroom, true);
+    }
+
+    public function canRestreamTo(User $user, int $schoolId, Student $student, int $targetClassId): bool
+    {
+        if (! $this->canEditProfile($user, $schoolId, $student)) {
+            return false;
+        }
+
+        $from = $student->schoolClass;
+        if (! $from) {
+            return $this->canMutateStudent($user, $schoolId, $student);
+        }
+
+        if ((int) $from->id === $targetClassId) {
+            return true;
+        }
+
+        if ($this->canMutateStudent($user, $schoolId, $student)) {
+            return true;
+        }
+
+        return $from->siblingStreams()->contains(fn ($c) => (int) $c->id === $targetClassId);
     }
 
     public function canLinkGuardian(User $user, int $schoolId, Student $student): bool

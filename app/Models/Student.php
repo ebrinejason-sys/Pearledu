@@ -15,7 +15,8 @@ class Student extends Model
     use BelongsToSchool, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'school_id', 'user_id', 'full_name', 'gender', 'emis_number', 'schoolpay_payment_code',
+        'school_id', 'user_id', 'full_name', 'gender', 'residency', 'nationality',
+        'emis_number', 'schoolpay_payment_code',
         'lin', 'nin', 'photo_path', 'class_id', 'status',
     ];
 
@@ -109,5 +110,26 @@ class Student extends Model
         $user = $this->user;
 
         return $user instanceof User ? $user->avatarUrl() : null;
+    }
+
+    /** Presence only — does not decrypt or audit. */
+    public function hasLinOnFile(): bool
+    {
+        return filled($this->attributes['lin'] ?? null);
+    }
+
+    /** Presence only — does not decrypt or audit. */
+    public function hasNinOnFile(): bool
+    {
+        return filled($this->attributes['nin'] ?? null);
+    }
+
+    public function sexLetter(): string
+    {
+        return match ($this->gender) {
+            'male' => 'M',
+            'female' => 'F',
+            default => '—',
+        };
     }
 }

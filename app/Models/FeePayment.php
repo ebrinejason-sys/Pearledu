@@ -26,6 +26,12 @@ class FeePayment extends Model
         return $this->belongsTo(FeeInvoice::class, 'invoice_id');
     }
 
+    /** @return BelongsTo<User, $this> */
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
+
     public function isPending(): bool
     {
         return $this->status === 'pending';

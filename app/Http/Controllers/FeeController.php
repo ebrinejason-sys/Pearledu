@@ -15,7 +15,10 @@ use App\Services\Fees\FeeInvoiceService;
 use App\Services\Fees\FeePaymentService;
 use App\Services\SchoolPay\SchoolPayPaymentService;
 use App\Services\Tenancy\TenantContext;
+use App\Support\FeeKind;
+use App\Support\Residency;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class FeeController extends Controller
@@ -26,21 +29,89 @@ class FeeController extends Controller
         abort_unless($school, 404);
 
         $user = $request->user();
+        $statusFilter = (string) $request->query('status', 'all');
+        if (in_array($statusFilter, ['demanded', 'cleared', 'overdue', 'void'], true)) {
+            return $this->ledger($request, $ctx, $statusFilter);
+        }
+
         $canManageFinance = $user && in_array('finance.manage', $user->permissionsForSchool($school->id), true);
 
-        $statusFilter = (string) $request->query('status', 'all');
-        if (! in_array($statusFilter, ['all', 'demanded', 'cleared', 'overdue', 'void'], true)) {
-            $statusFilter = 'all';
-        }
+        $structures = FeeStructure::where('school_id', $school->id)->with(['schoolClass', 'term', 'learners'])->orderByDesc('id')->get();
+        $classes = SchoolClass::where('school_id', $school->id)->orderBy('name')->orderBy('stream')->get();
+        $terms = Term::where('school_id', $school->id)->orderBy('sequence')->get();
+        $students = Student::where('school_id', $school->id)->where('status', 'active')->with('schoolClass')->orderBy('full_name')->get(['id', 'full_name', 'class_id', 'residency']);
+
+        $countsBase = FeeInvoice::query()->where('school_id', $school->id)->where('status', '!=', 'void');
+        $summary = [
+            'demanded' => (clone $countsBase)->whereIn('status', ['open', 'partial'])->where('balance', '>', 0)->count(),
+            'cleared' => (clone $countsBase)->where(function ($q) {
+                $q->where('status', 'paid')->orWhere(fn ($x) => $x->where('balance', '<=', 0)->where('status', '!=', 'void'));
+            })->count(),
+            'overdue' => (clone $countsBase)->whereIn('status', ['open', 'partial'])
+                ->where('balance', '>', 0)
+                ->whereNotNull('due_on')
+                ->whereDate('due_on', '<', now()->toDateString())
+                ->count(),
+            'outstanding' => (float) (clone $countsBase)->whereIn('status', ['open', 'partial'])->sum('balance'),
+        ];
+
+        return view('app.fees.index', compact(
+            'school', 'structures', 'classes', 'terms', 'students', 'summary', 'canManageFinance'
+        ));
+    }
+
+    public function invoices(Request $request, TenantContext $ctx)
+    {
+        return $this->ledger($request, $ctx, 'demanded');
+    }
+
+    public function cleared(Request $request, TenantContext $ctx)
+    {
+        return $this->ledger($request, $ctx, 'cleared');
+    }
+
+    public function overdue(Request $request, TenantContext $ctx)
+    {
+        return $this->ledger($request, $ctx, 'overdue');
+    }
+
+    public function receipt(FeePayment $payment, TenantContext $ctx)
+    {
+        $school = $ctx->school();
+        abort_unless($school && (int) $payment->school_id === (int) $school->id, 404);
+        abort_unless($payment->status === 'confirmed', 404);
+        $payment->load(['invoice.student.schoolClass', 'invoice.structure', 'recordedBy']);
+
+        return view('app.fees.receipt', [
+            'school' => $school,
+            'payment' => $payment,
+            'print' => request()->boolean('print'),
+        ]);
+    }
+
+    public function emailReceipt(FeePayment $payment, TenantContext $ctx, \App\Services\Fees\FeeReceiptService $receipts, Request $request)
+    {
+        $school = $ctx->school();
+        abort_unless($school && (int) $payment->school_id === (int) $school->id, 404);
+        $emails = $receipts->email($school, $payment);
+
+        return back()->with('status', 'Receipt emailed to '.implode(', ', $emails).'.');
+    }
+
+    private function ledger(Request $request, TenantContext $ctx, string $statusFilter)
+    {
+        $school = $ctx->school();
+        abort_unless($school, 404);
+        $user = $request->user();
+        $canManageFinance = $user && in_array('finance.manage', $user->permissionsForSchool($school->id), true);
+
         $classId = $request->integer('class_id') ?: null;
         $termId = $request->integer('term_id') ?: null;
         $q = trim((string) $request->query('q', ''));
 
-        $structures = FeeStructure::where('school_id', $school->id)->with(['schoolClass', 'term'])->orderByDesc('id')->get();
-
         $invoiceQuery = FeeInvoice::query()
             ->where('school_id', $school->id)
-            ->with(['student.schoolClass', 'structure'])
+            ->with(['student.schoolClass', 'structure', 'payments' => fn ($p) => $p->where('status', 'confirmed')->orderByDesc('id')])
             ->when($classId, fn ($query) => $query->whereHas('student', fn ($s) => $s->where('class_id', $classId)))
             ->when($termId, fn ($query) => $query->whereHas('structure', fn ($s) => $s->where('term_id', $termId)))
             ->when($q !== '', function ($query) use ($q) {
@@ -83,7 +154,6 @@ class FeeController extends Controller
         }
 
         $invoices = $invoiceQuery->orderByDesc('id')->limit(200)->get();
-
         $pendingPayments = FeePayment::where('school_id', $school->id)
             ->where('status', 'pending')
             ->with(['invoice.student'])
@@ -92,21 +162,25 @@ class FeeController extends Controller
             ->get();
         $classes = SchoolClass::where('school_id', $school->id)->orderBy('name')->orderBy('stream')->get();
         $terms = Term::where('school_id', $school->id)->orderBy('sequence')->get();
-        $students = Student::where('school_id', $school->id)->orderBy('full_name')->get();
 
-        // Group demanded/cleared lists by class for bursar follow-up.
         $groupedInvoices = $invoices->groupBy(function (FeeInvoice $inv) {
             $class = $inv->student?->schoolClass;
 
             return $class instanceof SchoolClass ? $class->displayName() : 'Unassigned';
         });
 
-        return view('app.fees.index', compact(
-            'school', 'structures', 'invoices', 'groupedInvoices', 'pendingPayments',
-            'classes', 'terms', 'students', 'statusFilter', 'classId', 'termId', 'q', 'summary',
-            'canManageFinance'
-        ));
+        $title = match ($statusFilter) {
+            'cleared' => 'Cleared invoices',
+            'overdue' => 'Overdue invoices',
+            'void' => 'Void invoices',
+            default => 'Demanded invoices',
+        };
 
+        return view('app.fees.ledger', compact(
+            'school', 'invoices', 'groupedInvoices', 'pendingPayments',
+            'classes', 'terms', 'statusFilter', 'classId', 'termId', 'q', 'summary',
+            'canManageFinance', 'title'
+        ));
     }
 
     public function defaulters(Request $request, TenantContext $ctx, DefaulterNoticeService $defaulters)
@@ -156,8 +230,37 @@ class FeeController extends Controller
     {
         $school = $ctx->school();
         abort_unless($school, 404);
-        $data = $request->validate(['name' => 'required|string|max:120', 'amount' => 'required|numeric|min:0', 'class_id' => 'nullable|integer', 'term_id' => 'nullable|integer']);
-        FeeStructure::create($data + ['school_id' => $school->id, 'currency' => 'UGX', 'is_active' => true]);
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'amount' => 'required|numeric|min:0',
+            'class_id' => 'nullable|integer',
+            'term_id' => 'nullable|integer',
+            'kind' => ['required', Rule::in(FeeKind::keys())],
+            'residency' => ['required', Rule::in(Residency::structureKeys())],
+            'applies_to' => ['required', Rule::in(['class', 'learners'])],
+            'student_ids' => 'nullable|array',
+            'student_ids.*' => 'integer',
+            'due_on' => 'nullable|date',
+        ]);
+        if ($data['applies_to'] === 'learners' && empty($data['student_ids'])) {
+            throw ValidationException::withMessages([
+                'student_ids' => 'Select the learners this fee type applies to.',
+            ]);
+        }
+        if ($data['applies_to'] === 'class' && empty($data['class_id'])) {
+            throw ValidationException::withMessages([
+                'class_id' => 'Choose a class for this fee structure.',
+            ]);
+        }
+        if ($data['applies_to'] === 'learners') {
+            $data['class_id'] = null;
+        }
+        $studentIds = $data['student_ids'] ?? [];
+        unset($data['student_ids'], $data['due_on']);
+        $structure = FeeStructure::create($data + ['school_id' => $school->id, 'currency' => 'UGX', 'is_active' => true]);
+        if ($structure->isLearnerTargeted()) {
+            $structure->syncLearners((int) $school->id, $studentIds);
+        }
 
         return back()->with('status', 'Fee structure created.');
     }
@@ -171,6 +274,8 @@ class FeeController extends Controller
             'amount' => 'required|numeric|min:0',
             'class_id' => 'nullable|integer',
             'term_id' => 'nullable|integer',
+            'kind' => ['nullable', Rule::in(FeeKind::keys())],
+            'residency' => ['nullable', Rule::in(Residency::structureKeys())],
         ]);
         $structure->update($data);
 
@@ -213,14 +318,18 @@ class FeeController extends Controller
         abort_unless($school, 404);
         $data = $request->validate([
             'fee_structure_id' => 'required|integer',
-            'class_id' => 'required|integer',
+            'class_id' => 'nullable|integer',
             'due_on' => 'nullable|date',
         ]);
+        $structure = FeeStructure::query()->where('school_id', $school->id)->findOrFail($data['fee_structure_id']);
+        if (! $structure->isLearnerTargeted() && empty($data['class_id']) && ! $structure->class_id) {
+            throw ValidationException::withMessages(['class_id' => 'Choose a class to invoice.']);
+        }
 
         $stats = $invoices->generateClassInvoices(
             $school->id,
             (int) $data['fee_structure_id'],
-            (int) $data['class_id'],
+            (int) ($data['class_id'] ?? $structure->class_id ?? 0),
             $data['due_on'] ?? null,
             $academic->year()?->id,
         );
@@ -272,7 +381,7 @@ class FeeController extends Controller
             'provider_ref' => 'nullable|string|max:120',
         ]);
         $invoice = FeeInvoice::where('school_id', $school->id)->findOrFail($data['invoice_id']);
-        $svc->record([
+        $payment = $svc->record([
             'school_id' => $school->id,
             'invoice_id' => $invoice->id,
             'amount' => $data['amount'],
@@ -281,7 +390,7 @@ class FeeController extends Controller
             'recorded_by' => $request->user()->id,
         ], confirmImmediately: true);
 
-        return back()->with('status', 'Payment recorded.');
+        return back()->with('status', 'Payment recorded.')->with('receipt_id', $payment->id);
     }
 
     public function syncSchoolPay(Request $request, TenantContext $ctx, SchoolPayPaymentService $schoolPay)

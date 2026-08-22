@@ -10,6 +10,7 @@ use App\Services\Navigation\NavigationBuilder;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Support\TeacherInviteLoad;
 use Tests\TestCase;
 
 class StaffRoleSeparationTest extends TestCase
@@ -47,12 +48,15 @@ class StaffRoleSeparationTest extends TestCase
             ->assertOk()
             ->assertDontSee('Save responsibilities');
 
+        $load = TeacherInviteLoad::ensure($this->school);
+
         $this->actingAsInSchool($dos)->post(route('app.staff.store'), [
             'full_name' => 'Invited Teacher',
             'email' => 'invited-teacher@standrews.test',
             'gender' => 'female',
             'nin' => 'CF12345678901',
             'role_keys' => ['subject_teacher'],
+            'teaching_assignments' => $load['teaching_assignments'],
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('users', ['email' => 'invited-teacher@standrews.test']);
@@ -90,7 +94,7 @@ class StaffRoleSeparationTest extends TestCase
             ->flatMap(fn ($section) => collect($section['items'])->pluck('label'))
             ->all();
 
-        $this->assertContains('My Teaching', $labels);
+        $this->assertContains('My classes', $labels);
         $this->assertNotContains('SMS', $labels);
         $this->assertNotContains('Fees', $labels);
         $this->assertNotContains('Staff', $labels);
@@ -109,7 +113,7 @@ class StaffRoleSeparationTest extends TestCase
         $this->assertContains('Fees', $labels);
         $this->assertContains('SMS', $labels);
         $this->assertNotContains('Assessment', $labels);
-        $this->assertNotContains('My Teaching', $labels);
+        $this->assertNotContains('My classes', $labels);
         $this->assertNotContains('Students', $labels);
     }
 }

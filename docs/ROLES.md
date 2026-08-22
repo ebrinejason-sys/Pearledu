@@ -8,7 +8,7 @@ Durable context for tenant RBAC. Permissions are enforced on routes and in scope
 - Grants: `config/permissions.php` (union of a user's active `role_assignments` in the current school)
 - Hierarchy of who may invite whom: `App\Services\Authorization\InvitePolicy`
 - Data scope: `AssessmentScope`, `AttendanceScope`, `LearnerScope`, `LmsScope`, `CbtScope`, `HelpdeskScope`
-- Workspaces: `RoleWorkspaceService` composes My Teaching, My Class, bursar, DOS, Head Teacher, and Director dashboards from the same permission + assignment union
+- Workspaces: `RoleWorkspaceService` composes My classes, My Class, bursar, DOS, Head Teacher, and Director dashboards from the same permission + assignment union
 - Tenant isolation: Eloquent school scope + PostgreSQL `FORCE ROW LEVEL SECURITY`
 
 There is no separate `permissions` / `role_permissions` table. Adding a SQL RBAC schema would duplicate this map.
@@ -65,11 +65,11 @@ Portal for linked children only: results, attendance (`child.attendance.view`), 
 
 ### 3. Teacher (`subject_teacher`)
 
-**My Teaching** workspace: today's lessons, assigned classes/subjects, attendance, marks, LMS, CBT authoring. Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. Cannot edit another subject merely because they teach the class. Cannot send school-wide SMS.
+**My classes** workspace: today's lessons and which subject they teach to which class. Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. Inviting a Teacher requires that load (subject + classes) so timetable generation does not collide. Cannot edit another subject merely because they teach the class. Cannot send school-wide SMS.
 
 ### 4. Class Teacher
 
-**My Class** homeroom: roster, daily attendance, parent contacts, invite/link parents for that class (`users.invite.parent`). Cannot enter marks unless also assigned as a teacher. Cannot send school-wide SMS. Staff role edits must store and preserve `role_assignments.class_id`.
+**My Class** homeroom: roster, daily attendance, parent contacts, invite/link parents for that class (`users.invite.parent`). Sees examination sets (BOT / MOT / EOT and any custom test DOS creates) with the subjects taught in that class. After the marks-upload deadline they may revoke a subject teacher's upload (`assessment.lock`) — they still cannot enter marks. Homeroom bio, photo, and restream to a sibling stream of the same class (`learners.profile.update`) are scoped to their assigned class; they do not get school-wide `learners.manage`. Cannot send school-wide SMS. Staff role edits must store and preserve `role_assignments.class_id`.
 
 ### 5. Director of Studies (DOS)
 
@@ -77,7 +77,7 @@ Academic operating system: years, terms, classes, subjects, teaching assignments
 
 ### 6. Bursar
 
-Finance workspace: structures, invoicing, payments, SchoolPay reconciliation, discounts, reversals, reports. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades or learner attendance. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
+Finance workspace: fee types (tuition by day/boarding for a class, transport/van, or a custom type applied to a named group of learners), invoicing, payments, printable/emailable receipts, SchoolPay reconciliation, discounts, reversals, reports. Demanded, cleared, and overdue invoices are separate pages; recording a payment is a popup on the demanded ledger. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades or learner attendance. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
 
 ### 7. Head Teacher
 
@@ -85,7 +85,7 @@ Operational leadership dashboard: students, staff, attendance oversight, promoti
 
 ### 8. Director
 
-Executive/governance dashboard: enrollment, collection, attendance, academic mean, gender stats, class overview (learner profiles + published performance), staff profiles, staff clock history, salary **view** and payment history. No transactional writes (marks, learner attendance, fee mutations, salary changes). `hr.payroll.view` is not `finance.manage`.
+Executive/governance dashboard: EMIS-style census (learners M/F, teaching vs non-teaching staff, enrollment by class and sex, NIN tracking, nationality), collection, attendance, academic mean, class overview (learner profiles + published performance), staff profiles, staff clock history, salary **view** and payment history. No transactional writes (marks, learner attendance, fee mutations, salary changes). `hr.payroll.view` is not `finance.manage`.
 
 ### Secretary
 
@@ -132,7 +132,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Student | own (portal) | own R | own R | own R | — | — | — |
 | Parent | children (portal) | children R | children R | children R + pay | — | — | — |
 | Teacher | assigned R | assigned CRUD | assigned W | — | messages | — | — |
-| Class teacher | homeroom R + parent invite | homeroom R | homeroom W | — | messages | — | — |
+| Class teacher | homeroom R + bio/photo/restream + parent invite | homeroom R + revoke upload after deadline | homeroom W | — | messages | — | — |
 | DOS | view + enrollment | all CRUD + verify | all W | — | invite teachers + messages | all CRUD | — |
 | Bursar | financial names on invoices | — | — | all CRUD | messages + payroll W | — | — |
 | Secretary | — | — | staff clock W | — | directory R + ID print | — | — |
@@ -159,7 +159,10 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Staff ID / clock | `StaffBadgeService`, `StaffClockService` (`staff_badges`, `staff_time_punches`) |
 | Staff messages | `StaffMessageService` (`staff_conversations` / `staff_messages`) |
 | Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) |
-| Gender stats | `GenderStatsService` |
+| Gender stats / EMIS census | `GenderStatsService::emisOverview` |
+| Homeroom profile / restream | `LearnerScope::canEditProfile` / `canRestreamTo` (`learners.profile.update`) |
+| Marks upload revoke | `MarksheetWorkflow::revokeUpload` (`assessment.lock`, after deadline) |
+| Teaching load on invite | `StaffInvitationService` requires `teaching_assignments` when inviting Teacher |
 | Class defaulters | `DefaulterNoticeService` (print + notify class teacher via staff messages) |
 | Idle logout | `EnforceIdleSession` + `users.last_seen_at` (remember-me cannot skip) |
 | Role dashboards | `RoleWorkspaceService` |

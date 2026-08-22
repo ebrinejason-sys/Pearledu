@@ -24,8 +24,8 @@ return [
 
     'themes' => [
         /*
-         | PearlEdu / VoxSign — deep lagoon navy + restrained amber.
-         | Calm institutional MIS with a warm signal color for CTAs.
+         | PearlEdu / VoxSign — deep lagoon navy + teal actions (EMIS-style).
+         | Calm institutional MIS with teal for primary CTAs and Active badges.
          */
         'pearledu' => [
             'label' => 'PearlEdu (VoxSign)',
@@ -35,19 +35,19 @@ return [
                 'brand'           => '#053F5C',
                 'brand-600'       => '#032F45',
                 'brand-soft'      => '#E6F3F8',
-                'accent'          => '#E09A12',
-                'accent-soft'     => '#FBF3E0',
-                'accent-ink'      => '#3D2A05',
+                'accent'          => '#0D9488',
+                'accent-soft'     => '#E6F7F4',
+                'accent-ink'      => '#042F2C',
                 'bg'              => '#F3F7F9',
                 'surface'         => '#FFFFFF',
                 'surface-2'       => '#EAF2F6',
                 'ink'             => '#0B2C3D',
                 'muted'           => '#5A7180',
                 'line'            => '#C9DCE4',
-                'sidebar'         => '#042F45',
-                'sidebar-ink'     => '#9FE7F5',
+                'sidebar'         => '#0E2A47',
+                'sidebar-ink'     => '#E8EEF4',
                 'sidebar-hover'   => 'rgba(255,255,255,.08)',
-                'sidebar-active'  => 'rgba(255,255,255,.15)',
+                'sidebar-active'  => '#0D9488',
                 'on-brand'        => '#FFFFFF',
                 'success'         => '#1B7A4A',
                 'success-soft'    => '#E3F5EB',

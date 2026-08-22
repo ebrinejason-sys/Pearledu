@@ -86,6 +86,24 @@ class SchoolClassController extends Controller
         return back()->with('status', 'Created '.$class->displayName().'.');
     }
 
+    public function update(Request $request, SchoolClass $schoolClass, TenantContext $ctx)
+    {
+        $school = $ctx->school();
+        abort_unless($school && (int) $schoolClass->school_id === (int) $school->id, 404);
+
+        $data = $request->validate([
+            'stream' => 'nullable|string|max:40',
+        ]);
+        $stream = filled($data['stream'] ?? null) ? trim((string) $data['stream']) : null;
+        $schoolClass->update(['stream' => $stream]);
+        $this->audit->record('school.class.updated', $schoolClass, [
+            'school_id' => $school->id,
+            'stream' => $stream,
+        ]);
+
+        return back()->with('status', 'Updated stream for '.$schoolClass->displayName().'.');
+    }
+
     public function destroy(SchoolClass $schoolClass, TenantContext $ctx)
     {
         $school = $ctx->school();

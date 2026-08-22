@@ -12,10 +12,12 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
 use App\Models\User;
+use App\Services\People\GenderStatsService;
 use Illuminate\Support\Facades\Route;
 
 class SchoolDashboardService
 {
+    public function __construct(private GenderStatsService $gender) {}
     /**
      * @param  list<string>  $permissions
      * @return array{
@@ -132,6 +134,10 @@ class SchoolDashboardService
             'feeChart' => $this->hasAny($permissions, ['finance.manage', 'finance.view', 'finance.report.view'])
                 ? $this->feeCollectionChart($schoolId)
                 : [],
+            'emis' => $this->hasAny($permissions, ['reports.view', 'staff.manage'])
+                && $this->hasAny($permissions, ['learners.view', 'learners.manage'])
+                ? $this->gender->emisOverview($school)
+                : null,
             'shortcuts' => $this->shortcuts($permissions, $school),
             'permissionLabels' => $this->permissionLabels($permissions),
         ];
@@ -208,15 +214,14 @@ class SchoolDashboardService
             ['perm' => 'learners.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
             ['perm' => 'enrollment.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
             ['perm' => 'admissions.manage', 'route' => 'app.admissions.index', 'label' => 'Admissions', 'desc' => 'Applications queue', 'icon' => 'admissions'],
-            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'params' => ['status' => 'demanded'], 'label' => 'Demanded fees', 'desc' => 'Students still owing', 'icon' => 'fees'],
-            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'params' => ['status' => 'cleared'], 'label' => 'Cleared fees', 'desc' => 'Paid in full', 'icon' => 'fees'],
-            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'label' => 'Fees desk', 'desc' => 'Invoices & payments', 'icon' => 'fees'],
+            ['perm' => 'finance.manage', 'route' => 'app.fees.invoices', 'label' => 'Demanded fees', 'desc' => 'Students still owing', 'icon' => 'fees'],
+            ['perm' => 'finance.manage', 'route' => 'app.fees.cleared', 'label' => 'Cleared fees', 'desc' => 'Paid in full', 'icon' => 'fees'],
+            ['perm' => 'finance.manage', 'route' => 'app.fees.index', 'label' => 'Fees desk', 'desc' => 'Structures & invoices', 'icon' => 'fees'],
             ['perm' => 'finance.view', 'route' => 'app.fees.index', 'label' => 'Fees', 'desc' => 'Fee statements', 'icon' => 'fees'],
             ['perm' => 'attendance.mark', 'route' => 'app.attendance.index', 'label' => 'Attendance', 'desc' => 'Daily register', 'icon' => 'attendance'],
             ['perm' => 'attendance.manage', 'route' => 'app.attendance.index', 'label' => 'Attendance', 'desc' => 'Daily register', 'icon' => 'attendance'],
-            ['perm' => 'assessment.enter', 'route' => 'app.teaching.mine', 'label' => 'My Teaching', 'desc' => 'Lessons, marks, LMS', 'icon' => 'teaching'],
+            ['perm' => 'assessment.enter', 'route' => 'app.teaching.mine', 'label' => 'My classes', 'desc' => 'Subjects by class', 'icon' => 'teaching'],
             ['perm' => 'class.view', 'route' => 'app.teaching.homeroom', 'label' => 'My Class', 'desc' => 'Homeroom roster', 'icon' => 'classes'],
-            ['perm' => 'assessment.enter', 'route' => 'app.assessment.marks', 'label' => 'Enter marks', 'desc' => 'Assessment entry', 'icon' => 'assessment'],
             ['perm' => 'assessment.manage', 'route' => 'app.assessment.index', 'label' => 'Assessment', 'desc' => 'Periods & reports', 'icon' => 'assessment'],
             ['perm' => 'timetable.manage', 'route' => 'app.timetable.index', 'label' => 'Timetable', 'desc' => 'Days, periods, generate', 'icon' => 'timetable'],
             ['perm' => 'timetable.manage', 'route' => 'app.teaching.index', 'label' => 'Teaching load', 'desc' => 'Who teaches what', 'icon' => 'teaching'],
@@ -281,6 +286,8 @@ class SchoolDashboardService
             'assessment.enter' => 'Enter marks',
             'assessment.manage' => 'Assessment',
             'assessment.view' => 'Assessment (view)',
+            'assessment.lock' => 'Revoke marks upload',
+            'learners.profile.update' => 'Learner profile (homeroom)',
             'timetable.manage' => 'Timetable',
             'admissions.manage' => 'Admissions',
             'announcements.manage' => 'Announcements',

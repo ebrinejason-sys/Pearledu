@@ -26,12 +26,20 @@ class AssessmentMarksheet extends Model
         'submitted_at',
         'verified_by',
         'verified_at',
+        'upload_revoked_at',
+        'upload_revoked_by',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'verified_at' => 'datetime',
+        'upload_revoked_at' => 'datetime',
     ];
+
+    public function uploadRevoked(): bool
+    {
+        return $this->upload_revoked_at !== null;
+    }
 
     public function period(): BelongsTo
     {

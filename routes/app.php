@@ -115,8 +115,6 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/students/import/commit', [StudentImportController::class, 'commit'])->name('app.students.import.commit');
         Route::get('/students/create', [StudentController::class, 'create'])->name('app.students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('app.students.store');
-        Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('app.students.edit')->whereNumber('student');
-        Route::put('/students/{student}', [StudentController::class, 'update'])->name('app.students.update')->whereNumber('student');
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('app.students.destroy')->whereNumber('student');
 
         Route::put('/students/{student}/guardians/{guardianship}/primary', [StudentController::class, 'makePrimary'])->name('app.students.guardians.primary')->whereNumber('student');
@@ -124,6 +122,10 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/students/{student}/account', [StudentController::class, 'storeAccount'])->name('app.students.account.store')->whereNumber('student');
         Route::delete('/students/{student}/account', [StudentController::class, 'destroyAccount'])->name('app.students.account.destroy')->whereNumber('student');
 
+    });
+    Route::middleware('permission:learners.manage,learners.profile.update')->group(function () {
+        Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('app.students.edit')->whereNumber('student');
+        Route::put('/students/{student}', [StudentController::class, 'update'])->name('app.students.update')->whereNumber('student');
     });
     Route::middleware('permission:learners.manage,users.invite.parent')->group(function () {
         Route::post('/students/{student}/guardians', [StudentController::class, 'storeGuardian'])->name('app.students.guardians.store')->whereNumber('student');
@@ -151,6 +153,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     Route::middleware('permission:school.manage,curriculum.manage')->group(function () {
         Route::get('/classes', [SchoolClassController::class, 'index'])->name('app.classes.index');
         Route::post('/classes', [SchoolClassController::class, 'store'])->name('app.classes.store');
+        Route::put('/classes/{schoolClass}', [SchoolClassController::class, 'update'])->name('app.classes.update');
         Route::delete('/classes/{schoolClass}', [SchoolClassController::class, 'destroy'])->name('app.classes.destroy');
 
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->name('app.years.index');
@@ -195,6 +198,9 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/assessment/marks', [AssessmentController::class, 'storeMarks'])->name('app.assessment.marks.store');
         Route::post('/assessment/marksheets/submit', [AssessmentController::class, 'submitMarksheet'])->name('app.assessment.marksheets.submit');
     });
+    Route::middleware('permission:assessment.lock,assessment.manage')->group(function () {
+        Route::post('/assessment/marksheets/revoke', [AssessmentController::class, 'revokeMarksheet'])->name('app.assessment.marksheets.revoke');
+    });
     Route::middleware('permission:marksheet.verify,assessment.manage')->group(function () {
         Route::post('/assessment/marksheets/verify', [AssessmentController::class, 'verifyMarksheet'])->name('app.assessment.marksheets.verify');
     });
@@ -227,6 +233,10 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
 
     Route::middleware('permission:finance.view,finance.manage')->group(function () {
         Route::get('/fees', [FeeController::class, 'index'])->name('app.fees.index');
+        Route::get('/fees/invoices', [FeeController::class, 'invoices'])->name('app.fees.invoices');
+        Route::get('/fees/cleared', [FeeController::class, 'cleared'])->name('app.fees.cleared');
+        Route::get('/fees/overdue', [FeeController::class, 'overdue'])->name('app.fees.overdue');
+        Route::get('/fees/payments/{payment}/receipt', [FeeController::class, 'receipt'])->name('app.fees.receipts.show');
         Route::get('/fees/defaulters', [FeeController::class, 'defaulters'])->name('app.fees.defaulters');
         Route::post('/fees/defaulters/notify', [FeeController::class, 'notifyDefaulters'])->name('app.fees.defaulters.notify');
     });
@@ -247,6 +257,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
     });
     Route::middleware('permission:fees.payment.record,finance.manage')->group(function () {
         Route::post('/fees/payments', [FeeController::class, 'storePayment'])->name('app.fees.payments.store');
+        Route::post('/fees/payments/{payment}/email', [FeeController::class, 'emailReceipt'])->name('app.fees.receipts.email');
     });
     Route::middleware('permission:fees.payment.confirm,finance.manage')->group(function () {
         Route::post('/fees/payments/{payment}/confirm', [FeeController::class, 'confirmPayment'])->name('app.fees.payments.confirm');

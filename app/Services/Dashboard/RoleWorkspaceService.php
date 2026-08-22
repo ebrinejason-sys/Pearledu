@@ -167,6 +167,54 @@ class RoleWorkspaceService
             : SchoolClass::query()->find($classId);
         $className = $classRecord instanceof SchoolClass ? $classRecord->displayName() : 'My class';
 
+        $periods = AssessmentPeriod::query()
+            ->where('school_id', $school->id)
+            ->orderByDesc('id')
+            ->get();
+
+        $subjects = TeachingAssignment::query()
+            ->where('school_id', $school->id)
+            ->where('class_id', $classId)
+            ->forCurrentYear((int) $school->id)
+            ->effective()
+            ->with(['subject', 'teacher'])
+            ->get()
+            ->unique('subject_id')
+            ->values();
+
+        $marksheets = AssessmentMarksheet::query()
+            ->where('school_id', $school->id)
+            ->where('class_id', $classId)
+            ->get();
+
+        $sets = [];
+        foreach ($periods as $period) {
+            $rows = [];
+            foreach ($subjects as $assignment) {
+                $sheet = $marksheets->first(fn (AssessmentMarksheet $s) => (int) $s->assessment_period_id === (int) $period->id
+                    && (int) $s->subject_id === (int) $assignment->subject_id);
+                $rows[] = [
+                    'subject_id' => (int) $assignment->subject_id,
+                    'subject' => $assignment->subject?->name ?? 'Subject',
+                    'teacher' => $assignment->teacher?->full_name,
+                    'status' => $sheet?->status ?? 'draft',
+                    'revoked' => $sheet?->uploadRevoked() ?? false,
+                    'can_revoke' => $period->entryDeadlinePassed() && ! ($sheet?->uploadRevoked() ?? false),
+                ];
+            }
+            $sets[] = [
+                'id' => (int) $period->id,
+                'name' => $period->name,
+                'kind' => $period->kindShort(),
+                'deadline' => $period->entry_deadline?->format('d M Y'),
+                'deadline_passed' => $period->entryDeadlinePassed(),
+                'status' => $period->status,
+                'subjects' => $rows,
+            ];
+        }
+
+        $streams = $classRecord instanceof SchoolClass ? $classRecord->siblingStreams() : collect();
+
         return [
             'class_id' => $classId,
             'class_name' => $className,
@@ -178,6 +226,8 @@ class RoleWorkspaceService
             'fees_total' => $feeTotal,
             'roster' => $students->take(12),
             'gender' => $this->gender->countStudents($school, $classId),
+            'exam_sets' => $sets,
+            'streams' => $streams,
         ];
     }
 

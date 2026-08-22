@@ -26,7 +26,7 @@ class FeeInvoiceService
             ->where('school_id', $schoolId)
             ->findOrFail($structureId);
 
-        $studentIds = $this->studentIdsForClass($schoolId, $classId, $academicYearId);
+        $studentIds = $this->studentIdsForStructure($schoolId, $structure, $classId, $academicYearId);
         $created = 0;
         $already = 0;
         $skipped = 0;
@@ -79,6 +79,10 @@ class FeeInvoiceService
         $skipped = 0;
 
         foreach ($structures as $structure) {
+            if (! $structure->appliesToStudent($student)) {
+                $skipped++;
+                continue;
+            }
             $result = $this->ensureInvoice((int) $student->school_id, (int) $student->id, $structure, null);
             if ($result === 'created') {
                 $created++;
@@ -199,9 +203,63 @@ class FeeInvoiceService
             ->first();
     }
 
+    /**
+     * @return array{created:int, already_existed:int, skipped:int}
+     */
+    public function generateForStructure(int $schoolId, FeeStructure $structure, ?int $classId, ?string $dueOn, ?int $academicYearId): array
+    {
+        return $this->generateClassInvoices(
+            $schoolId,
+            (int) $structure->id,
+            $classId ?: (int) ($structure->class_id ?: 0),
+            $dueOn,
+            $academicYearId,
+        );
+    }
+
+    /** @return list<int> */
+    private function studentIdsForStructure(int $schoolId, FeeStructure $structure, int $classId, ?int $academicYearId): array
+    {
+        if ($structure->isLearnerTargeted()) {
+            return $structure->learners()
+                ->where('students.school_id', $schoolId)
+                ->where('students.status', 'active')
+                ->pluck('students.id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        $targetClass = $classId ?: (int) ($structure->class_id ?: 0);
+        $ids = $targetClass
+            ? $this->studentIdsForClass($schoolId, $targetClass, $academicYearId)
+            : Student::query()
+                ->where('school_id', $schoolId)
+                ->where('status', 'active')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+        if (($structure->residency ?: 'any') === 'any') {
+            return $ids;
+        }
+
+        return Student::query()
+            ->where('school_id', $schoolId)
+            ->whereIn('id', $ids)
+            ->get()
+            ->filter(fn (Student $student) => $structure->appliesToStudent($student))
+            ->map(fn (Student $student) => (int) $student->id)
+            ->values()
+            ->all();
+    }
+
     /** @return list<int> */
     private function studentIdsForClass(int $schoolId, int $classId, ?int $academicYearId): array
     {
+        if ($classId <= 0) {
+            return [];
+        }
+
         $fromEnrollments = Enrollment::query()
             ->where('school_id', $schoolId)
             ->where('class_id', $classId)

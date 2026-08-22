@@ -19,6 +19,22 @@ class SchoolClass extends Model
         return $this->hasMany(Student::class, 'class_id');
     }
 
+    /**
+     * Parallel streams of the same class name and level (e.g. P.5 East / P.5 West).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, self>
+     */
+    public function siblingStreams()
+    {
+        return static::query()
+            ->where('school_id', $this->school_id)
+            ->where('name', $this->name)
+            ->where('level', $this->level)
+            ->where('id', '!=', $this->id)
+            ->orderBy('stream')
+            ->get();
+    }
+
     /** Human label: "S.1 East" when a stream is set, otherwise the class name. */
     public function displayName(): string
     {

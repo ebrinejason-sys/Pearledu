@@ -57,13 +57,18 @@ class AssessmentController extends Controller
             'name' => 'required|string|max:120',
             'term_id' => 'nullable|integer|exists:terms,id',
             'max_score' => 'nullable|numeric|min:1|max:1000',
+            'kind' => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\AssessmentSet::keys())],
+            'entry_deadline' => 'nullable|date',
         ]);
 
+        $kind = $data['kind'] ?? \App\Support\AssessmentSet::CUSTOM;
         AssessmentPeriod::create([
             'school_id' => $school->id,
-            'name' => $data['name'],
+            'name' => \App\Support\AssessmentSet::defaultName($kind, $data['name']),
+            'kind' => $kind,
             'term_id' => $data['term_id'] ?? $this->academic->term()?->id,
             'max_score' => $data['max_score'] ?? 100,
+            'entry_deadline' => $data['entry_deadline'] ?? null,
             'status' => 'draft',
         ]);
 
@@ -244,6 +249,11 @@ class AssessmentController extends Controller
         return $this->transitionMarksheet($request, $context, 'return');
     }
 
+    public function revokeMarksheet(Request $request, TenantContext $context)
+    {
+        return $this->transitionMarksheet($request, $context, 'revoke');
+    }
+
     private function transitionMarksheet(Request $request, TenantContext $context, string $action)
     {
         $school = $context->school();
@@ -259,10 +269,13 @@ class AssessmentController extends Controller
         $sheet = match ($action) {
             'submit' => $this->marksheets->submit($request->user(), $period, (int) $data['class_id'], (int) $data['subject_id']),
             'verify' => $this->marksheets->verify($request->user(), $period, (int) $data['class_id'], (int) $data['subject_id']),
+            'revoke' => $this->marksheets->revokeUpload($request->user(), $period, (int) $data['class_id'], (int) $data['subject_id']),
             default => $this->marksheets->returnToDraft($request->user(), $period, (int) $data['class_id'], (int) $data['subject_id']),
         };
 
-        return back()->with('status', 'Marksheet is now '.$sheet->status.'.');
+        $label = $action === 'revoke' ? 'Marks upload revoked for this subject.' : 'Marksheet is now '.$sheet->status.'.';
+
+        return back()->with('status', $label);
     }
 
     public function broadsheet(Request $request, TenantContext $context, MarksheetService $marks)
