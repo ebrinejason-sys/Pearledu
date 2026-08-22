@@ -95,7 +95,11 @@ class FeeController extends Controller
         $students = Student::where('school_id', $school->id)->orderBy('full_name')->get();
 
         // Group demanded/cleared lists by class for bursar follow-up.
-        $groupedInvoices = $invoices->groupBy(fn (FeeInvoice $inv) => $inv->student?->schoolClass?->displayName() ?? 'Unassigned');
+        $groupedInvoices = $invoices->groupBy(function (FeeInvoice $inv) {
+            $class = $inv->student?->schoolClass;
+
+            return $class instanceof SchoolClass ? $class->displayName() : 'Unassigned';
+        });
 
         return view('app.fees.index', compact(
             'school', 'structures', 'invoices', 'groupedInvoices', 'pendingPayments',

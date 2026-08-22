@@ -14,11 +14,13 @@ class RoleAssignment extends Model
 
     protected $casts = ['is_active' => 'boolean', 'starts_on' => 'date', 'ends_on' => 'date'];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<Role, $this> */
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
@@ -29,6 +31,7 @@ class RoleAssignment extends Model
         return $this->belongsTo(School::class);
     }
 
+    /** @return BelongsTo<SchoolClass, $this> */
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');

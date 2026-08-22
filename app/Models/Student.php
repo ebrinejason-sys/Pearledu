@@ -46,24 +46,35 @@ class Student extends Model
         $active = $this->enrollments()->where('status', 'active')->with('schoolClass');
         if ($yearId) {
             $match = (clone $active)->where('academic_year_id', $yearId)->first();
-            if ($match) {
+            if ($match instanceof Enrollment) {
                 return $match;
             }
         }
 
-        return $active->orderByDesc('id')->first();
+        $fallback = $active->orderByDesc('id')->first();
+
+        return $fallback instanceof Enrollment ? $fallback : null;
     }
 
     public function currentClass(): ?SchoolClass
     {
-        return $this->currentEnrollment()?->schoolClass ?? $this->schoolClass;
+        $fromEnrollment = $this->currentEnrollment()?->schoolClass;
+        if ($fromEnrollment instanceof SchoolClass) {
+            return $fromEnrollment;
+        }
+
+        $class = $this->schoolClass;
+
+        return $class instanceof SchoolClass ? $class : null;
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<SchoolClass, $this> */
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
@@ -95,6 +106,8 @@ class Student extends Model
             return asset('storage/'.$this->photo_path);
         }
 
-        return $this->user?->avatarUrl();
+        $user = $this->user;
+
+        return $user instanceof User ? $user->avatarUrl() : null;
     }
 }

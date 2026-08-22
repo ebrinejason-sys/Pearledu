@@ -52,8 +52,10 @@ class StaffClockController extends Controller
         }
 
         $verb = $punch->direction === StaffTimePunch::IN ? 'in' : 'out';
+        $when = $punch->punched_at->timezone(config('app.timezone'))->format('H:i');
+        $name = $punch->user instanceof User ? $punch->user->full_name : 'Staff';
 
-        return back()->with('status', ($punch->user?->full_name ?? 'Staff').' clocked '.$verb.' at '.$punch->punched_at->timezone(config('app.timezone'))->format('H:i'));
+        return back()->with('status', $name.' clocked '.$verb.' at '.$when);
     }
 
     public function history(Request $request, TenantContext $ctx): View

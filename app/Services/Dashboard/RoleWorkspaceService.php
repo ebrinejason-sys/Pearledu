@@ -13,11 +13,11 @@ use App\Models\RoleAssignment;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\TeachingAssignment;
 use App\Models\TimetableSlot;
 use App\Models\User;
 use App\Services\Authorization\AssignedClassResolver;
 use App\Services\People\GenderStatsService;
-use Illuminate\Support\Collection;
 
 /**
  * Composes role workspaces from permission + assignment union. One account, many responsibilities.
@@ -88,15 +88,24 @@ class RoleWorkspaceService
             ->sortBy(fn (TimetableSlot $slot) => $slot->period?->sequence ?? $slot->period_id)
             ->values();
 
-        $classes = $assignments->groupBy('class_id')->map(function (Collection $rows) {
+        $classes = [];
+        foreach ($assignments->groupBy('class_id') as $rows) {
             $first = $rows->first();
-
-            return [
-                'class_id' => (int) $first?->class_id,
-                'class' => $first?->schoolClass?->displayName() ?? 'Class '.$first?->class_id,
-                'subjects' => $rows->map(fn ($row) => $row->subject?->name)->filter()->unique()->values()->all(),
+            if (! $first instanceof TeachingAssignment) {
+                continue;
+            }
+            $class = $first->schoolClass;
+            $classes[] = [
+                'class_id' => (int) $first->class_id,
+                'class' => $class instanceof SchoolClass ? $class->displayName() : 'Class '.$first->class_id,
+                'subjects' => $rows
+                    ->map(fn ($row) => $row instanceof TeachingAssignment ? $row->subject?->name : null)
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all(),
             ];
-        })->values()->all();
+        }
 
         return [
             'lessons' => $lessons,
@@ -151,9 +160,12 @@ class RoleWorkspaceService
             $feesCleared = max(0, $feeTotal - $owing);
         }
 
-        $className = $students->first()?->schoolClass?->displayName()
-            ?? SchoolClass::query()->find($classId)?->displayName()
-            ?? 'My class';
+        $firstLearner = $students->first();
+        $classFromRoster = $firstLearner?->schoolClass;
+        $classRecord = $classFromRoster instanceof SchoolClass
+            ? $classFromRoster
+            : SchoolClass::query()->find($classId);
+        $className = $classRecord instanceof SchoolClass ? $classRecord->displayName() : 'My class';
 
         return [
             'class_id' => $classId,

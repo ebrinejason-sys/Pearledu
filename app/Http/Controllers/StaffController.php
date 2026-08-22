@@ -28,25 +28,47 @@ class StaffController extends Controller
         $roles = Role::query()->whereIn('key', $roleKeys)->orderBy('label')->get();
         $classes = SchoolClass::query()->where('school_id', $school->id)->orderBy('name')->get();
 
-        $members = RoleAssignment::query()
+        $grouped = RoleAssignment::query()
             ->where('school_id', $school->id)
             ->where('is_active', true)
             ->with(['user', 'role', 'schoolClass'])
             ->get()
-            ->groupBy('user_id')
-            ->map(fn ($assignments) => [
-                'user' => $assignments->first()->user,
-                'roles' => $assignments->map(fn ($a) => [
-                    'label' => $a->role?->label,
-                    'class' => $a->schoolClass?->displayName() ?? $a->schoolClass?->name,
-                    'key' => $a->role?->key,
-                ])->unique(fn ($r) => $r['label'].'|'.$r['class'])->values()->all(),
-                'role_keys' => $assignments->pluck('role.key')->filter()->unique()->values()->all(),
-                'homeroom_class_id' => $assignments->first(fn ($a) => $a->role?->key === 'class_teacher')?->class_id,
-            ])
-            ->filter(fn ($m) => $m['user'] !== null)
-            ->sortBy(fn ($m) => $m['user']->full_name ?? '')
-            ->values();
+            ->groupBy('user_id');
+
+        $members = collect();
+        foreach ($grouped as $assignments) {
+            $first = $assignments->first();
+            if (! $first instanceof RoleAssignment || $first->user === null) {
+                continue;
+            }
+            $memberRoles = [];
+            $memberRoleKeys = [];
+            $homeroomClassId = null;
+            foreach ($assignments as $assignment) {
+                if (! $assignment instanceof RoleAssignment) {
+                    continue;
+                }
+                $class = $assignment->schoolClass;
+                $memberRoles[] = [
+                    'label' => $assignment->role?->label,
+                    'class' => $class instanceof SchoolClass ? $class->displayName() : null,
+                    'key' => $assignment->role?->key,
+                ];
+                if ($assignment->role?->key) {
+                    $memberRoleKeys[] = $assignment->role->key;
+                }
+                if ($assignment->role?->key === 'class_teacher') {
+                    $homeroomClassId = $assignment->class_id;
+                }
+            }
+            $members->push([
+                'user' => $first->user,
+                'roles' => collect($memberRoles)->unique(fn ($r) => $r['label'].'|'.$r['class'])->values()->all(),
+                'role_keys' => array_values(array_unique($memberRoleKeys)),
+                'homeroom_class_id' => $homeroomClassId,
+            ]);
+        }
+        $members = $members->sortBy(fn ($m) => $m['user']->full_name ?? '')->values();
 
         $openInvites = SchoolInvitation::query()
             ->where('school_id', $school->id)

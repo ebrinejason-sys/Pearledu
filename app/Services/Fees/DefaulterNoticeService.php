@@ -22,7 +22,7 @@ class DefaulterNoticeService
     ) {}
 
     /**
-     * @return Collection<int, array{student: Student, balance: float, invoices: int}>
+     * @return Collection<int, array{student: Student, balance: float, invoices: int<0, max>}>
      */
     public function forClass(School $school, int $classId): Collection
     {
@@ -44,7 +44,7 @@ class DefaulterNoticeService
             return [
                 'student' => $student,
                 'balance' => (float) $invoices->sum('balance'),
-                'invoices' => $invoices->count(),
+                'invoices' => (int) $invoices->count(),
             ];
         })->filter(fn (array $row) => $row['balance'] > 0)->values();
     }
@@ -57,9 +57,10 @@ class DefaulterNoticeService
             ->where('is_active', true)
             ->whereHas('role', fn ($q) => $q->where('key', Role::CLASS_TEACHER))
             ->with('user')
-            ->first()?->user;
+            ->first()
+            ?->user;
 
-        if (! $teacher) {
+        if (! $teacher instanceof User) {
             throw new RuntimeException('No class teacher is assigned to this class.');
         }
 

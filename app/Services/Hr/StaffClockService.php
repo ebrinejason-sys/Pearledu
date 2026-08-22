@@ -18,11 +18,12 @@ class StaffClockService
     public function punchByCode(School $school, string $code, User $scanner): StaffTimePunch
     {
         $badge = $this->badges->findActive($school, $code);
-        if (! $badge) {
+        $staff = $badge?->user;
+        if (! $staff instanceof User) {
             throw new RuntimeException('Unknown or revoked staff ID.');
         }
 
-        return $this->punch($school, $badge->user, $scanner, 'scan');
+        return $this->punch($school, $staff, $scanner, 'scan');
     }
 
     public function punch(School $school, User $staff, User $recorder, string $source = 'scan'): StaffTimePunch
