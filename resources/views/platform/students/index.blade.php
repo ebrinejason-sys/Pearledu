@@ -20,6 +20,23 @@
         <label>Search</label>
         <input name="q" value="{{ $q }}" placeholder="Name or EMIS number">
       </div>
+      <div>
+        <label>Class</label>
+        <select name="class_id">
+          <option value="">All classes</option>
+          @foreach(($classes ?? []) as $class)
+            <option value="{{ $class->id }}" @selected((int) ($classFilter ?? 0) === (int) $class->id)>{{ $class->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div>
+        <label>Gender</label>
+        <select name="gender">
+          <option value="">All</option>
+          <option value="male" @selected(($genderFilter ?? '') === 'male')>Male</option>
+          <option value="female" @selected(($genderFilter ?? '') === 'female')>Female</option>
+        </select>
+      </div>
       <button class="btn" type="submit">Search</button>
       @if($q !== '')
         <a class="btn ghost" href="{{ route('platform.students.index') }}">Clear</a>
@@ -39,6 +56,7 @@
         <thead>
           <tr>
             <th>Name</th>
+            <th>Gender</th>
             <th>EMIS</th>
             <th>Class</th>
             <th>Status</th>
@@ -49,6 +67,7 @@
           @foreach($students as $student)
             <tr>
               <td><a href="{{ route('platform.students.show', $student) }}"><strong>{{ $student->full_name }}</strong></a></td>
+              <td>{{ \App\Support\Gender::label($student->gender) }}</td>
               <td>{{ $student->emis_number ?: '—' }}</td>
               <td>{{ $student->schoolClass?->name ?: '—' }}</td>
               <td><span class="pill">{{ $student->status }}</span></td>

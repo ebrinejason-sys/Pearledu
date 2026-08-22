@@ -15,8 +15,8 @@ class Student extends Model
     use BelongsToSchool, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'school_id', 'user_id', 'full_name', 'emis_number', 'schoolpay_payment_code',
-        'lin', 'nin', 'class_id', 'status',
+        'school_id', 'user_id', 'full_name', 'gender', 'emis_number', 'schoolpay_payment_code',
+        'lin', 'nin', 'photo_path', 'class_id', 'status',
     ];
 
     protected $casts = ['lin' => 'encrypted', 'nin' => 'encrypted'];   // DPPA: encrypted at rest
@@ -46,24 +46,35 @@ class Student extends Model
         $active = $this->enrollments()->where('status', 'active')->with('schoolClass');
         if ($yearId) {
             $match = (clone $active)->where('academic_year_id', $yearId)->first();
-            if ($match) {
+            if ($match instanceof Enrollment) {
                 return $match;
             }
         }
 
-        return $active->orderByDesc('id')->first();
+        $fallback = $active->orderByDesc('id')->first();
+
+        return $fallback instanceof Enrollment ? $fallback : null;
     }
 
     public function currentClass(): ?SchoolClass
     {
-        return $this->currentEnrollment()?->schoolClass ?? $this->schoolClass;
+        $fromEnrollment = $this->currentEnrollment()?->schoolClass;
+        if ($fromEnrollment instanceof SchoolClass) {
+            return $fromEnrollment;
+        }
+
+        $class = $this->schoolClass;
+
+        return $class instanceof SchoolClass ? $class : null;
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<SchoolClass, $this> */
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
@@ -87,5 +98,16 @@ class Student extends Model
         }
 
         return $p;
+    }
+
+    public function photoUrl(): ?string
+    {
+        if ($this->photo_path) {
+            return asset('storage/'.$this->photo_path);
+        }
+
+        $user = $this->user;
+
+        return $user instanceof User ? $user->avatarUrl() : null;
     }
 }

@@ -22,6 +22,8 @@ return [
             'hostel.manage', 'hr.view', 'hr.manage', 'clinic.manage', 'cbt.manage', 'lms.manage',
             'reports.view',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
+            'staff.view', 'staff.messages', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
+            'hr.payroll.view', 'hr.payroll.manage',
         ],
         'director' => [
             // Governance: full visibility, staff appointments, no grade/finance/attendance writes.
@@ -29,6 +31,7 @@ return [
             'finance.view', 'finance.report.view', 'assessment.view', 'reports.view',
             'attendance.view', 'hr.view', 'announcements.manage', 'users.invite.parent',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
+            'staff.view', 'staff.messages', 'staff.attendance.view', 'hr.payroll.view',
         ],
         'head_teacher' => [
             // Operational lead: staff/learners/ops; cannot write grades or fees.
@@ -38,6 +41,8 @@ return [
             'attendance.view', 'attendance.manage', 'promotions.approve',
             'timetable.manage', 'sms.send', 'announcements.manage', 'hr.view', 'hr.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
+            'staff.view', 'staff.messages', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
+            'hr.payroll.view',
         ],
         'deputy_head_teacher' => [
             'school.view', 'staff.manage', 'staff.invite.teacher', 'users.invite.parent',
@@ -47,6 +52,8 @@ return [
             'timetable.manage', 'sms.send', 'announcements.manage',
             'hr.view', 'hr.manage',
             'helpdesk.create', 'helpdesk.view_own', 'helpdesk.manage',
+            'staff.view', 'staff.messages', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
+            'hr.payroll.view',
         ],
         'director_of_studies' => [
             // Academic lead: curriculum + assessment; no finance, HR, or identity admin.
@@ -56,6 +63,7 @@ return [
             'attendance.view', 'attendance.manage', 'timetable.manage',
             'announcements.manage', 'lms.manage', 'cbt.manage', 'sms.send',
             'helpdesk.create', 'helpdesk.view_own',
+            'staff.messages',
         ],
         'bursar' => [
             'finance.view', 'finance.manage', 'finance.report.view', 'finance.reconcile',
@@ -64,18 +72,27 @@ return [
             'fees.discount.apply', 'fees.record', 'fees.report',
             'sms.send',
             'helpdesk.create', 'helpdesk.view_own',
+            'staff.messages', 'hr.payroll.view', 'hr.payroll.manage',
+        ],
+        'secretary' => [
+            // Front office: printable staff IDs and barcode clock. No finance or grade writes.
+            'school.view', 'staff.view', 'staff.id.print', 'staff.attendance.view', 'staff.attendance.mark',
+            'staff.messages',
+            'helpdesk.create', 'helpdesk.view_own',
         ],
         'class_teacher' => [
             // Homeroom: view class reports — not unrestricted mark entry or school-wide SMS.
             'attendance.view', 'attendance.mark', 'assessment.view', 'class.view',
             'learners.view', 'users.invite.parent', 'self.timetable.view',
             'helpdesk.create', 'helpdesk.view_own',
+            'staff.messages',
         ],
         'subject_teacher' => [
             // Enter is further scoped to teaching_assignments (class + subject).
             'assessment.enter', 'assessment.view', 'marksheet.submit', 'lms.manage', 'cbt.manage',
             'attendance.view', 'attendance.mark', 'learners.view', 'self.timetable.view',
             'helpdesk.create', 'helpdesk.view_own',
+            'staff.messages',
         ],
         'parent' => [
             'child.results.view', 'child.fees.view', 'child.attendance.view', 'fees.pay', 'self.timetable.view',

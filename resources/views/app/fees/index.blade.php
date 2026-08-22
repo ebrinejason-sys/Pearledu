@@ -17,6 +17,9 @@
       <a class="btn {{ ($statusFilter ?? 'all') === 'all' ? 'accent' : 'ghost' }}" href="{{ route('app.fees.index', array_filter(['class_id'=>$classId,'term_id'=>$termId,'q'=>$q])) }}">All open ledgers</a>
       <span class="pill" style="align-self:center">Outstanding UGX {{ number_format($summary['outstanding'] ?? 0) }}</span>
     </div>
+    @if(!empty($classId))
+      <p style="margin:0 0 14px"><a class="btn ghost" href="{{ route('app.fees.defaulters', ['class_id' => $classId]) }}">Defaulters in this class</a></p>
+    @endif
     <form method="get" action="{{ route('app.fees.index') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
       <input type="hidden" name="status" value="{{ $statusFilter ?? 'all' }}">
       <div>

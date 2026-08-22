@@ -1,7 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Account;
+
 use App\Http\Controllers\Controller;
 use App\Services\Account\AccountDeletionService;
+use App\Services\Platform\ImpersonationService;
+use App\Support\Gender;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -10,7 +14,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
-class AccountController extends Controller {
+class AccountController extends Controller
+{
     public function show()
     {
         return view('account.settings', [
@@ -23,7 +28,7 @@ class AccountController extends Controller {
         $user = Auth::user();
         abort_unless($user, 403);
 
-        if (app(\App\Services\Platform\ImpersonationService::class)->isActive()) {
+        if (app(ImpersonationService::class)->isActive()) {
             throw ValidationException::withMessages(['full_name' => 'End imitation before editing this account.']);
         }
 
@@ -40,6 +45,8 @@ class AccountController extends Controller {
             'preferred_theme' => ['nullable', 'string', Rule::in(array_merge([''], array_keys(config('themes.themes', []))))],
             'avatar' => ['nullable', 'image', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],
+            'gender' => [$user->requiresNationalId() ? 'required' : 'nullable', Rule::in(Gender::keys())],
+            'nin' => [$user->requiresNationalId() && ! $user->hasNationalIdOnFile() ? 'required' : 'nullable', 'string', 'min:10', 'max:20'],
         ]);
 
         if (! empty($data['remove_avatar']) && $user->avatar_path) {
@@ -63,8 +70,13 @@ class AccountController extends Controller {
             'full_name' => $data['full_name'],
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
+            'gender' => $data['gender'] ?? null,
             'preferred_theme' => $theme,
-        ])->save();
+        ]);
+        if (filled($data['nin'] ?? null)) {
+            $user->nin = $data['nin'];
+        }
+        $user->save();
 
         return back()->with('status', 'Profile saved.');
     }
@@ -74,7 +86,7 @@ class AccountController extends Controller {
         $user = Auth::user();
         abort_unless($user, 403);
 
-        if (app(\App\Services\Platform\ImpersonationService::class)->isActive()) {
+        if (app(ImpersonationService::class)->isActive()) {
             throw ValidationException::withMessages(['current_password' => 'End imitation before changing a password.']);
         }
 
@@ -92,19 +104,21 @@ class AccountController extends Controller {
         return back()->with('status', 'Password updated.');
     }
 
-    public function destroy(Request $request, AccountDeletionService $deletion) {
-        if (app(\App\Services\Platform\ImpersonationService::class)->isActive()) {
+    public function destroy(Request $request, AccountDeletionService $deletion)
+    {
+        if (app(ImpersonationService::class)->isActive()) {
             throw ValidationException::withMessages(['password' => 'End imitation before deleting an account.']);
         }
-        $request->validate(['confirm'=>'required|in:DELETE','password'=>'required|string']);
+        $request->validate(['confirm' => 'required|in:DELETE', 'password' => 'required|string']);
         $user = Auth::user();
         if (! Hash::check($request->input('password'), $user->password ?? '')) {
-            throw ValidationException::withMessages(['password'=>'Password is incorrect.']);
+            throw ValidationException::withMessages(['password' => 'Password is incorrect.']);
         }
         Auth::logout();
         $deletion->erase($user, 'self');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/')->with('status', 'Your account and personal data have been erased.');
     }
 }

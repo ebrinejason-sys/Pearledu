@@ -5,7 +5,7 @@ namespace App\Services\Authorization;
 use App\Models\Role;
 use App\Models\TeachingAssignment;
 use App\Models\User;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 /** Resolves class IDs from teaching assignments and homeroom (class teacher) bindings. */
 class AssignedClassResolver
@@ -13,9 +13,9 @@ class AssignedClassResolver
     /**
      * Effective teaching assignments for the school's current academic year.
      *
-     * @return Collection<int, TeachingAssignment>
+     * @return EloquentCollection<int, TeachingAssignment>
      */
-    public function teachingAssignments(User $user, int $schoolId): Collection
+    public function teachingAssignments(User $user, int $schoolId): EloquentCollection
     {
         return TeachingAssignment::query()
             ->where('school_id', $schoolId)

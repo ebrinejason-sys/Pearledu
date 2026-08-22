@@ -140,6 +140,7 @@ class StudentRecordsTest extends TestCase
             'full_name' => 'Uncle Guardian',
             'email' => 'uncle@newguardian.test',
             'phone' => '',
+            'nin' => 'CM98765432109',
             'relationship' => 'uncle',
         ])->assertRedirect();
 
@@ -147,6 +148,7 @@ class StudentRecordsTest extends TestCase
 
         $invited = User::where('email', 'uncle@newguardian.test')->firstOrFail();
         $this->assertSame('invited', $invited->status);
+        $this->assertTrue($invited->hasNationalIdOnFile());
         $this->assertFalse($invited->hasRoleInSchool('parent', $this->school->id));
         $this->assertTrue(
             RoleAssignment::query()
@@ -188,6 +190,7 @@ class StudentRecordsTest extends TestCase
             'full_name' => 'Outsider',
             'email' => $outsider->email,
             'phone' => '',
+            'nin' => 'CM11111111111',
             'relationship' => 'uncle',
         ]);
 

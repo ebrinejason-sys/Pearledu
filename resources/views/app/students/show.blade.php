@@ -7,6 +7,7 @@
       <p style="color:var(--muted);margin:6px 0 0">
         <span class="pill">{{ $student->status }}</span>
         @if($student->schoolClass) · {{ $student->schoolClass->name }} @endif
+        · {{ \App\Support\Gender::label($student->gender) }}
       </p>
     </div>
     @if(!empty($canManageLearners))
@@ -24,7 +25,11 @@
   <div class="grid g2">
     <div class="card">
       <h3 style="margin-top:0">Record</h3>
+      @if($student->photoUrl())
+        <p><img src="{{ $student->photoUrl() }}" alt="" width="96" height="96" style="width:96px;height:96px;object-fit:cover;border-radius:12px"></p>
+      @endif
       <p><strong>EMIS:</strong> {{ $student->emis_number ?: '—' }}</p>
+      <p><strong>Gender:</strong> {{ \App\Support\Gender::label($student->gender) }}</p>
       <p><strong>Class:</strong> {{ $student->schoolClass?->name ?: '—' }}</p>
       <p><strong>Status:</strong> {{ $student->status }}</p>
       <p style="color:var(--muted);font-size:13px">LIN/NIN are hidden on this page to avoid unnecessary sensitive reads.@if(!empty($canManageLearners)) Open Edit to view or change them.@endif</p>
@@ -136,6 +141,7 @@
           <div><label>Full name</label><input name="full_name" required value="{{ old('mode') === 'invite' ? old('full_name') : '' }}"></div>
           <div><label>Email</label><input name="email" type="email" required value="{{ old('mode') === 'invite' ? old('email') : '' }}"></div>
           <div><label>Phone</label><input name="phone" value="{{ old('mode') === 'invite' ? old('phone') : '' }}"></div>
+          <div><label>National ID (NIN)</label><input name="nin" required value="{{ old('mode') === 'invite' ? old('nin') : '' }}" autocomplete="off" minlength="10" maxlength="20"></div>
           <div><label>Relationship</label><input name="relationship" value="{{ old('mode') === 'invite' ? old('relationship') : '' }}"></div>
         </div>
         <label style="display:flex;gap:8px;align-items:center;width:auto;margin:8px 0">

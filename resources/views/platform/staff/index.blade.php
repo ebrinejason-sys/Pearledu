@@ -5,7 +5,7 @@
     <div>
       <p class="page-header__eyebrow"><a href="{{ route('platform.workspace') }}">{{ $school->name }}</a> · People</p>
       <h2 class="page-header__title">Staff &amp; accounts</h2>
-      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Invite by email or phone. Edit roles to change what each person can do. Permissions come from roles.</p>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Invite by email or phone. Use <strong>Read-only</strong> or <strong>Full write</strong> to imitate that staff member in this school.</p>
     </div>
   </div>
 
@@ -28,6 +28,16 @@
         <label>Phone</label>
         <input name="phone" value="{{ old('phone') }}" placeholder="07XXXXXXXX">
         @error('phone')<div class="err">{{ $message }}</div>@enderror
+        <label>Gender</label>
+        <select name="gender" required>
+          <option value="">— Select —</option>
+          <option value="male" @selected(old('gender') === 'male')>Male</option>
+          <option value="female" @selected(old('gender') === 'female')>Female</option>
+        </select>
+        @error('gender')<div class="err">{{ $message }}</div>@enderror
+        <label>National ID (NIN)</label>
+        <input name="nin" value="{{ old('nin') }}" required autocomplete="off" minlength="10" maxlength="20">
+        @error('nin')<div class="err">{{ $message }}</div>@enderror
         <label>Roles</label>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">
           @foreach($roles as $role)

@@ -65,12 +65,13 @@ class GuardianLinkService
         ?string $relationship = null,
         bool $isPrimary = false,
         ?int $invitedBy = null,
+        ?string $nin = null,
     ): Guardianship {
         $schoolId = $this->requireSchoolId($student);
         $email = strtolower(trim($email));
         $school = School::findOrFail($schoolId);
 
-        return DB::transaction(function () use ($student, $fullName, $email, $phone, $relationship, $isPrimary, $invitedBy, $schoolId, $school) {
+        return DB::transaction(function () use ($student, $fullName, $email, $phone, $relationship, $isPrimary, $invitedBy, $schoolId, $school, $nin) {
             $user = User::whereRaw('lower(email) = ?', [$email])->first();
 
             if ($user) {
@@ -103,8 +104,13 @@ class GuardianLinkService
                     'full_name' => $fullName,
                     'email' => $email,
                     'phone' => $phone ?: null,
+                    'nin' => $nin,
                     'status' => 'invited',
                 ]);
+            }
+
+            if (filled($nin) && ! $user->hasNationalIdOnFile()) {
+                $user->forceFill(['nin' => $nin])->save();
             }
 
             $this->ensureParentRole($user, $schoolId, $invitedBy, active: false);

@@ -8,7 +8,7 @@
     </div>
   </div>
   <div class="card">
-    <form method="post" action="{{ route('platform.students.update', $student) }}">
+    <form method="post" action="{{ route('platform.students.update', $student) }}" enctype="multipart/form-data">
       @csrf
       @method('PUT')
       @include('app.students._form')

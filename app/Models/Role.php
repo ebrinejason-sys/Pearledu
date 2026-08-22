@@ -22,6 +22,8 @@ class Role extends Model
 
     public const BURSAR = 'bursar';
 
+    public const SECRETARY = 'secretary';
+
     public const CLASS_TEACHER = 'class_teacher';
 
     public const SUBJECT_TEACHER = 'subject_teacher';
@@ -38,6 +40,7 @@ class Role extends Model
         self::DEPUTY_HEAD_TEACHER,
         self::DIRECTOR_OF_STUDIES,
         self::BURSAR,
+        self::SECRETARY,
         self::CLASS_TEACHER,
         self::SUBJECT_TEACHER,
         self::PARENT,
@@ -52,6 +55,19 @@ class Role extends Model
         self::DEPUTY_HEAD_TEACHER,
         self::DIRECTOR_OF_STUDIES,
         self::SCHOOL_ADMIN,
+    ];
+
+    /** School employees (not parent/student). Used for NIN, ID cards, and intercom. */
+    public const STAFF = [
+        self::SCHOOL_ADMIN,
+        self::DIRECTOR,
+        self::HEAD_TEACHER,
+        self::DEPUTY_HEAD_TEACHER,
+        self::DIRECTOR_OF_STUDIES,
+        self::BURSAR,
+        self::SECRETARY,
+        self::CLASS_TEACHER,
+        self::SUBJECT_TEACHER,
     ];
 
     /** School-wide academic/ops leaders (unrestricted learner & register visibility). */

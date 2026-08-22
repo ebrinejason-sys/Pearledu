@@ -11,6 +11,7 @@ use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
 use App\Services\Provisioning\StaffRoleService;
 use App\Services\Tenancy\EnteredSchoolGuard;
+use App\Support\Gender;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -58,10 +59,13 @@ class StaffController extends Controller
         $school = $this->entered->school($request);
         $allowed = $policy->rolesInvitableBy($request->user(), $school->id, true);
 
+        $needsIdentity = collect($request->input('role_keys', []))->intersect(array_merge(Role::STAFF, [Role::PARENT]))->isNotEmpty();
         $data = $request->validate([
             'full_name' => 'required|string|max:120',
             'email' => 'nullable|email|max:190|required_without:phone',
             'phone' => 'nullable|string|max:30|required_without:email',
+            'gender' => [$needsIdentity ? 'required' : 'nullable', Rule::in(Gender::keys())],
+            'nin' => [$needsIdentity ? 'required' : 'nullable', 'string', 'min:10', 'max:20'],
             'role_keys' => 'required|array|min:1',
             'role_keys.*' => ['string', Rule::in($allowed)],
         ]);

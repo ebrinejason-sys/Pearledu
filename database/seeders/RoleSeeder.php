@@ -20,6 +20,7 @@ class RoleSeeder extends Seeder
             ['key' => 'deputy_head_teacher', 'scope' => 'school', 'label' => 'Deputy Head Teacher'],
             ['key' => 'director_of_studies', 'scope' => 'school', 'label' => 'Director of Studies'],
             ['key' => 'bursar', 'scope' => 'school', 'label' => 'Bursar'],
+            ['key' => 'secretary', 'scope' => 'school', 'label' => 'Secretary'],
             ['key' => 'class_teacher', 'scope' => 'school', 'label' => 'Class Teacher'],
             ['key' => 'subject_teacher', 'scope' => 'school', 'label' => 'Teacher'],
             ['key' => 'parent', 'scope' => 'school', 'label' => 'Parent'],

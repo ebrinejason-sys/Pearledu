@@ -65,6 +65,7 @@ class WalkthroughSchoolTest extends TestCase
         $this->assertSame(1, School::query()->where('emis_number', WalkthroughSchoolService::EMIS_NUMBER)->count());
         $this->assertSame(100, Student::query()->where('school_id', $this->school->id)->count());
         $this->assertSame(1, User::query()->where('email', 'admin@stkizito.test')->count());
+        $this->assertTrue(User::query()->where('email', 'secretary@stkizito.test')->firstOrFail()->hasRoleInSchool(Role::SECRETARY, $this->school->id));
     }
 
     public function test_named_staff_can_sign_in_and_land_on_home(): void

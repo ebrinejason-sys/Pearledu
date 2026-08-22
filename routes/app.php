@@ -7,6 +7,7 @@ use App\Http\Controllers\AppHomeController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\CbtController;
+use App\Http\Controllers\ClassOverviewController;
 use App\Http\Controllers\ClinicController;
 use App\Http\Controllers\EmisController;
 use App\Http\Controllers\EnrollmentController;
@@ -23,7 +24,12 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolSettingsController;
 use App\Http\Controllers\SchoolSetupController;
 use App\Http\Controllers\SmsController;
+use App\Http\Controllers\StaffClockController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StaffIdController;
+use App\Http\Controllers\StaffMessageController;
+use App\Http\Controllers\StaffPayrollController;
+use App\Http\Controllers\StaffProfileController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\SubjectController;
@@ -60,13 +66,41 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::get('/portal/announcements', [PortalController::class, 'announcements'])->name('app.portal.announcements');
     });
 
-    Route::middleware('permission:staff.manage,staff.invite.teacher')->group(function () {
+    Route::middleware('permission:staff.manage,staff.invite.teacher,staff.view')->group(function () {
         Route::get('/staff', [StaffController::class, 'index'])->name('app.staff.index');
+    });
+    Route::middleware('permission:staff.manage,staff.invite.teacher')->group(function () {
         Route::post('/staff', [StaffController::class, 'store'])->name('app.staff.store');
     });
     Route::middleware('permission:staff.manage')->group(function () {
         Route::put('/staff/{user}/roles', [StaffController::class, 'updateRoles'])->name('app.staff.roles');
         Route::delete('/staff/{user}', [StaffController::class, 'revoke'])->name('app.staff.revoke');
+    });
+    Route::middleware('permission:staff.view,staff.manage')->group(function () {
+        Route::get('/staff/{user}', [StaffProfileController::class, 'show'])->name('app.staff.show')->whereNumber('user');
+    });
+    Route::middleware('permission:staff.id.print')->group(function () {
+        Route::get('/staff/{user}/id-card', [StaffIdController::class, 'show'])->name('app.staff.id')->whereNumber('user');
+    });
+    Route::middleware('permission:staff.attendance.view,staff.attendance.mark')->group(function () {
+        Route::get('/staff-clock', [StaffClockController::class, 'scan'])->name('app.staff.clock');
+        Route::get('/staff-clock/history', [StaffClockController::class, 'history'])->name('app.staff.clock.history');
+    });
+    Route::middleware('permission:staff.attendance.mark')->group(function () {
+        Route::post('/staff-clock', [StaffClockController::class, 'punch'])->name('app.staff.clock.punch');
+    });
+    Route::middleware('permission:staff.messages')->group(function () {
+        Route::get('/messages', [StaffMessageController::class, 'index'])->name('app.staff.messages.index');
+        Route::post('/messages', [StaffMessageController::class, 'store'])->name('app.staff.messages.store');
+        Route::get('/messages/{conversation}', [StaffMessageController::class, 'show'])->name('app.staff.messages.show');
+        Route::post('/messages/{conversation}', [StaffMessageController::class, 'reply'])->name('app.staff.messages.reply');
+    });
+    Route::middleware('permission:hr.payroll.view,hr.payroll.manage')->group(function () {
+        Route::get('/payroll', [StaffPayrollController::class, 'index'])->name('app.staff.payroll');
+    });
+    Route::middleware('permission:hr.payroll.manage')->group(function () {
+        Route::post('/payroll/{user}/salary', [StaffPayrollController::class, 'storeSalary'])->name('app.staff.payroll.salary')->whereNumber('user');
+        Route::post('/payroll/{user}/payments', [StaffPayrollController::class, 'storePayment'])->name('app.staff.payroll.pay')->whereNumber('user');
     });
 
     Route::middleware('permission:sms.send')->group(function () {
@@ -108,6 +142,10 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::put('/settings/school', [SchoolSettingsController::class, 'update'])->name('app.settings.school.update');
         Route::get('/setup', [SchoolSetupController::class, 'index'])->name('app.setup.index');
         Route::post('/setup/complete', [SchoolSetupController::class, 'complete'])->name('app.setup.complete');
+    });
+
+    Route::middleware('permission:reports.view')->group(function () {
+        Route::get('/classes/overview', [ClassOverviewController::class, 'index'])->name('app.classes.overview');
     });
 
     Route::middleware('permission:school.manage,curriculum.manage')->group(function () {
@@ -189,6 +227,8 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
 
     Route::middleware('permission:finance.view,finance.manage')->group(function () {
         Route::get('/fees', [FeeController::class, 'index'])->name('app.fees.index');
+        Route::get('/fees/defaulters', [FeeController::class, 'defaulters'])->name('app.fees.defaulters');
+        Route::post('/fees/defaulters/notify', [FeeController::class, 'notifyDefaulters'])->name('app.fees.defaulters.notify');
     });
     Route::middleware('permission:fees.structure.manage,finance.manage')->group(function () {
         Route::post('/fees/structures', [FeeController::class, 'storeStructure'])->name('app.fees.structures.store');

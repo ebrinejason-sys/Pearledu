@@ -190,6 +190,9 @@ class NavigationBuilder
                     $on('announcements') && $this->has($permissions, 'announcements.manage')
                         ? $this->item('Announcements', 'app.announcements.index', icon: 'announcements', active: request()->routeIs('app.announcements.*'))
                         : null,
+                    $this->has($permissions, 'staff.messages')
+                        ? $this->item('Staff messages', 'app.staff.messages.index', icon: 'announcements', active: request()->routeIs('app.staff.messages.*'))
+                        : null,
                     $on('sms') && $this->has($permissions, 'sms.send')
                         ? $this->item('SMS', 'app.sms', icon: 'sms')
                         : null,
@@ -208,9 +211,12 @@ class NavigationBuilder
                     $this->has($permissions, 'school.manage')
                         ? $this->item('School identity', 'app.settings.school', icon: 'platform', active: request()->routeIs('app.settings.*'))
                         : null,
-                    $this->hasAny($permissions, ['staff.manage', 'staff.invite.teacher'])
-                        ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.*'))
-                        : null,
+                    $this->hasAny($permissions, ['staff.manage', 'staff.invite.teacher', 'staff.view'])
+                        ? $this->item('Staff', 'app.staff.index', icon: 'staff', active: request()->routeIs('app.staff.index') || request()->routeIs('app.staff.show') || request()->routeIs('app.staff.id')) : null,
+                    $this->hasAny($permissions, ['staff.attendance.view', 'staff.attendance.mark'])
+                        ? $this->item('Staff clock', 'app.staff.clock', icon: 'attendance', active: request()->routeIs('app.staff.clock*')) : null,
+                    $this->hasAny($permissions, ['hr.payroll.view', 'hr.payroll.manage'])
+                        ? $this->item('Salaries', 'app.staff.payroll', icon: 'hr', active: request()->routeIs('app.staff.payroll*')) : null,
                     $this->hasAny($permissions, ['school.manage', 'curriculum.manage'])
                         ? $this->item('Classes & streams', 'app.classes.index', icon: 'classes', active: request()->routeIs('app.classes.*'))
                         : null,
@@ -268,6 +274,9 @@ class NavigationBuilder
                 'key' => 'reports',
                 'label' => 'Reports',
                 'items' => array_values(array_filter([
+                    $this->has($permissions, 'reports.view')
+                        ? $this->item('Class overview', 'app.classes.overview', icon: 'classes', active: request()->routeIs('app.classes.overview'))
+                        : null,
                     $on('assessment') && $canAssess
                         ? $this->item('Academic reports', 'app.assessment.reports', icon: 'broadsheet', active: request()->routeIs('app.assessment.broadsheet') || request()->routeIs('app.assessment.reports'))
                         : null,
@@ -312,6 +321,8 @@ class NavigationBuilder
                         ? $this->item('Dashboard', 'platform.dashboard', icon: 'dashboard') : null,
                     $entered && $user->hasPlatformPermission('platform.schools.enter')
                         ? $this->item('School workspace', 'platform.workspace', icon: 'workspace') : null,
+                    $entered && $user->hasPlatformPermission('platform.schools.update')
+                        ? $this->item('EMIS & SchoolPay', 'platform.workspace.settings', icon: 'platform') : null,
                 ])),
             ],
             [

@@ -50,6 +50,8 @@ class StaffRoleSeparationTest extends TestCase
         $this->actingAsInSchool($dos)->post(route('app.staff.store'), [
             'full_name' => 'Invited Teacher',
             'email' => 'invited-teacher@standrews.test',
+            'gender' => 'female',
+            'nin' => 'CF12345678901',
             'role_keys' => ['subject_teacher'],
         ])->assertRedirect()->assertSessionHasNoErrors();
 

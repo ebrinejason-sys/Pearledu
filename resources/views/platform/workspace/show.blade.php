@@ -56,8 +56,14 @@
     </a>
     <a class="card dash-action" href="{{ route('platform.staff.index') }}">
       <h3>Staff &amp; invites</h3>
-      <p>Invite school admins, teachers, and bursars. Resend open invitations from here or Operations.</p>
+      <p>Invite school admins, teachers, and bursars. Imitate any staff member from this school’s staff list.</p>
     </a>
+    @if(auth()->user()->hasPlatformPermission('platform.schools.update'))
+    <a class="card dash-action" href="{{ route('platform.workspace.settings') }}">
+      <h3>EMIS &amp; SchoolPay</h3>
+      <p>Set the school EMIS number and SchoolPay credentials without leaving this workspace.</p>
+    </a>
+    @endif
     <a class="card dash-action" href="{{ route('platform.sms.index') }}">
       <h3>SMS credits</h3>
       <p>Current school balance: <strong>{{ number_format($stats['sms_balance']) }}</strong> credits. Top up from SMS &amp; credits.</p>

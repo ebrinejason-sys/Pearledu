@@ -18,6 +18,7 @@ class FeeInvoice extends Model
 
     protected $casts = ['amount' => 'decimal:2', 'balance' => 'decimal:2', 'due_on' => 'date'];
 
+    /** @return BelongsTo<Student, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);

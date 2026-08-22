@@ -7,6 +7,14 @@
       <h1 class="page-header__title">Staff members</h1>
       <p style="margin:8px 0 0;color:var(--muted);font-size:14px">Add people and choose their responsibilities. One person may be a teacher and a class teacher at the same time.</p>
     </div>
+    <div class="page-header__actions">
+      @if(!empty($canViewClock))
+        <a class="btn" href="{{ route('app.staff.clock') }}">Staff clock</a>
+      @endif
+      @if(in_array('staff.messages', auth()->user()->permissionsForSchool($school->id), true))
+        <a class="btn ghost" href="{{ route('app.staff.messages.index') }}">Messages</a>
+      @endif
+    </div>
   </div>
 
   @if(session('status'))<div class="vx-auth-status" style="margin-bottom:16px">{{ session('status') }}</div>@endif
@@ -30,6 +38,16 @@
           <label for="invite-phone">Phone</label>
           <input id="invite-phone" name="phone" value="{{ old('phone') }}" placeholder="07XXXXXXXX" autocomplete="tel">
           @error('phone')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-gender">Gender <span aria-hidden="true">*</span></label>
+          <select id="invite-gender" name="gender" required>
+            <option value="">— Select —</option>
+            <option value="male" @selected(old('gender') === 'male')>Male</option>
+            <option value="female" @selected(old('gender') === 'female')>Female</option>
+          </select>
+          @error('gender')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-nin">National ID (NIN) <span aria-hidden="true">*</span></label>
+          <input id="invite-nin" name="nin" value="{{ old('nin') }}" required autocomplete="off" minlength="10" maxlength="20">
+          @error('nin')<div class="err" role="alert">{{ $message }}</div>@enderror
         </fieldset>
 
         <fieldset style="border:0;padding:0;margin:16px 0 0">
@@ -137,13 +155,15 @@
           </td>
           <td>{{ $user->status }}</td>
           <td>
+            <a href="{{ route('app.staff.show', $user) }}">Profile</a>
+            @if(!empty($canPrintId))
+              · <a href="{{ route('app.staff.id', $user) }}">ID card</a>
+            @endif
             @if(!empty($canManageStaff) && (int) $user->id !== (int) auth()->id())
-              <form method="post" action="{{ route('app.staff.revoke', $user) }}" onsubmit="return confirm('Revoke school access for {{ $user->full_name }}?')">
+              <form method="post" action="{{ route('app.staff.revoke', $user) }}" onsubmit="return confirm('Revoke school access for {{ $user->full_name }}?')" style="margin-top:8px">
                 @csrf @method('DELETE')
                 <button type="submit" class="btn ghost" style="color:var(--danger,#b42318)">Revoke</button>
               </form>
-            @else
-              —
             @endif
           </td>
         </tr>

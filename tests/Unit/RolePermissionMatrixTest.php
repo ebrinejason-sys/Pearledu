@@ -127,4 +127,36 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertNotContains('finance.manage', $perms);
         $this->assertNotContains('promotions.approve', $perms);
     }
+
+    public function test_secretary_is_front_office_without_finance_or_grades(): void
+    {
+        $perms = $this->roles()['secretary'];
+        $this->assertContains('staff.id.print', $perms);
+        $this->assertContains('staff.attendance.mark', $perms);
+        $this->assertContains('staff.messages', $perms);
+        $this->assertNotContains('finance.manage', $perms);
+        $this->assertNotContains('finance.view', $perms);
+        $this->assertNotContains('assessment.enter', $perms);
+        $this->assertNotContains('assessment.manage', $perms);
+        $this->assertNotContains('attendance.mark', $perms);
+    }
+
+    public function test_director_views_payroll_but_cannot_manage_it(): void
+    {
+        $perms = $this->roles()['director'];
+        $this->assertContains('hr.payroll.view', $perms);
+        $this->assertContains('staff.attendance.view', $perms);
+        $this->assertNotContains('hr.payroll.manage', $perms);
+        $this->assertNotContains('staff.attendance.mark', $perms);
+        $this->assertNotContains('finance.manage', $perms);
+    }
+
+    public function test_bursar_manages_payroll_without_grade_writes(): void
+    {
+        $perms = $this->roles()['bursar'];
+        $this->assertContains('hr.payroll.manage', $perms);
+        $this->assertContains('hr.payroll.view', $perms);
+        $this->assertNotContains('assessment.enter', $perms);
+        $this->assertNotContains('staff.attendance.mark', $perms);
+    }
 }

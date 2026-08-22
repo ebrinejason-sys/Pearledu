@@ -13,16 +13,17 @@ class InvitePolicy
     /** @var array<string, list<string>> */
     public const MATRIX = [
         'school_admin' => [
-            'director', 'head_teacher', 'deputy_head_teacher', 'director_of_studies', 'bursar',
+            'director', 'head_teacher', 'deputy_head_teacher', 'director_of_studies', 'bursar', 'secretary',
             'class_teacher', 'subject_teacher', 'parent', 'student',
         ],
         'director' => [
-            'head_teacher', 'deputy_head_teacher', 'director_of_studies', 'bursar',
+            'head_teacher', 'deputy_head_teacher', 'director_of_studies', 'bursar', 'secretary',
             'class_teacher', 'subject_teacher', 'parent', 'student',
         ],
         'head_teacher' => [
-            'director_of_studies', 'class_teacher', 'subject_teacher', 'parent', 'student',
+            'director_of_studies', 'secretary', 'class_teacher', 'subject_teacher', 'parent', 'student',
         ],
+        'secretary' => [],
         'deputy_head_teacher' => [
             'class_teacher', 'subject_teacher', 'parent', 'student',
         ],
@@ -46,6 +47,7 @@ class InvitePolicy
         'deputy_head_teacher',
         'director_of_studies',
         'bursar',
+        'secretary',
         'class_teacher',
         'subject_teacher',
         'parent',

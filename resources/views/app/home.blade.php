@@ -56,6 +56,9 @@
           <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">{{ $workspace['homeroom']['present'] }}</div><div class="dash-stat__label">Present today</div></div>
           <div class="dash-stat dash-stat--warning"><div class="dash-stat__value">{{ $workspace['homeroom']['absent'] }}</div><div class="dash-stat__label">Absent</div></div>
           <div class="dash-stat"><div class="dash-stat__value">{{ $workspace['homeroom']['late'] }}</div><div class="dash-stat__label">Late</div></div>
+          @if(!empty($workspace['homeroom']['gender']))
+            <div class="dash-stat"><div class="dash-stat__value">{{ $workspace['homeroom']['gender']['male'] }}/{{ $workspace['homeroom']['gender']['female'] }}</div><div class="dash-stat__label">Class M/F</div></div>
+          @endif
         </div>
       </div>
     @endif
@@ -108,6 +111,10 @@
           @endif
           @if($ops['academic_mean'] !== null)
             <div class="dash-stat"><div class="dash-stat__value">{{ $ops['academic_mean'] }}%</div><div class="dash-stat__label">Academic mean</div></div>
+          @endif
+          @if(!empty($ops['gender']))
+            <div class="dash-stat"><div class="dash-stat__value">{{ $ops['gender']['learners']['male'] }}/{{ $ops['gender']['learners']['female'] }}</div><div class="dash-stat__label">Learners M/F</div></div>
+            <div class="dash-stat"><div class="dash-stat__value">{{ $ops['gender']['staff']['male'] }}/{{ $ops['gender']['staff']['female'] }}</div><div class="dash-stat__label">Staff M/F</div></div>
           @endif
         </div>
       </div>

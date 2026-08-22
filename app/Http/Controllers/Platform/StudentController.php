@@ -10,7 +10,9 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Students\GuardianLinkService;
 use App\Services\Students\StudentAccountLinkService;
 use App\Services\Tenancy\EnteredSchoolGuard;
+use App\Support\Gender;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
@@ -26,9 +28,13 @@ class StudentController extends Controller
     {
         $school = $this->entered->school($request);
         $q = trim((string) $request->query('q', ''));
+        $classFilter = $request->integer('class_id') ?: null;
+        $genderFilter = (string) $request->query('gender', '');
 
         $students = Student::query()
             ->with('schoolClass')
+            ->when($classFilter, fn ($query) => $query->where('class_id', $classFilter))
+            ->when(in_array($genderFilter, Gender::keys(), true), fn ($query) => $query->where('gender', $genderFilter))
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('full_name', 'ilike', '%'.$q.'%')
@@ -39,7 +45,9 @@ class StudentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('platform.students.index', compact('school', 'students', 'q'));
+        $classes = $this->classesForSchool();
+
+        return view('platform.students.index', compact('school', 'students', 'q', 'classes', 'classFilter', 'genderFilter'));
     }
 
     public function create(Request $request)
@@ -54,7 +62,10 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $school = $this->entered->school($request);
-        $student = Student::create($this->validated($request) + ['school_id' => $school->id]);
+        $data = $this->validated($request);
+        unset($data['photo']);
+        $student = Student::create($data + ['school_id' => $school->id]);
+        $this->storePhoto($request, $student);
         $this->audit->record('platform.student.created', $student, ['school_id' => $school->id]);
 
         return redirect()
@@ -88,7 +99,10 @@ class StudentController extends Controller
     public function update(Request $request, Student $student)
     {
         $this->entered->assertStudent($request, $student);
-        $student->update($this->validated($request, $student));
+        $data = $this->validated($request, $student);
+        unset($data['photo']);
+        $student->update($data);
+        $this->storePhoto($request, $student);
         $this->audit->record('platform.student.updated', $student);
 
         return redirect()
@@ -117,6 +131,7 @@ class StudentController extends Controller
                 'full_name' => 'required|string|max:120',
                 'email' => 'required|email|max:190',
                 'phone' => 'nullable|string|max:30',
+                'nin' => 'required|string|min:10|max:20',
                 'relationship' => 'nullable|string|max:60',
                 'is_primary' => 'sometimes|boolean',
             ]);
@@ -129,6 +144,7 @@ class StudentController extends Controller
                 $data['relationship'] ?? null,
                 (bool) ($data['is_primary'] ?? false),
                 $request->user()?->id,
+                $data['nin'],
             );
 
             return back()->with('status', 'Guardian invited and linked.');
@@ -231,6 +247,8 @@ class StudentController extends Controller
                 Rule::exists('school_classes', 'id')->where(fn ($q) => $q->where('school_id', $schoolId)),
             ],
             'status' => ['required', Rule::in($this->statuses())],
+            'gender' => ['nullable', Rule::in(Gender::keys())],
+            'photo' => 'nullable|image|max:2048',
             'lin' => 'nullable|string|max:120',
             'nin' => 'nullable|string|max:120',
         ]);
@@ -240,8 +258,27 @@ class StudentController extends Controller
                 $data[$key] = null;
             }
         }
+        if ($student) {
+            foreach (['nin', 'lin'] as $sensitive) {
+                if (! filled($data[$sensitive] ?? null)) {
+                    unset($data[$sensitive]);
+                }
+            }
+        }
 
         return $data;
+    }
+
+    private function storePhoto(Request $request, Student $student): void
+    {
+        if (! $request->hasFile('photo')) {
+            return;
+        }
+        if ($student->photo_path) {
+            Storage::disk('public')->delete($student->photo_path);
+        }
+        $student->photo_path = $request->file('photo')->store('students/'.$student->id, 'public');
+        $student->save();
     }
 
     /** @return list<string> */

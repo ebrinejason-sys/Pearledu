@@ -97,11 +97,18 @@ class StaffInvitationService
                 ]);
             }
 
-            $user->forceFill([
+            $fill = [
                 'full_name' => $data['full_name'],
                 'email' => $email ?? $user->email,
                 'phone' => $phone ?? $user->phone,
-            ])->save();
+            ];
+            if (filled($data['gender'] ?? null)) {
+                $fill['gender'] = $data['gender'];
+            }
+            if (filled($data['nin'] ?? null)) {
+                $fill['nin'] = $data['nin'];
+            }
+            $user->forceFill($fill)->save();
 
             $invitations = [];
             $tokens = [];
