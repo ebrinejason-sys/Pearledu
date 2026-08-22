@@ -59,7 +59,7 @@ After migrate + `db:seed`, create a primary school you can sign into and click t
 php artisan school:seed-walkthrough --password='Choose-a-long-password'
 ```
 
-On the **live server**, add `--force` so you can test in the browser. Pass the password on the command only — do not set `SEED_TEST_SCHOOL_PASSWORD` in production `.env`. Purge **St. Kizito Demonstration Primary** from the platform console when you are done.
+On the **live server**, open **Schools → Demonstration school** in `/admin` and set the shared password there (or SSH and add `--force`). Do not set `SEED_TEST_SCHOOL_PASSWORD` in production `.env`. Purge **St. Kizito Demonstration Primary** from the platform console when you are done.
 
 It uses `SchoolProvisioner` and the existing role catalog (not a second permission system). Every class from Baby through P7 gets 10 learners (100 total). Named staff:
 

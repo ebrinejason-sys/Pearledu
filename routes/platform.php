@@ -14,6 +14,7 @@ use App\Http\Controllers\Platform\StaffController;
 use App\Http\Controllers\Platform\StudentController;
 use App\Http\Controllers\Platform\SupportTicketController;
 use App\Http\Controllers\Platform\SystemController;
+use App\Http\Controllers\Platform\WalkthroughSchoolController;
 use App\Http\Controllers\Platform\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,12 @@ Route::middleware(['web', 'auth', 'platform'])->prefix('admin')->name('platform.
     Route::post('schools', [SchoolController::class, 'store'])
         ->middleware('platform.permission:platform.schools.create')
         ->name('schools.store');
+    Route::get('schools/walkthrough', [WalkthroughSchoolController::class, 'create'])
+        ->middleware('platform.permission:platform.schools.create')
+        ->name('schools.walkthrough');
+    Route::post('schools/walkthrough', [WalkthroughSchoolController::class, 'store'])
+        ->middleware(['platform.permission:platform.schools.create', 'platform.recent_auth'])
+        ->name('schools.walkthrough.store');
     Route::get('schools/{school}', [SchoolController::class, 'show'])
         ->middleware('platform.permission:platform.schools.view')
         ->name('schools.show');

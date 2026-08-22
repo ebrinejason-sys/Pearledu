@@ -319,9 +319,11 @@ class NavigationBuilder
                 'label' => 'Schools',
                 'items' => array_values(array_filter([
                     $user->hasPlatformPermission('platform.schools.view')
-                        ? $this->item('Schools', 'platform.schools.index', icon: 'schools', active: request()->routeIs('platform.schools.*') && ! request()->routeIs('platform.schools.create')) : null,
+                        ? $this->item('Schools', 'platform.schools.index', icon: 'schools', active: request()->routeIs('platform.schools.*') && ! request()->routeIs('platform.schools.create') && ! request()->routeIs('platform.schools.walkthrough')) : null,
                     $user->hasPlatformPermission('platform.schools.create')
                         ? $this->item('Onboard school', 'platform.schools.create', icon: 'add', highlight: true) : null,
+                    $user->hasPlatformPermission('platform.schools.create')
+                        ? $this->item('Demonstration school', 'platform.schools.walkthrough', icon: 'add') : null,
                 ])),
             ],
             [

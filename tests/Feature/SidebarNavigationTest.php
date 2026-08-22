@@ -74,6 +74,7 @@ class SidebarNavigationTest extends TestCase
         $response->assertSee('Dashboard');
         $response->assertSee('Schools');
         $response->assertSee('Onboard school');
+        $response->assertSee('Demonstration school');
         $response->assertSee('Invitations');
         $response->assertSee('SMS & credits');
         $response->assertSee('School data entry');
