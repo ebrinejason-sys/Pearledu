@@ -249,6 +249,7 @@ Route::middleware(['web', 'auth', RequireSchoolMembership::class])->group(functi
         Route::post('/fees/structures', [FeeController::class, 'storeStructure'])->name('app.fees.structures.store');
         Route::put('/fees/structures/{structure}', [FeeController::class, 'updateStructure'])->name('app.fees.structures.update');
         Route::post('/fees/structures/{structure}/archive', [FeeController::class, 'archiveStructure'])->name('app.fees.structures.archive');
+        Route::delete('/fees/structures/{structure}', [FeeController::class, 'destroyStructure'])->name('app.fees.structures.destroy');
     });
     Route::middleware('permission:fees.invoice.create,finance.manage')->group(function () {
         Route::post('/fees/invoices', [FeeController::class, 'storeInvoice'])->name('app.fees.invoices.store');

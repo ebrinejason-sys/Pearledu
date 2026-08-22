@@ -5,6 +5,7 @@ namespace App\Services\Fees;
 use App\Models\Enrollment;
 use App\Models\FeeAdjustment;
 use App\Models\FeeInvoice;
+use App\Models\FeePayment;
 use App\Models\FeeStructure;
 use App\Models\Student;
 use App\Support\FeeKind;
@@ -201,6 +202,49 @@ class FeeInvoiceService
             'due_on' => $dueOn,
             'reference' => 'INV-'.now()->format('YmdHis').'-'.$studentId,
         ]);
+    }
+
+    /**
+     * Remove a saved fee type. Unpaid invoices are voided. Confirmed or pending
+     * payments must be reversed or rejected first so the ledger stays auditable.
+     */
+    public function deleteStructure(FeeStructure $structure): void
+    {
+        $blocking = FeePayment::query()
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->whereHas('invoice', function ($q) use ($structure) {
+                $q->where('school_id', $structure->school_id)
+                    ->where('fee_structure_id', $structure->id);
+            })
+            ->exists();
+
+        if ($blocking) {
+            throw ValidationException::withMessages([
+                'structure' => 'Reverse or reject payments on this fee type before deleting it. You can archive it instead.',
+            ]);
+        }
+
+        DB::transaction(function () use ($structure) {
+            $invoices = FeeInvoice::query()
+                ->where('school_id', $structure->school_id)
+                ->where('fee_structure_id', $structure->id)
+                ->where('status', '!=', 'void')
+                ->get();
+
+            foreach ($invoices as $invoice) {
+                $this->void($invoice);
+            }
+
+            // Composite tenant FK is (school_id, fee_structure_id) ON DELETE SET NULL.
+            // Null only the structure id so invoices keep their school and ledger history.
+            FeeInvoice::query()
+                ->where('school_id', $structure->school_id)
+                ->where('fee_structure_id', $structure->id)
+                ->update(['fee_structure_id' => null]);
+
+            $structure->learners()->detach();
+            $structure->delete();
+        });
     }
 
     public function void(FeeInvoice $invoice): FeeInvoice

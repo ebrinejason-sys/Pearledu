@@ -245,7 +245,7 @@ class FeeController extends Controller
         ]);
         if ($data['applies_to'] === 'learners' && empty($data['student_ids'])) {
             throw ValidationException::withMessages([
-                'student_ids' => 'Select the learners this fee type applies to.',
+                'student_ids' => 'Select the learner this extra is for (you can apply it on their profile).',
             ]);
         }
         if ($data['applies_to'] === 'class' && empty($data['class_id'])) {
@@ -253,8 +253,14 @@ class FeeController extends Controller
                 'class_id' => 'Choose a class for this fee structure.',
             ]);
         }
+        if ($data['applies_to'] === 'class' && ($data['residency'] ?? '') === Residency::ANY) {
+            throw ValidationException::withMessages([
+                'residency' => 'Save a day structure and a boarding structure separately. Learners are charged by class and residence.',
+            ]);
+        }
         if ($data['applies_to'] === 'learners') {
             $data['class_id'] = null;
+            $data['residency'] = Residency::ANY;
         }
         $studentIds = $data['student_ids'] ?? [];
         unset($data['student_ids'], $data['due_on']);
@@ -290,6 +296,21 @@ class FeeController extends Controller
         $structure->update(['is_active' => ! $structure->is_active]);
 
         return back()->with('status', $structure->is_active ? 'Structure reactivated.' : 'Structure archived.');
+    }
+
+    public function destroyStructure(FeeStructure $structure, TenantContext $ctx, FeeInvoiceService $invoices, AuditLogger $audit, Request $request)
+    {
+        $school = $ctx->school();
+        abort_unless($school && (int) $structure->school_id === (int) $school->id, 404);
+        $name = (string) $structure->name;
+        $invoices->deleteStructure($structure);
+        $audit->record('fees.structure.deleted', null, [
+            'id' => $structure->id,
+            'name' => $name,
+            'amount' => $structure->amount,
+        ], actor: $request->user());
+
+        return back()->with('status', 'Fee type “'.$name.'” deleted.');
     }
 
     public function storeInvoice(Request $request, TenantContext $ctx, FeeInvoiceService $invoices)
