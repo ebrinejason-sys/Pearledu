@@ -22,6 +22,7 @@ class Student extends Model
 
     protected $casts = ['lin' => 'encrypted', 'nin' => 'encrypted'];   // DPPA: encrypted at rest
 
+    /** @return HasMany<Guardianship, $this> */
     public function guardianships(): HasMany
     {
         return $this->hasMany(Guardianship::class);

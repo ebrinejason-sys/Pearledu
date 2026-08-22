@@ -157,10 +157,10 @@ class SchoolDashboardService
             ->limit(8)
             ->get();
 
-        $max = max(1, (int) $classes->max('active_students_count'));
+        $max = max(1, (int) $classes->max(fn (SchoolClass $class) => (int) $class->getAttribute('active_students_count')));
 
-        return $classes->map(function ($class) use ($max) {
-            $count = (int) $class->active_students_count;
+        return $classes->map(function (SchoolClass $class) use ($max) {
+            $count = (int) $class->getAttribute('active_students_count');
 
             return [
                 'label' => (string) $class->name,
@@ -251,14 +251,14 @@ class SchoolDashboardService
             if (! Route::has($item['route'])) {
                 continue;
             }
-            $key = $item['route'].'|'.json_encode($item['params'] ?? []);
+            $key = $item['route'];
             if (isset($seen[$key])) {
                 continue;
             }
             $seen[$key] = true;
             $out[] = [
                 'label' => $item['label'],
-                'url' => route($item['route'], $item['params'] ?? []),
+                'url' => route($item['route']),
                 'desc' => $item['desc'],
                 'icon' => $item['icon'],
             ];

@@ -21,6 +21,7 @@ class FeePayment extends Model
         'verified_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<FeeInvoice, $this> */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(FeeInvoice::class, 'invoice_id');
