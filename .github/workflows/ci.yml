@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -36,7 +38,19 @@ jobs:
       - run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Pint (style)
-        run: vendor/bin/pint --test
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            mapfile -t files < <(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.php')
+            if [ "${#files[@]}" -eq 0 ]; then
+              echo "No PHP files changed."
+              exit 0
+            fi
+            echo "Pint checking ${#files[@]} changed PHP file(s)"
+            vendor/bin/pint --test "${files[@]}"
+          else
+            vendor/bin/pint --test
+          fi
 
       - name: PHPStan / Larastan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
@@ -143,4 +157,4 @@ jobs:
         run: php artisan db:verify-security
 
       - name: PHPUnit
-        run: php artisan test --no-interaction
+        run: php artisan test

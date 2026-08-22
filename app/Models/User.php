@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-/** Global identity. Schools + roles come from role_assignments (one person, many roles). */
+/** Global identity. Schools + roles come from role_assignments (one person, many roles).
+ *
+ * @property \Illuminate\Support\Carbon|null $last_login_at
+ * @property \Illuminate\Support\Carbon|null $last_seen_at
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
