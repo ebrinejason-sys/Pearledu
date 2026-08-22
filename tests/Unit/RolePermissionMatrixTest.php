@@ -90,6 +90,7 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertContains('finance.manage', $perms);
         $this->assertContains('fees.payment.reverse', $perms);
         $this->assertContains('fees.invoice.void', $perms);
+        $this->assertContains('learners.view', $perms);
         $this->assertNotContains('assessment.view', $perms);
         $this->assertNotContains('assessment.enter', $perms);
         $this->assertNotContains('learners.manage', $perms);

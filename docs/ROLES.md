@@ -77,7 +77,7 @@ Academic operating system: years, terms, classes, subjects, teaching assignments
 
 ### 6. Bursar
 
-Finance workspace: fee types (a class amount for day and a separate amount for boarding; named extras such as van saved for a specific learner and applied on their profile), delete or archive of saved types, invoicing, payments, printable/emailable receipts, SchoolPay reconciliation, discounts, reversals, reports. Demanded, cleared, and overdue invoices are separate pages; recording a payment is a popup on the demanded ledger. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades or learner attendance. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
+Finance workspace: fee types (a class amount for day and a separate amount for boarding; named extras such as van saved for a specific learner and applied on their profile), delete or archive of saved types, invoicing, payments, printable/emailable receipts, SchoolPay reconciliation, discounts, reversals, reports. Demanded, cleared, and overdue invoices are separate pages; recording a payment is a popup on the demanded ledger. Opens learner profiles (`learners.view`, school-wide) to attach a saved fee type or a one-off extra. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades, learner attendance, or learner identity writes. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
 
 ### 7. Head Teacher
 
@@ -134,7 +134,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Teacher | assigned R | assigned CRUD | assigned W | — | messages | — | — |
 | Class teacher | homeroom R + bio/photo/restream + parent invite | homeroom R + revoke upload after deadline | homeroom W | — | messages | — | — |
 | DOS | view + enrollment | all CRUD + verify | all W | — | invite teachers + messages | all CRUD | — |
-| Bursar | financial names on invoices | — | — | all CRUD | messages + payroll W | — | — |
+| Bursar | profile R (billing) | — | — | all CRUD | messages + payroll W | — | — |
 | Secretary | all R | — | staff clock W | — | directory R + files W + ID print | — | — |
 | Head Teacher | all RW | all R | all W + staff clock | all R | staff RW + payroll R | — | — |
 | Deputy Head | all RW | all R | all W + staff clock | all R | staff RW + payroll R | — | — |
@@ -157,10 +157,10 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Homeroom class_id sync | `StaffRoleService` |
 | Staff role mutation | `staff.manage` routes + `StaffRoleService` (invite-only roles cannot sync/revoke) |
 | Staff ID / clock | `StaffBadgeService`, `StaffClockService` (`staff_badges`, `staff_time_punches`) |
-| Staff files | `staff.profile.update` + `staff_documents` (FORCE RLS); secretary may update files but not roles or salary |
+| Staff files | `staff.profile.update` + `staff_documents` (FORCE RLS); secretary may update any staff file; other actors only people they may invite (hierarchy) |
 | Staff messages | `StaffMessageService` (`staff_conversations` / `staff_messages`) |
 | Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) — amount on invite when the actor has payroll manage |
-| Learner fees | Class day/boarding structures auto-invoice on enroll; custom extras via `FeeInvoiceService::applyCustomFee` on the learner profile; bursar may delete a saved type (`FeeInvoiceService::deleteStructure`) which voids unpaid invoices |
+| Learner fees | Class day/boarding structures plus other class-wide types auto-invoice on admit/enroll from class + residence; bursar attaches any saved type (or a one-off extra) on the learner profile; bursar may delete a saved type |
 | Gender stats / EMIS census | `GenderStatsService::emisOverview` |
 | Homeroom profile / restream | `LearnerScope::canEditProfile` / `canRestreamTo` (`learners.profile.update`) |
 | Marks upload revoke | `MarksheetWorkflow::revokeUpload` (`assessment.lock`, after deadline) |
@@ -170,11 +170,11 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Class defaulters | `DefaulterNoticeService` (print + notify class teacher via staff messages) |
 | Idle logout | `EnforceIdleSession` + `users.last_seen_at` (remember-me cannot skip) |
 | Role dashboards | `RoleWorkspaceService` |
-| Nav / shortcuts | `NavigationBuilder`, `SchoolDashboardService` (not a security boundary) |
+| Nav / shortcuts | Nested EMIS-style IA in `NavigationBuilder` (Manage school data → Learners / Human Resource / Finance). `SchoolDashboardService` shortcuts. Not a security boundary. |
 
 ## Identity and demographics
 
-Staff and parent accounts must store a NIN (encrypted). Learners may have a NIN; it is optional. Learner profiles also store date of birth, religion, home address, medical notes, residency, and a photo, with related guardian(s) and guardian photos captured in the same window. Staff profiles store biodata, photo, academic documents, salary amount, teaching load (subject + classes), and a clocking ID. Gender is `male` / `female` on users and students. Leadership dashboards and class overview show M/F counts. Class teachers see M/F for their homeroom only.
+Staff and parent accounts must store a NIN (encrypted). Learners may have a NIN; it is optional. Every user and learner profile shows a photo (or a placeholder). Edit of **staff details** follows the invite hierarchy: you may change people whose roles you are allowed to invite. Secretary still keeps school-wide staff files (photo, biodata, documents) without role writes. Learner profile edits stay on `LearnerScope` (school-wide `learners.manage`, or homeroom `learners.profile.update`). Own photo and details stay on Account.
 
 Platform operators who have **entered** a school workspace may edit that school’s EMIS number and SchoolPay credentials (`platform.schools.update` + recent password). They imitate staff from the entered school’s staff list (`platform.users.impersonate`) — the existing impersonation flow, not a second one. `emis_data_entrant` can enter a workspace but cannot change integrations.
 

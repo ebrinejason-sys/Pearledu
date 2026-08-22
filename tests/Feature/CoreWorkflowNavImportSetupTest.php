@@ -33,9 +33,10 @@ class CoreWorkflowNavImportSetupTest extends TestCase
     public function test_sidebar_hides_optional_modules_and_keeps_core(): void
     {
         $nav = app(NavigationBuilder::class)->build($this->admin);
-        $labels = collect($nav['sections'])->flatMap(fn ($s) => collect($s['items'])->pluck('label'))->all();
+        $labels = $this->navLabels($nav);
 
-        $this->assertContains('Students', $labels);
+        $this->assertContains('View Learners', $labels);
+        $this->assertContains('Learners', $labels);
         $this->assertContains('Admissions', $labels);
         $this->assertContains('SMS', $labels);
         $this->assertNotContains('Hostel', $labels);

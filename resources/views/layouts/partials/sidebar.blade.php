@@ -36,6 +36,7 @@
     'clinic' => '<path d="M9 3h6v5h5v6h-5v5H9v-5H4V8h5V3z"/>',
     'helpdesk' => '<circle cx="12" cy="12" r="8.5"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 1c0 1.5-2.5 2-2.5 3.5"/><circle cx="12" cy="17" r=".8"/>',
     'dot' => '<circle cx="12" cy="12" r="3"/>',
+    'chevron' => '<path d="M9 6l6 6-6 6"/>',
   ];
   $collapsed = request()->cookie('sidebar_collapsed') === '1';
 @endphp
@@ -43,13 +44,45 @@
 <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
 <aside id="app-sidebar" class="sidebar" aria-label="Section navigation">
+  <div class="sidebar__head">
+    @include('layouts.partials.brand', [
+      'brandHref' => ($nav['zone'] ?? '') === 'platform' ? route('platform.dashboard') : route('app.home'),
+    ])
+  </div>
   <nav class="sidebar__nav">
     @foreach($nav['sections'] ?? [] as $section)
       <div class="sidebar__section">
         <p class="sidebar__section-label">{{ $section['label'] }}</p>
         <ul class="sidebar__list">
           @foreach($section['items'] as $item)
-            @if($item['url'])
+            @if(!empty($item['children']))
+              <li>
+                <details class="sidebar__group" @if(!empty($item['active'])) open @endif>
+                  <summary class="sidebar__link {{ !empty($item['active']) ? 'sidebar__link--open' : '' }}" title="{{ $item['label'] }}">
+                    <span class="sidebar__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{!! $icons[$item['icon']] ?? $icons['dot'] !!}</svg>
+                    </span>
+                    <span class="sidebar__label">{{ $item['label'] }}</span>
+                    <span class="sidebar__chevron" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{!! $icons['chevron'] !!}</svg>
+                    </span>
+                  </summary>
+                  <ul class="sidebar__sub">
+                    @foreach($item['children'] as $child)
+                      @if(!empty($child['url']))
+                        <li>
+                          <a href="{{ $child['url'] }}"
+                             class="sidebar__link sidebar__link--sub {{ !empty($child['active']) ? 'active' : '' }}"
+                             title="{{ $child['label'] }}">
+                            <span class="sidebar__label">{{ $child['label'] }}</span>
+                          </a>
+                        </li>
+                      @endif
+                    @endforeach
+                  </ul>
+                </details>
+              </li>
+            @elseif(!empty($item['url']))
               <li>
                 <a href="{{ $item['url'] }}"
                    class="sidebar__link {{ $item['active'] ? 'active' : '' }} {{ !empty($item['highlight']) ? 'sidebar__link--cta' : '' }}"

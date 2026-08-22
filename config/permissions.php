@@ -70,6 +70,7 @@ return [
             'staff.messages',
         ],
         'bursar' => [
+            'learners.view',
             'finance.view', 'finance.manage', 'finance.report.view', 'finance.reconcile',
             'fees.structure.manage', 'fees.invoice.create', 'fees.invoice.void',
             'fees.payment.record', 'fees.payment.confirm', 'fees.payment.reject', 'fees.payment.reverse',

@@ -8,6 +8,9 @@
       <p style="color:var(--muted)">{{ \App\Support\Gender::label($staff->gender) }}</p>
     </div>
     <div class="page-header__actions">
+      @if(!empty($canEditProfile))
+        <button type="button" class="btn accent" data-open-modal="staff-edit-modal">Edit details</button>
+      @endif
       @if(!empty($canPrintId))
         <a class="btn" href="{{ route('app.staff.id', $staff) }}">Print ID</a>
       @endif
@@ -18,6 +21,8 @@
     <div class="card">
       @if($staff->avatarUrl())
         <img src="{{ $staff->avatarUrl() }}" alt="" width="96" height="96" style="width:96px;height:96px;border-radius:12px;object-fit:cover">
+      @else
+        <span class="staff-card__avatar" style="width:96px;height:96px;font-size:32px" aria-hidden="true">{{ $staff->avatarInitial() }}</span>
       @endif
       <p>Email: {{ $staff->email ?: '—' }}<br>Phone: {{ $staff->phone ?: '—' }}</p>
       <p>Date of birth: {{ $staff->date_of_birth?->format('Y-m-d') ?: '—' }}</p>
@@ -38,26 +43,31 @@
         </ul>
       @endif
       @if(!empty($canEditProfile))
-        <h3>Update file</h3>
-        <form method="post" action="{{ route('app.staff.profile.update', $staff) }}" enctype="multipart/form-data">
-          @csrf
-          @method('PUT')
-          <label>Full name</label>
-          <input name="full_name" required value="{{ old('full_name', $staff->full_name) }}">
-          <label>Phone</label>
-          <input name="phone" value="{{ old('phone', $staff->phone) }}">
-          <label>NIN</label>
-          <input name="nin" value="{{ old('nin') }}" autocomplete="off" placeholder="Leave blank to keep the current NIN">
-          <label>Date of birth</label>
-          <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $staff->date_of_birth?->format('Y-m-d')) }}">
-          <label>Nationality</label>
-          <input name="nationality" value="{{ old('nationality', $staff->nationality) }}">
-          <label>Home address</label>
-          <input name="home_address" value="{{ old('home_address', $staff->home_address) }}">
-          <label>Photo</label>
-          <input type="file" name="photo" accept="image/*" capture="user">
-          <p style="margin-top:8px"><button class="btn" type="submit">Save profile</button></p>
-        </form>
+        <dialog class="pe-modal pe-modal--form" id="staff-edit-modal">
+          <form method="post" action="{{ route('app.staff.profile.update', $staff) }}" enctype="multipart/form-data" class="pe-modal__card">
+            @csrf
+            @method('PUT')
+            <h3 style="margin-top:0">Edit details</h3>
+            <label>Full name</label>
+            <input name="full_name" required value="{{ old('full_name', $staff->full_name) }}">
+            <label>Phone</label>
+            <input name="phone" value="{{ old('phone', $staff->phone) }}">
+            <label>NIN</label>
+            <input name="nin" value="{{ old('nin') }}" autocomplete="off" placeholder="Leave blank to keep the current NIN">
+            <label>Date of birth</label>
+            <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $staff->date_of_birth?->format('Y-m-d')) }}">
+            <label>Nationality</label>
+            <input name="nationality" value="{{ old('nationality', $staff->nationality) }}">
+            <label>Home address</label>
+            <input name="home_address" value="{{ old('home_address', $staff->home_address) }}">
+            <label>Photo</label>
+            <input type="file" name="photo" accept="image/*" capture="user">
+            <p style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+              <button class="btn ghost" type="button" data-close-modal>Cancel</button>
+              <button class="btn" type="submit">Save profile</button>
+            </p>
+          </form>
+        </dialog>
       @endif
     </div>
     <div class="card">

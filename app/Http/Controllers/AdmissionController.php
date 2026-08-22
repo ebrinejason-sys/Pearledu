@@ -6,7 +6,9 @@ use App\Models\AdmissionApplication;
 use App\Models\SchoolClass;
 use App\Services\Learners\StudentLifecycleService;
 use App\Services\Tenancy\TenantContext;
+use App\Support\Residency;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AdmissionController extends Controller
 {
@@ -46,6 +48,8 @@ class AdmissionController extends Controller
         $data = $request->validate([
             'decision' => 'required|in:accepted,rejected,enrolled',
             'class_id' => 'nullable|integer',
+            'residency' => ['nullable', Rule::in(Residency::learnerKeys())],
+            'photo' => ['nullable', 'image', 'max:4096'],
         ]);
 
         if ($data['decision'] !== 'enrolled') {
@@ -58,7 +62,14 @@ class AdmissionController extends Controller
             $application,
             isset($data['class_id']) ? (int) $data['class_id'] : null,
             $request->user()?->id,
+            $data['residency'] ?? null,
         );
+
+        if ($request->hasFile('photo')) {
+            $student = $result['student'];
+            $student->photo_path = $request->file('photo')->store('students/'.$student->id, 'public');
+            $student->save();
+        }
 
         $message = 'Admitted '.$result['student']->full_name.'.';
         if ($result['invoices']['created'] > 0) {

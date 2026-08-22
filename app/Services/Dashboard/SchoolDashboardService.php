@@ -210,8 +210,8 @@ class SchoolDashboardService
     private function shortcuts(array $permissions, School $school): array
     {
         $catalog = [
-            ['perm' => 'learners.manage', 'route' => 'app.students.index', 'label' => 'Students', 'desc' => 'Records & guardians', 'icon' => 'students'],
-            ['perm' => 'learners.view', 'route' => 'app.students.index', 'label' => 'Students', 'desc' => 'Learner profiles', 'icon' => 'students'],
+            ['perm' => 'learners.manage', 'route' => 'app.students.index', 'label' => 'View Learners', 'desc' => 'Records & guardians', 'icon' => 'students'],
+            ['perm' => 'learners.view', 'route' => 'app.students.index', 'label' => 'View Learners', 'desc' => 'Learner profiles', 'icon' => 'students'],
             ['perm' => 'learners.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
             ['perm' => 'enrollment.manage', 'route' => 'app.enrollments.index', 'label' => 'Enrollments', 'desc' => 'Class placement', 'icon' => 'enrollments'],
             ['perm' => 'admissions.manage', 'route' => 'app.admissions.index', 'label' => 'Admissions', 'desc' => 'Applications queue', 'icon' => 'admissions'],

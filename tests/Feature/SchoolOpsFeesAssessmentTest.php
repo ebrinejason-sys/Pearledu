@@ -749,4 +749,151 @@ class SchoolOpsFeesAssessmentTest extends TestCase
         $this->assertFalse(FeeStructure::query()->whereKey($unpaid->id)->exists());
         $this->assertSame('void', $openInvoice->fresh()->status);
     }
+
+    public function test_enrollment_bills_class_residence_and_other_class_fees(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+        $class = $load['class'];
+        $yearId = AcademicYear::query()->where('school_id', $this->school->id)->where('is_current', true)->value('id')
+            ?? AcademicYear::create([
+                'school_id' => $this->school->id,
+                'name' => '2026-enroll-bill',
+                'starts_on' => '2026-01-01',
+                'ends_on' => '2026-12-31',
+                'is_current' => true,
+            ])->id;
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Enroll day tuition',
+            'amount' => 100000,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::DAY,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Enroll boarding tuition',
+            'amount' => 300000,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::BOARDING,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'PTA all residences',
+            'amount' => 20000,
+            'kind' => FeeKind::OTHER,
+            'residency' => Residency::ANY,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $student = Student::factory()->create([
+            'school_id' => $this->school->id,
+            'full_name' => 'Enroll Day Child',
+            'status' => 'active',
+            'residency' => Residency::BOARDING,
+        ]);
+
+        $this->actingAsInSchool($this->admin)->post(route('app.enrollments.store'), [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $yearId,
+            'residency' => Residency::DAY,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $student->refresh();
+        $this->assertSame(Residency::DAY, $student->residency);
+        $this->assertSame($class->id, $student->class_id);
+        $day = FeeStructure::query()->where('name', 'Enroll day tuition')->firstOrFail();
+        $board = FeeStructure::query()->where('name', 'Enroll boarding tuition')->firstOrFail();
+        $pta = FeeStructure::query()->where('name', 'PTA all residences')->firstOrFail();
+        $this->assertTrue(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $day->id)->exists());
+        $this->assertFalse(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $board->id)->exists());
+        $this->assertTrue(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $pta->id)->exists());
+    }
+
+    public function test_bursar_attaches_saved_fee_structure_from_learner_profile(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+        $class = $load['class'];
+
+        $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
+            'full_name' => 'Profile Attach Learner',
+            'status' => 'active',
+            'class_id' => $class->id,
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
+            'full_name' => 'Second Attach Learner',
+            'status' => 'active',
+            'class_id' => $class->id,
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $student = Student::query()->where('full_name', 'Profile Attach Learner')->firstOrFail();
+        $other = Student::query()->where('full_name', 'Second Attach Learner')->firstOrFail();
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Late PTA',
+            'amount' => 25000,
+            'kind' => FeeKind::OTHER,
+            'residency' => Residency::ANY,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Boarding only extra',
+            'amount' => 90000,
+            'kind' => FeeKind::BOARDING,
+            'residency' => Residency::BOARDING,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $pta = FeeStructure::query()->where('name', 'Late PTA')->firstOrFail();
+        $boarding = FeeStructure::query()->where('name', 'Boarding only extra')->firstOrFail();
+
+        $this->actingAsInSchool($this->bursar)->get(route('app.students.show', ['student' => $student, 'tab' => 'fees']))
+            ->assertOk()
+            ->assertSee('Attach fee type', false)
+            ->assertSee('Late PTA', false)
+            ->assertSee('Boarding only extra', false);
+
+        $this->actingAsInSchool($this->director)->get(route('app.students.show', ['student' => $student, 'tab' => 'fees']))
+            ->assertOk()
+            ->assertDontSee('Attach fee type', false);
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.students.fees.apply', $student), [
+            'fee_structure_id' => $pta->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertTrue(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $pta->id)->where('status', '!=', 'void')->exists());
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.students.fees.apply', $student), [
+            'fee_structure_id' => $boarding->id,
+        ])->assertSessionHasErrors('fee_structure_id');
+        $this->assertFalse(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $boarding->id)->exists());
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.students.fees.apply', $student), [
+            'name' => 'Van pool',
+            'amount' => 40000,
+            'kind' => FeeKind::TRANSPORT,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $van = FeeStructure::query()->where('name', 'Van pool')->where('applies_to', 'learners')->firstOrFail();
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.students.fees.apply', $other), [
+            'fee_structure_id' => $van->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertTrue(FeeInvoice::query()->where('student_id', $other->id)->where('fee_structure_id', $van->id)->exists());
+        $this->assertTrue($van->fresh()->learners()->where('students.id', $other->id)->exists());
+
+        $this->actingAsInSchool($this->director)->post(route('app.students.fees.apply', $student), [
+            'fee_structure_id' => $pta->id,
+        ])->assertForbidden();
+        $this->actingAsInSchool($this->teacher)->post(route('app.students.fees.apply', $student), [
+            'fee_structure_id' => $pta->id,
+        ])->assertForbidden();
+    }
 }

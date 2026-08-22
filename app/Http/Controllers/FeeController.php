@@ -253,9 +253,10 @@ class FeeController extends Controller
                 'class_id' => 'Choose a class for this fee structure.',
             ]);
         }
-        if ($data['applies_to'] === 'class' && ($data['residency'] ?? '') === Residency::ANY) {
+        if ($data['applies_to'] === 'class' && ($data['residency'] ?? '') === Residency::ANY
+            && FeeKind::requiresResidenceSplit((string) $data['kind'])) {
             throw ValidationException::withMessages([
-                'residency' => 'Save a day structure and a boarding structure separately. Learners are charged by class and residence.',
+                'residency' => 'Save a day structure and a boarding structure separately for tuition. Other fee types may apply to both residences.',
             ]);
         }
         if ($data['applies_to'] === 'learners') {

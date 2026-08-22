@@ -135,9 +135,9 @@ class CoreWorkflowAssessmentAndFeesTest extends TestCase
 
         $this->actingAs($parent);
         app(TenantContext::class)->forSchool($this->school->id);
-        $this->get(route('app.portal.results', ['student_id' => $student->id]))
-            ->assertOk()
-            ->assertDontSee('D1');
+        $unpublished = $this->get(route('app.portal.results', ['student_id' => $student->id]))->assertOk();
+        $unpublished->assertSee('No results yet.');
+        $this->assertDoesNotMatchRegularExpression('/<td>\s*D1\s*<\/td>/', $unpublished->getContent());
 
         $this->actingAsAdmin()->post(route('app.assessment.periods.transition', $period), ['to' => 'mark_entry_closed']);
         $this->actingAsAdmin()->post(route('app.assessment.periods.transition', $period), ['to' => 'review']);
@@ -145,9 +145,8 @@ class CoreWorkflowAssessmentAndFeesTest extends TestCase
 
         $this->actingAs($parent);
         app(TenantContext::class)->forSchool($this->school->id);
-        $this->get(route('app.portal.results', ['student_id' => $student->id]))
-            ->assertOk()
-            ->assertSee('D1');
+        $published = $this->get(route('app.portal.results', ['student_id' => $student->id]))->assertOk();
+        $this->assertMatchesRegularExpression('/<td>\s*D1\s*<\/td>/', $published->getContent());
 
         $this->actingAsAdmin()->post(route('app.assessment.periods.transition', $period), ['to' => 'locked']);
         $this->actingAsAdmin()->post(route('app.assessment.marks.store'), [

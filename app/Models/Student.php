@@ -138,4 +138,9 @@ class Student extends Model
             default => '—',
         };
     }
+
+    public function ageYears(): ?int
+    {
+        return $this->date_of_birth?->age;
+    }
 }

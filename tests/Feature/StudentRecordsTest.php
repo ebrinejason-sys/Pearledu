@@ -69,7 +69,12 @@ class StudentRecordsTest extends TestCase
         $this->assertSame($this->school->id, $student->school_id);
         $this->assertNull($student->user_id);
 
-        $this->actingAsAdmin()->get(route('app.students.show', $student))->assertOk()->assertSee('New Learner');
+        $this->actingAsAdmin()->get(route('app.students.show', $student))
+            ->assertOk()
+            ->assertSee('New Learner')
+            ->assertSee('Learner Profile')
+            ->assertSee('Basic Info')
+            ->assertSee('Parents/Guardian');
 
         $this->actingAsAdmin()->put(route('app.students.update', $student), [
             'full_name' => 'Renamed Learner',
@@ -221,6 +226,6 @@ class StudentRecordsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Learners');
-        $response->assertSee('Students');
+        $response->assertSee('View Learners');
     }
 }

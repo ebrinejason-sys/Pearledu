@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeeInvoice;
 use App\Models\FeeStructure;
 use App\Models\Guardianship;
 use App\Models\SchoolClass;
@@ -127,20 +128,56 @@ class StudentController extends Controller
             || in_array('finance.manage', $user->permissionsForSchool($schoolId), true);
         $canApplyFees = in_array('finance.manage', $user->permissionsForSchool($schoolId), true)
             || in_array('fees.invoice.create', $user->permissionsForSchool($schoolId), true);
+        $profileTab = (string) request()->query('tab', 'basic');
+        if (! in_array($profileTab, ['basic', 'guardians', 'fees', 'login'], true)) {
+            $profileTab = 'basic';
+        }
+        $errorBag = request()->session()->get('errors');
+        if (is_object($errorBag) && method_exists($errorBag, 'has')
+            && ($errorBag->has('fee_structure_id') || $errorBag->has('name') || $errorBag->has('amount'))) {
+            $profileTab = 'fees';
+        }
+        if ($profileTab === 'fees' && ! $canViewFinance && ! $canApplyFees) {
+            $profileTab = 'basic';
+        }
         $statement = $canViewFinance ? $this->ledger->statement($student) : ['lines' => [], 'balance' => 0];
         $feeKinds = FeeKind::keys();
-        $applyableStructures = $canApplyFees
-            ? FeeStructure::query()
+        $applyableStructures = collect();
+        $invoicedStructureIds = [];
+        if ($canApplyFees) {
+            $classId = $student->class_id ? (int) $student->class_id : null;
+            $applyableStructures = FeeStructure::query()
+                ->with('schoolClass')
                 ->where('school_id', $schoolId)
                 ->where('is_active', true)
-                ->where('applies_to', 'learners')
+                ->where(function ($q) use ($classId) {
+                    $q->where('applies_to', 'learners')
+                        ->orWhere(function ($class) use ($classId) {
+                            $class->where('applies_to', 'class')
+                                ->where(function ($scope) use ($classId) {
+                                    $scope->whereNull('class_id');
+                                    if ($classId) {
+                                        $scope->orWhere('class_id', $classId);
+                                    }
+                                });
+                        });
+                })
                 ->orderBy('name')
-                ->get()
-            : collect();
+                ->get();
+            $invoicedStructureIds = FeeInvoice::query()
+                ->where('school_id', $schoolId)
+                ->where('student_id', $student->id)
+                ->where('status', '!=', 'void')
+                ->whereNotNull('fee_structure_id')
+                ->pluck('fee_structure_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
 
         return view('app.students.show', compact(
             'student', 'statement', 'canManageLearners', 'canEditProfile', 'canLinkGuardians',
-            'canViewFinance', 'canApplyFees', 'feeKinds', 'applyableStructures'
+            'canViewFinance', 'canApplyFees', 'feeKinds', 'applyableStructures', 'invoicedStructureIds',
+            'profileTab'
         ));
     }
 
@@ -354,7 +391,9 @@ class StudentController extends Controller
                 ->findOrFail($data['fee_structure_id']);
             $invoice = $this->invoices->invoiceStudent($student, $structure, $data['due_on'] ?? null);
 
-            return back()->with('status', 'Fee applied. Invoice '.$invoice->reference.' · balance UGX '.number_format((float) $invoice->balance).'.');
+            return redirect()
+                ->route('app.students.show', ['student' => $student, 'tab' => 'fees'])
+                ->with('status', 'Fee applied. Invoice '.$invoice->reference.' · balance UGX '.number_format((float) $invoice->balance).'.');
         }
 
         $data = $request->validate([
@@ -365,7 +404,9 @@ class StudentController extends Controller
         ]);
         $invoice = $this->invoices->applyCustomFee($student, $data);
 
-        return back()->with('status', 'Custom fee applied to '.$student->full_name.'. Invoice '.$invoice->reference.'.');
+        return redirect()
+            ->route('app.students.show', ['student' => $student, 'tab' => 'fees'])
+            ->with('status', 'Custom fee applied to '.$student->full_name.'. Invoice '.$invoice->reference.'.');
     }
 
     private function maybeInviteFirstGuardian(Request $request, Student $student): void
@@ -527,6 +568,10 @@ class StudentController extends Controller
         }
         $student->photo_path = $request->file('photo')->store('students/'.$student->id, 'public');
         $student->save();
+        if ($student->user) {
+            $student->user->avatar_path = $student->photo_path;
+            $student->user->save();
+        }
     }
 
     /** @return list<string> */
