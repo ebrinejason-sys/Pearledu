@@ -23,10 +23,56 @@
       </div>
     </div>
 
+    @if(!empty($emis))
+      <div class="emis-kpis">
+        <div class="emis-card emis-card--teal">
+          <div class="emis-card__value">{{ number_format($emis['learners']['total']) }}</div>
+          <div class="emis-card__label">Learners</div>
+          <div class="emis-card__split">{{ $emis['learners']['male'] }} Male · {{ $emis['learners']['female'] }} Female</div>
+        </div>
+        <div class="emis-card emis-card--pink">
+          <div class="emis-card__value">{{ number_format($emis['teaching']['male'] + $emis['teaching']['female'] + $emis['teaching']['unspecified']) }}</div>
+          <div class="emis-card__label">Teaching staff</div>
+          <div class="emis-card__split">{{ $emis['teaching']['male'] }} Male · {{ $emis['teaching']['female'] }} Female</div>
+        </div>
+        <div class="emis-card emis-card--navy">
+          <div class="emis-card__value">{{ number_format($emis['non_teaching']['male'] + $emis['non_teaching']['female'] + $emis['non_teaching']['unspecified']) }}</div>
+          <div class="emis-card__label">Non teaching staff</div>
+          <div class="emis-card__split">{{ $emis['non_teaching']['male'] }} Male · {{ $emis['non_teaching']['female'] }} Female</div>
+        </div>
+      </div>
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:18px">Enrollment by class &amp; sex</h2>
+          @forelse($emis['enrollment'] as $row)
+            <div class="dash-bar" style="margin-bottom:10px">
+              <div class="dash-bar__meta"><span>{{ $row['label'] }}</span><strong>{{ $row['male'] }}M / {{ $row['female'] }}F</strong></div>
+              <div class="dash-bar__track"><span style="width:{{ min(100, $row['total'] > 0 ? 100 : 0) }}%"></span></div>
+            </div>
+          @empty
+            <p style="color:var(--muted);margin:0">No enrollment yet.</p>
+          @endforelse
+        </div>
+        <div class="card">
+          <h2 style="margin-top:0;font-size:18px">NIN tracking</h2>
+          <div class="workspace-kpis">
+            <div class="dash-stat"><div class="dash-stat__value">{{ $emis['nin']['with'] }}</div><div class="dash-stat__label">Learners with NINs</div></div>
+            <div class="dash-stat dash-stat--accent"><div class="dash-stat__value">{{ $emis['nin']['without'] }}</div><div class="dash-stat__label">Learners without NINs</div></div>
+          </div>
+          <h3 style="font-size:15px;margin:18px 0 8px">Learner nationality</h3>
+          @forelse($emis['nationality'] as $row)
+            <p style="margin:0 0 6px">{{ $row['label'] }} · {{ $row['count'] }} ({{ $row['pct'] }}%)</p>
+          @empty
+            <p style="color:var(--muted);margin:0">No nationality data yet.</p>
+          @endforelse
+        </div>
+      </div>
+    @endif
+
     @if(!empty($workspace['teacher']))
       <div class="card" style="margin-bottom:16px">
         <div class="dash-chart-card__head">
-          <h2 style="margin:0;font-size:18px">My Teaching</h2>
+          <h2 style="margin:0;font-size:18px">My classes</h2>
           <a class="btn ghost" href="{{ route('app.teaching.mine') }}">Open workspace</a>
         </div>
         <h3 style="font-size:14px;margin:14px 0 8px">Today’s lessons</h3>

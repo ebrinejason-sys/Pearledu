@@ -45,6 +45,9 @@ class MarksheetWorkflow
         if (! $this->periods->canEnterMarks($period)) {
             return false;
         }
+        if ($sheet && $sheet->uploadRevoked() && ! $this->scope->canManage($user, (int) $period->school_id)) {
+            return false;
+        }
         if ($sheet && ! $this->scope->canEnter($user, (int) $period->school_id, (int) $sheet->class_id, (int) $sheet->subject_id)) {
             return false;
         }
@@ -129,6 +132,31 @@ class MarksheetWorkflow
         ]);
 
         $this->audit->record('assessment.marksheet.returned', $sheet, [
+            'period_id' => $period->id,
+            'class_id' => $classId,
+            'subject_id' => $subjectId,
+        ], actor: $user);
+
+        return $sheet;
+    }
+
+    public function revokeUpload(User $user, AssessmentPeriod $period, int $classId, int $subjectId): AssessmentMarksheet
+    {
+        $schoolId = (int) $period->school_id;
+        abort_unless($this->scope->canLockClass($user, $schoolId, $classId), 403, 'You cannot revoke marks upload for this class.');
+        if (! $period->entryDeadlinePassed()) {
+            throw ValidationException::withMessages([
+                'marksheet' => 'The marks upload deadline has not passed yet.',
+            ]);
+        }
+
+        $sheet = $this->locate($schoolId, (int) $period->id, $classId, $subjectId);
+        $sheet->update([
+            'upload_revoked_at' => now(),
+            'upload_revoked_by' => $user->id,
+        ]);
+
+        $this->audit->record('assessment.marksheet.upload_revoked', $sheet, [
             'period_id' => $period->id,
             'class_id' => $classId,
             'subject_id' => $subjectId,

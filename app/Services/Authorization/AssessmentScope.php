@@ -141,6 +141,22 @@ class AssessmentScope
     }
 
     /**
+     * Class teacher may revoke subject-teacher upload for a homeroom class after the deadline.
+     */
+    public function canLockClass(User $user, int $schoolId, int $classId): bool
+    {
+        if ($this->canManage($user, $schoolId)) {
+            return true;
+        }
+
+        if (! $this->hasPermission($user, $schoolId, 'assessment.lock')) {
+            return false;
+        }
+
+        return in_array($classId, $this->assigned->classTeacherClassIds($user, $schoolId), true);
+    }
+
+    /**
      * Effective teaching assignments for the school's current academic year.
      *
      * @return Collection<int, TeachingAssignment>

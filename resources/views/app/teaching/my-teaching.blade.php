@@ -1,15 +1,14 @@
 @extends('layouts.app')
-@section('title','My Teaching · '.$school->name)
+@section('title','My classes · '.$school->name)
 @section('content')
   <div class="page-header">
     <div>
       <p class="page-header__eyebrow">{{ $school->name }}</p>
-      <h1 class="page-header__title">{{ $greeting }}</h1>
-      <p style="margin:6px 0 0;color:var(--muted);font-size:14px">Your teaching for today — assigned classes and subjects only.</p>
+      <h1 class="page-header__title">My classes</h1>
+      <p style="margin:6px 0 0;color:var(--muted);font-size:14px">Subjects you teach, by class. Open marks from the class card so entry stays on your assignment.</p>
     </div>
     <div class="page-header__actions">
       <a class="btn" href="{{ route('app.attendance.index') }}">Take attendance</a>
-      <a class="btn ghost" href="{{ route('app.assessment.marks') }}">Enter marks</a>
     </div>
   </div>
 
@@ -33,17 +32,27 @@
       @endforelse
     </div>
 
-    <div class="card">
-      <h2 style="margin-top:0;font-size:18px">My classes</h2>
+    <div class="grid g2">
       @forelse($workspace['classes'] as $row)
-        <p style="margin:0 0 8px"><strong>{{ $row['class'] }}</strong> — {{ implode(', ', $row['subjects']) }}</p>
+        <div class="card">
+          <h2 style="margin-top:0;font-size:18px">{{ $row['class'] }}</h2>
+          <ul style="margin:0;padding-left:18px">
+            @foreach($row['subjects'] as $subject)
+              <li style="margin-bottom:6px">{{ $subject }}</li>
+            @endforeach
+          </ul>
+          <p style="margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px">
+            <a class="btn accent" href="{{ route('app.assessment.marks', ['class_id' => $row['class_id']]) }}">Enter marks</a>
+            <a class="btn ghost" href="{{ route('app.attendance.index', ['class_id' => $row['class_id']]) }}">Attendance</a>
+          </p>
+        </div>
       @empty
-        <p style="color:var(--muted);margin:0">No assigned classes this term.</p>
+        <div class="card"><p style="color:var(--muted);margin:0">No assigned classes this term.</p></div>
       @endforelse
-      <p style="margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px">
-        <a class="btn ghost" href="{{ route('app.lms.index') }}">Upload material</a>
-        <a class="btn ghost" href="{{ route('app.cbt.index') }}">CBT exams</a>
-      </p>
     </div>
+    <p style="margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px">
+      <a class="btn ghost" href="{{ route('app.lms.index') }}">Upload material</a>
+      <a class="btn ghost" href="{{ route('app.cbt.index') }}">CBT exams</a>
+    </p>
   @endif
 @endsection

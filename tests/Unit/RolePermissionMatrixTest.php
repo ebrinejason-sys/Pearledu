@@ -62,6 +62,9 @@ class RolePermissionMatrixTest extends TestCase
         $this->assertNotContains('learners.manage', $perms);
         $this->assertContains('users.invite.parent', $perms);
         $this->assertContains('class.view', $perms);
+        $this->assertContains('assessment.lock', $perms);
+        $this->assertContains('learners.profile.update', $perms);
+        $this->assertNotContains('assessment.manage', $perms);
     }
 
     public function test_director_of_studies_manages_academics_not_finance_or_hr(): void

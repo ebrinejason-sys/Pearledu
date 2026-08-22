@@ -10,14 +10,16 @@
         · {{ \App\Support\Gender::label($student->gender) }}
       </p>
     </div>
-    @if(!empty($canManageLearners))
+    @if(!empty($canManageLearners) || !empty($canEditProfile))
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <a class="btn" href="{{ route('app.students.edit', $student) }}">Edit</a>
+      @if(!empty($canManageLearners))
       <form method="post" action="{{ route('app.students.destroy', $student) }}" onsubmit="return confirm('Archive this student record?')">
         @csrf
         @method('DELETE')
         <button class="btn ghost" type="submit">Archive</button>
       </form>
+      @endif
     </div>
     @endif
   </div>
@@ -30,9 +32,11 @@
       @endif
       <p><strong>EMIS:</strong> {{ $student->emis_number ?: '—' }}</p>
       <p><strong>Gender:</strong> {{ \App\Support\Gender::label($student->gender) }}</p>
-      <p><strong>Class:</strong> {{ $student->schoolClass?->name ?: '—' }}</p>
+      <p><strong>Class:</strong> {{ $student->schoolClass?->displayName() ?: '—' }}</p>
+      <p><strong>Day / boarding:</strong> {{ \App\Support\Residency::label($student->residency) }}</p>
+      <p><strong>Nationality:</strong> {{ $student->nationality ?: 'Uganda' }}</p>
       <p><strong>Status:</strong> {{ $student->status }}</p>
-      <p style="color:var(--muted);font-size:13px">LIN/NIN are hidden on this page to avoid unnecessary sensitive reads.@if(!empty($canManageLearners)) Open Edit to view or change them.@endif</p>
+      <p style="color:var(--muted);font-size:13px">LIN/NIN are hidden on this page to avoid unnecessary sensitive reads.@if(!empty($canEditProfile)) Open Edit to view or change them.@endif</p>
     </div>
 
     <div class="card">

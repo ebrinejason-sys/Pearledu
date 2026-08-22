@@ -145,7 +145,7 @@ class NavigationBuilder
                 'label' => 'Academics',
                 'items' => array_values(array_filter([
                     $this->hasAny($permissions, ['assessment.enter', 'lms.manage'])
-                        ? $this->item('My Teaching', 'app.teaching.mine', icon: 'teaching', active: request()->routeIs('app.teaching.mine'))
+                        ? $this->item('My classes', 'app.teaching.mine', icon: 'teaching', active: request()->routeIs('app.teaching.mine'))
                         : null,
                     $this->has($permissions, 'class.view')
                         ? $this->item('My Class', 'app.teaching.homeroom', icon: 'classes', active: request()->routeIs('app.teaching.homeroom'))
@@ -153,7 +153,7 @@ class NavigationBuilder
                     $on('attendance') && $this->hasAny($permissions, ['attendance.mark', 'attendance.manage', 'attendance.view'])
                         ? $this->item('Attendance', 'app.attendance.index', icon: 'attendance', active: request()->routeIs('app.attendance.*'))
                         : null,
-                    $on('assessment') && $this->hasAny($permissions, ['assessment.enter', 'assessment.manage'])
+                    $on('assessment') && $this->has($permissions, 'assessment.manage')
                         ? $this->item('Assessment', 'app.assessment.marks', icon: 'assessment', active: request()->routeIs('app.assessment.marks*') || request()->routeIs('app.assessment.marksheets.*'))
                         : null,
                     $on('timetable') && $this->has($permissions, 'timetable.manage')
@@ -169,17 +169,16 @@ class NavigationBuilder
                 'label' => 'Finance',
                 'items' => array_values(array_filter([
                     $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
-                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.*') && ! request()->filled('status') && ! str_contains((string) request()->getRequestUri(), '#payments'))
+                        ? $this->item('Fees', 'app.fees.index', icon: 'fees', active: request()->routeIs('app.fees.index') || request()->routeIs('app.fees.structures*'))
                         : null,
-                    $on('fees') && $this->has($permissions, 'finance.manage')
-                        ? array_merge($this->item('Payments', 'app.fees.index', icon: 'fees', active: false), [
-                            'url' => Route::has('app.fees.index') ? route('app.fees.index').'#payments' : null,
-                        ])
+                    $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
+                        ? $this->item('Invoices', 'app.fees.invoices', icon: 'fees', active: request()->routeIs('app.fees.invoices') || request()->routeIs('app.fees.overdue'))
+                        : null,
+                    $on('fees') && $this->hasAny($permissions, ['finance.manage', 'finance.view'])
+                        ? $this->item('Cleared', 'app.fees.cleared', icon: 'fees', active: request()->routeIs('app.fees.cleared'))
                         : null,
                     $on('fees') && $this->hasAny($permissions, ['finance.reconcile', 'finance.manage'])
-                        ? array_merge($this->item('Reconciliation', 'app.fees.index', icon: 'fees', active: request()->query('status') === 'demanded'), [
-                            'url' => Route::has('app.fees.index') ? route('app.fees.index', ['status' => 'demanded']) : null,
-                        ])
+                        ? $this->item('Reconciliation', 'app.fees.invoices', icon: 'fees', active: request()->routeIs('app.fees.invoices') && request()->query('status') === 'demanded')
                         : null,
                 ])),
             ],

@@ -166,6 +166,30 @@
   .idle-dialog__card h2{margin:0 0 8px;font-size:20px;font-family:var(--font-display)}
   .idle-dialog__card p{margin:0 0 16px;color:var(--muted);font-size:14px}
   .idle-dialog__actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .pill--active{background:var(--accent);color:#fff}
+  .emis-filter{background:color-mix(in srgb, var(--accent) 8%, var(--surface));border:1px solid color-mix(in srgb, var(--accent) 28%, var(--line));border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+  .emis-filter label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .emis-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:0 0 16px}
+  .emis-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden}
+  .emis-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px}
+  .emis-card--teal::before{background:var(--accent)}
+  .emis-card--pink::before{background:#C45C8A}
+  .emis-card--navy::before{background:var(--brand)}
+  .emis-card__value{font-size:28px;font-weight:800;font-family:var(--font-display);line-height:1.1}
+  .emis-card__label{margin-top:6px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .emis-card__split{margin-top:8px;font-size:13px;color:var(--ink)}
+  .fee-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
+  .fee-tabs__link{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:700;color:var(--ink)}
+  .fee-tabs__link.is-active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .fee-tabs__link.is-active .pill{background:rgba(255,255,255,.2);color:#fff}
+  .pe-modal{border:0;padding:0;background:transparent;max-width:420px;width:calc(100% - 32px)}
+  .pe-modal::backdrop{background:color-mix(in srgb, var(--ink) 45%, transparent)}
+  .pe-modal__card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .learner-name{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--accent)}
+  .learner-avatar{width:32px;height:32px;border-radius:999px;object-fit:cover;background:var(--surface-2);flex-shrink:0}
+  .learner-avatar--empty{display:inline-block;background:var(--brand-soft)}
+  .nin-missing{color:var(--danger);font-weight:700;font-size:13px}
+  @media print {.no-print,.sidebar,.topbar,.fee-tabs,.emis-filter{display:none !important}}
 </style>
 @yield('head')
 </head>

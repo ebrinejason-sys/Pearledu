@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\SchoolClass;
 use App\Models\SchoolInvitation;
+use App\Models\Subject;
 use App\Models\User;
 use App\Services\Authorization\InvitePolicy;
 use App\Services\Provisioning\StaffInvitationService;
@@ -26,7 +27,8 @@ class StaffController extends Controller
 
         $roleKeys = $policy->rolesInvitableBy($request->user(), $school->id, false);
         $roles = Role::query()->whereIn('key', $roleKeys)->orderBy('label')->get();
-        $classes = SchoolClass::query()->where('school_id', $school->id)->orderBy('name')->get();
+        $classes = SchoolClass::query()->where('school_id', $school->id)->orderBy('name')->orderBy('stream')->get();
+        $subjects = Subject::query()->where('school_id', $school->id)->orderBy('name')->get();
 
         $grouped = RoleAssignment::query()
             ->where('school_id', $school->id)
@@ -90,6 +92,7 @@ class StaffController extends Controller
             'canManageStaff' => $canManageStaff,
             'canPrintId' => in_array('staff.id.print', $perms, true),
             'canViewClock' => in_array('staff.attendance.view', $perms, true) || in_array('staff.attendance.mark', $perms, true),
+            'subjects' => $subjects,
         ]);
     }
 
@@ -109,7 +112,14 @@ class StaffController extends Controller
             'role_keys' => 'required|array|min:1',
             'role_keys.*' => ['string', Rule::in($allowed)],
             'class_id' => 'nullable|integer|exists:school_classes,id',
+            'teaching_assignments' => 'nullable|array',
+            'teaching_assignments.*.subject_id' => 'nullable|integer',
+            'teaching_assignments.*.class_ids' => 'nullable|array',
+            'teaching_assignments.*.class_ids.*' => 'integer',
         ]);
+        if (in_array('subject_teacher', $data['role_keys'], true)) {
+            $data['teaching_assignments'] = $data['teaching_assignments'] ?? [];
+        }
 
         try {
             $result = $inviter->invite($school, $data, $request->user(), false);

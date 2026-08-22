@@ -21,9 +21,16 @@ class FeePayment extends Model
         'verified_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<FeeInvoice, $this> */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(FeeInvoice::class, 'invoice_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 
     public function isPending(): bool

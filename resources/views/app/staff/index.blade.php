@@ -72,8 +72,36 @@
               <option value="{{ $c->id }}" @selected((string) old('class_id') === (string) $c->id)>{{ $c->displayName() }}</option>
             @endforeach
           </select>
-          <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Required when Class Teacher is selected. Teaching subjects are assigned separately under Teaching assignments.</p>
+          <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Required when Class Teacher is selected.</p>
           @error('class_id')<div class="err" role="alert">{{ $message }}</div>@enderror
+        </div>
+        <div id="teaching-field" hidden>
+          <label>Teaching load <span aria-hidden="true">*</span></label>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 8px">Required when Teacher is selected. One person can teach different subjects to different classes so the timetable does not collide.</p>
+          <div id="teaching-rows">
+            <div class="js-teach-row" style="border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px">
+              <label>Subject</label>
+              <select name="teaching_assignments[0][subject_id]">
+                <option value="">Select subject</option>
+                @foreach($subjects ?? [] as $subject)
+                  <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                @endforeach
+              </select>
+              <fieldset style="border:0;padding:0;margin:8px 0 0">
+                <legend style="font-size:13px;color:var(--muted)">Classes</legend>
+                <div style="display:flex;flex-wrap:wrap;gap:8px">
+                  @foreach($classes as $c)
+                    <label class="check" style="margin:0">
+                      <input type="checkbox" name="teaching_assignments[0][class_ids][]" value="{{ $c->id }}">
+                      <span>{{ $c->displayName() }}</span>
+                    </label>
+                  @endforeach
+                </div>
+              </fieldset>
+            </div>
+          </div>
+          <button type="button" class="btn ghost" id="add-teach-row">Add another subject</button>
+          @error('teaching_assignments')<div class="err" role="alert">{{ $message }}</div>@enderror
         </div>
         <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
       </form>
@@ -185,11 +213,34 @@
         return el.value === 'class_teacher';
       });
       field.hidden = !checked;
+      var teach = document.getElementById('teaching-field');
+      if (teach) {
+        teach.hidden = !Array.from(document.querySelectorAll('#invite-staff-form .js-role-key:checked')).some(function (el) {
+          return el.value === 'subject_teacher';
+        });
+      }
     }
     document.querySelectorAll('#invite-staff-form .js-role-key').forEach(function (el) {
       el.addEventListener('change', syncInviteHomeroom);
     });
     syncInviteHomeroom();
+
+    var addBtn = document.getElementById('add-teach-row');
+    var rows = document.getElementById('teaching-rows');
+    if (addBtn && rows) {
+      addBtn.addEventListener('click', function () {
+        var first = rows.querySelector('.js-teach-row');
+        if (!first) return;
+        var clone = first.cloneNode(true);
+        var idx = rows.querySelectorAll('.js-teach-row').length;
+        clone.querySelectorAll('[name]').forEach(function (el) {
+          el.name = el.name.replace(/teaching_assignments\[\d+]/, 'teaching_assignments[' + idx + ']');
+          if (el.type === 'checkbox') el.checked = false;
+          if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        });
+        rows.appendChild(clone);
+      });
+    }
 
     document.querySelectorAll('.js-member-role').forEach(function (el) {
       el.addEventListener('change', function () {

@@ -56,6 +56,7 @@ class AppHomeController extends Controller
             'setupPercent' => $school ? $setup->completionPercentage($school) : 100,
             'setupNext' => $school ? $setup->nextStep($school) : null,
             'setupComplete' => $school ? $setup->isComplete($school) : true,
+            'emis' => $board['emis'] ?? null,
         ]);
     }
 }
