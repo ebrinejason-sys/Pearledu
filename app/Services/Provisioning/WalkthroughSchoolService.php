@@ -314,7 +314,7 @@ class WalkthroughSchoolService
     {
         $english = $this->accountUser($accounts, 'english');
         $maths = $this->accountUser($accounts, 'maths');
-        $termId = $year->terms->firstWhere('sequence', 1)?->id;
+        $termId = $this->firstTerm($year)?->id;
 
         $preprimary = ['BABY', 'MID', 'TOP'];
         $primary = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
@@ -352,6 +352,14 @@ class WalkthroughSchoolService
                 'periods_per_week' => 5,
             ],
         );
+    }
+
+    private function firstTerm(AcademicYear $year): ?Term
+    {
+        return Term::query()
+            ->where('academic_year_id', $year->id)
+            ->where('sequence', 1)
+            ->first();
     }
 
     /**
@@ -443,7 +451,7 @@ class WalkthroughSchoolService
 
     private function ensureFeesAndAssessment(School $school, AcademicYear $year): void
     {
-        $term = $year->terms->firstWhere('sequence', 1);
+        $term = $this->firstTerm($year);
         FeeStructure::query()->firstOrCreate(
             ['school_id' => $school->id, 'name' => 'Term I tuition'],
             [
