@@ -172,57 +172,74 @@
   @if(!empty($canViewFinance) || !empty($canApplyFees))
   <div class="card" style="margin-top:16px">
     <h3 style="margin-top:0">Fees</h3>
-    <p style="color:var(--muted);font-size:13px;margin-top:0">Class day or boarding tuition is billed from the saved class structure. Extra fees (van, club) are applied on this profile. The cumulative balance is what this learner is meant to pay.</p>
+    <p style="color:var(--muted);font-size:13px;margin-top:0">Class and residence types are billed at enrollment. Attach any saved fee type to this learner here, or create a one-off extra. The cumulative balance is what they are meant to pay.</p>
     @if(!empty($canApplyFees))
-      <p><button type="button" class="btn" data-open-modal="apply-fee-modal">Apply extra fee</button></p>
+      <p><button type="button" class="btn accent" data-open-modal="apply-fee-modal">Attach fee type</button></p>
       <dialog class="pe-modal pe-modal--form" id="apply-fee-modal">
         <div class="pe-modal__card">
-          <h3 style="margin-top:0">Apply extra fee</h3>
-      <form method="post" action="{{ route('app.students.fees.apply', $student) }}" style="margin-bottom:18px">
-        @csrf
-        <div class="grid g2">
-          <div>
-            <label>Custom fee name</label>
-            <input name="name" value="{{ old('name') }}" placeholder="e.g. Van for Aisha">
-            @error('name')<div class="err">{{ $message }}</div>@enderror
-          </div>
-          <div>
-            <label>Amount (UGX)</label>
-            <input type="number" step="0.01" name="amount" value="{{ old('amount') }}">
-            @error('amount')<div class="err">{{ $message }}</div>@enderror
-          </div>
-          <div>
-            <label>Kind</label>
-            <select name="kind">
-              @foreach($feeKinds as $kind)
-                <option value="{{ $kind }}" @selected(old('kind', 'transport') === $kind)>{{ \App\Support\FeeKind::label($kind) }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div>
-            <label>Due on (optional)</label>
-            <input type="date" name="due_on" value="{{ old('due_on') }}">
-          </div>
-        </div>
-        <p style="margin-top:8px"><button class="btn" type="submit">Apply custom fee</button></p>
-      </form>
-      @if(($applyableStructures ?? collect())->isNotEmpty())
-        <form method="post" action="{{ route('app.students.fees.apply', $student) }}">
-          @csrf
-          <label>Or apply a saved learner extra</label>
-          <select name="fee_structure_id" required>
-            <option value="">— Select —</option>
-            @foreach($applyableStructures as $structure)
-              <option value="{{ $structure->id }}">{{ $structure->name }} · UGX {{ number_format((float) $structure->amount) }}</option>
-            @endforeach
-          </select>
-          @error('fee_structure_id')<div class="err">{{ $message }}</div>@enderror
-          <p style="margin-top:8px"><button class="btn ghost" type="submit">Apply saved extra</button></p>
-        </form>
-      @endif
-          <p style="display:flex;justify-content:flex-end;margin:12px 0 0">
-            <button class="btn ghost" type="button" data-close-modal>Close</button>
-          </p>
+          <h3 style="margin-top:0">Attach {{ $student->full_name }} to a fee type</h3>
+          @if(($applyableStructures ?? collect())->isNotEmpty())
+            <form method="post" action="{{ route('app.students.fees.apply', $student) }}" style="margin-bottom:18px">
+              @csrf
+              <label>Saved fee type</label>
+              <select name="fee_structure_id" required>
+                <option value="">— Select a fee type —</option>
+                @foreach($applyableStructures as $structure)
+                  @php
+                    $already = in_array((int) $structure->id, $invoicedStructureIds ?? [], true);
+                    $scope = $structure->isLearnerTargeted()
+                      ? 'Named extra'
+                      : trim(($structure->schoolClass?->displayName() ?: 'All classes').' · '.$structure->residencyLabel());
+                  @endphp
+                  <option value="{{ $structure->id }}" @selected((string) old('fee_structure_id') === (string) $structure->id)>
+                    {{ $structure->name }} · {{ $structure->kindLabel() }} · {{ $scope }} · UGX {{ number_format((float) $structure->amount) }}{{ $already ? ' (already billed)' : '' }}
+                  </option>
+                @endforeach
+              </select>
+              @error('fee_structure_id')<div class="err">{{ $message }}</div>@enderror
+              <label>Due on (optional)</label>
+              <input type="date" name="due_on" value="{{ old('due_on') }}">
+              <p style="color:var(--muted);font-size:13px;margin:8px 0 0">Day/boarding tuition only attaches when this learner’s residence matches. Named extras (van, club) can be added to this learner even if they were created for someone else.</p>
+              <p style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+                <button class="btn ghost" type="button" data-close-modal>Cancel</button>
+                <button class="btn accent" type="submit">Attach and bill</button>
+              </p>
+            </form>
+          @else
+            <p style="color:var(--muted)">No saved fee types yet. Create them on Fees, or add a one-off extra below.</p>
+          @endif
+          <h4 style="margin:8px 0 0">Or create a one-off extra</h4>
+          <form method="post" action="{{ route('app.students.fees.apply', $student) }}">
+            @csrf
+            <div class="grid g2">
+              <div>
+                <label>Custom fee name</label>
+                <input name="name" value="{{ old('name') }}" placeholder="e.g. Van for Aisha">
+                @error('name')<div class="err">{{ $message }}</div>@enderror
+              </div>
+              <div>
+                <label>Amount (UGX)</label>
+                <input type="number" step="0.01" name="amount" value="{{ old('amount') }}">
+                @error('amount')<div class="err">{{ $message }}</div>@enderror
+              </div>
+              <div>
+                <label>Kind</label>
+                <select name="kind">
+                  @foreach($feeKinds as $kind)
+                    <option value="{{ $kind }}" @selected(old('kind', 'transport') === $kind)>{{ \App\Support\FeeKind::label($kind) }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div>
+                <label>Due on (optional)</label>
+                <input type="date" name="due_on" value="{{ old('due_on') }}">
+              </div>
+            </div>
+            <p style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+              <button class="btn ghost" type="button" data-close-modal>Cancel</button>
+              <button class="btn" type="submit">Apply custom fee</button>
+            </p>
+          </form>
         </div>
       </dialog>
     @endif
@@ -249,4 +266,14 @@
     @endif
   </div>
   @endif
+@endsection
+@section('head')
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    @if($errors->has('fee_structure_id') || $errors->has('name') || $errors->has('amount'))
+    var modal = document.getElementById('apply-fee-modal');
+    if (modal && modal.showModal && !modal.open) modal.showModal();
+    @endif
+  });
+</script>
 @endsection

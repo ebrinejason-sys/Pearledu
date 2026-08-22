@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeeInvoice;
 use App\Models\FeeStructure;
 use App\Models\Guardianship;
 use App\Models\SchoolClass;
@@ -129,18 +130,41 @@ class StudentController extends Controller
             || in_array('fees.invoice.create', $user->permissionsForSchool($schoolId), true);
         $statement = $canViewFinance ? $this->ledger->statement($student) : ['lines' => [], 'balance' => 0];
         $feeKinds = FeeKind::keys();
-        $applyableStructures = $canApplyFees
-            ? FeeStructure::query()
+        $applyableStructures = collect();
+        $invoicedStructureIds = [];
+        if ($canApplyFees) {
+            $classId = $student->class_id ? (int) $student->class_id : null;
+            $applyableStructures = FeeStructure::query()
+                ->with('schoolClass')
                 ->where('school_id', $schoolId)
                 ->where('is_active', true)
-                ->where('applies_to', 'learners')
+                ->where(function ($q) use ($classId) {
+                    $q->where('applies_to', 'learners')
+                        ->orWhere(function ($class) use ($classId) {
+                            $class->where('applies_to', 'class')
+                                ->where(function ($scope) use ($classId) {
+                                    $scope->whereNull('class_id');
+                                    if ($classId) {
+                                        $scope->orWhere('class_id', $classId);
+                                    }
+                                });
+                        });
+                })
                 ->orderBy('name')
-                ->get()
-            : collect();
+                ->get();
+            $invoicedStructureIds = FeeInvoice::query()
+                ->where('school_id', $schoolId)
+                ->where('student_id', $student->id)
+                ->where('status', '!=', 'void')
+                ->whereNotNull('fee_structure_id')
+                ->pluck('fee_structure_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
 
         return view('app.students.show', compact(
             'student', 'statement', 'canManageLearners', 'canEditProfile', 'canLinkGuardians',
-            'canViewFinance', 'canApplyFees', 'feeKinds', 'applyableStructures'
+            'canViewFinance', 'canApplyFees', 'feeKinds', 'applyableStructures', 'invoicedStructureIds'
         ));
     }
 

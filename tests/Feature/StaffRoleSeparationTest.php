@@ -112,9 +112,9 @@ class StaffRoleSeparationTest extends TestCase
 
         $this->assertContains('Fees', $labels);
         $this->assertContains('SMS', $labels);
+        $this->assertContains('Students', $labels);
         $this->assertNotContains('Assessment', $labels);
         $this->assertNotContains('My classes', $labels);
-        $this->assertNotContains('Students', $labels);
     }
 
     public function test_granting_teacher_to_existing_staff_requires_classified_load(): void

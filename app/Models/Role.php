@@ -70,13 +70,14 @@ class Role extends Model
         self::SUBJECT_TEACHER,
     ];
 
-    /** School-wide academic/ops leaders and front office (unrestricted learner directory). */
+    /** School-wide academic/ops leaders, bursar (billing lookup), and front office. */
     public const SCHOOL_WIDE = [
         self::SCHOOL_ADMIN,
         self::DIRECTOR,
         self::HEAD_TEACHER,
         self::DEPUTY_HEAD_TEACHER,
         self::DIRECTOR_OF_STUDIES,
+        self::BURSAR,
         self::SECRETARY,
     ];
 }
