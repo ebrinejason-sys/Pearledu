@@ -141,7 +141,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Optional default for `php artisan school:seed-walkthrough`. Never set
-    | this in production. Prefer passing --password on the command line.
+    | this in production. Prefer --password on the command (add --force live).
     |
     */
 

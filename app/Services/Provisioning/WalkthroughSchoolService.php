@@ -23,8 +23,9 @@ use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
- * Opt-in local walkthrough tenant: Baby–P7, ~100 learners, named staff.
- * Uses SchoolProvisioner + role_assignments + enrollments. Never for production.
+ * Opt-in walkthrough tenant: Baby–P7, ~100 learners, named staff.
+ * Uses SchoolProvisioner + role_assignments + enrollments.
+ * Production requires an explicit --force from the artisan command.
  */
 class WalkthroughSchoolService
 {
@@ -56,10 +57,10 @@ class WalkthroughSchoolService
      *     accounts: list<array{role: string, email: string, name: string}>
      * }
      */
-    public function seed(string $password): array
+    public function seed(string $password, bool $allowProduction = false): array
     {
-        if (app()->isProduction()) {
-            throw new RuntimeException('Walkthrough school seeding is not allowed in production.');
+        if (app()->isProduction() && ! $allowProduction) {
+            throw new RuntimeException('Walkthrough school seeding on a live server requires --force.');
         }
 
         if (strlen($password) < 10) {
@@ -314,31 +315,29 @@ class WalkthroughSchoolService
     {
         $english = $this->accountUser($accounts, 'english');
         $maths = $this->accountUser($accounts, 'maths');
-        $termId = $this->firstTerm($year)?->id;
 
         $preprimary = ['BABY', 'MID', 'TOP'];
         $primary = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
 
         foreach (SchoolClass::query()->where('school_id', $school->id)->whereIn('code', $preprimary)->get() as $class) {
-            $this->assignTeaching($school, $year, $termId, $english, $subjects['literacy'], $class);
-            $this->assignTeaching($school, $year, $termId, $maths, $subjects['numeracy'], $class);
+            $this->assignTeaching($school, $year, $english, $subjects['literacy'], $class);
+            $this->assignTeaching($school, $year, $maths, $subjects['numeracy'], $class);
         }
 
         foreach (SchoolClass::query()->where('school_id', $school->id)->whereIn('code', $primary)->get() as $class) {
-            $this->assignTeaching($school, $year, $termId, $english, $subjects['english'], $class);
-            $this->assignTeaching($school, $year, $termId, $maths, $subjects['maths'], $class);
+            $this->assignTeaching($school, $year, $english, $subjects['english'], $class);
+            $this->assignTeaching($school, $year, $maths, $subjects['maths'], $class);
         }
     }
 
     private function assignTeaching(
         School $school,
         AcademicYear $year,
-        ?int $termId,
         User $teacher,
         Subject $subject,
         SchoolClass $class,
     ): void {
-        TeachingAssignment::query()->firstOrCreate(
+        $assignment = TeachingAssignment::query()->firstOrCreate(
             [
                 'school_id' => $school->id,
                 'user_id' => $teacher->id,
@@ -347,11 +346,16 @@ class WalkthroughSchoolService
                 'class_id' => $class->id,
             ],
             [
-                'term_id' => $termId,
+                'term_id' => null,
                 'status' => 'active',
                 'periods_per_week' => 5,
             ],
         );
+        // Year-long so mark entry still works between terms.
+        $assignment->forceFill([
+            'term_id' => null,
+            'status' => 'active',
+        ])->save();
     }
 
     private function firstTerm(AcademicYear $year): ?Term

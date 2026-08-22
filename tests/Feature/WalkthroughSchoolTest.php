@@ -136,11 +136,41 @@ class WalkthroughSchoolTest extends TestCase
         $this->actingAsInSchool($dos)->get(route('app.assessment.index'))->assertOk();
     }
 
-    public function test_command_refuses_production(): void
+    public function test_command_refuses_production_without_force(): void
     {
         $this->app['env'] = 'production';
 
         $this->artisan('school:seed-walkthrough', ['--password' => 'Walkthrough-12'])
             ->assertFailed();
+    }
+
+    public function test_command_seeds_production_with_force(): void
+    {
+        $this->app['env'] = 'production';
+
+        $this->artisan('school:seed-walkthrough', [
+            '--password' => 'Walkthrough-12',
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame(1, School::query()->where('emis_number', WalkthroughSchoolService::EMIS_NUMBER)->count());
+        $this->assertSame(100, Student::query()->where('school_id', $this->school->id)->count());
+    }
+
+    public function test_attendance_and_marks_forms_opt_into_offline_queue(): void
+    {
+        $homeroom = User::query()->where('email', 'ct.p4@stkizito.test')->firstOrFail();
+        $english = User::query()->where('email', 'english@stkizito.test')->firstOrFail();
+
+        $this->actingAsInSchool($homeroom)
+            ->get(route('app.attendance.index'))
+            ->assertOk()
+            ->assertSee('data-offline-queue="attendance"', false)
+            ->assertSee('js/offline-first.js', false);
+
+        $this->actingAsInSchool($english)
+            ->get(route('app.assessment.marks'))
+            ->assertOk()
+            ->assertSee('data-offline-queue="marks"', false);
     }
 }

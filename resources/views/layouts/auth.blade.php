@@ -4,6 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', config('app.name'))</title>
 @include('layouts.partials.favicons')
+@include('layouts.partials.offline-head')
 @if(!empty($themeFontUrl))
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +19,7 @@
 @yield('head')
 </head>
 <body>
+  @include('layouts.partials.offline-body')
   @yield('content')
 </body>
 </html>
