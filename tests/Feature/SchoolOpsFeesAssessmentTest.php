@@ -641,4 +641,112 @@ class SchoolOpsFeesAssessmentTest extends TestCase
         $this->assertNotNull($guardian->avatar_path);
         $this->assertTrue(Guardianship::query()->where('student_id', $student->id)->where('guardian_user_id', $guardian->id)->exists());
     }
+
+    public function test_bursar_deletes_fee_structure_and_director_cannot(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+        $class = $load['class'];
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'P6 day to delete',
+            'amount' => 120000,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::DAY,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Combined class fee',
+            'amount' => 1,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::ANY,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertSessionHasErrors('residency');
+
+        $structure = FeeStructure::query()->where('name', 'P6 day to delete')->firstOrFail();
+
+        $this->actingAsInSchool($this->bursar)->get(route('app.fees.index'))
+            ->assertOk()
+            ->assertSee('Saved fee types', false)
+            ->assertSee('P6 day to delete', false)
+            ->assertSee('Delete', false);
+
+        $this->actingAsInSchool($this->director)
+            ->delete(route('app.fees.structures.destroy', $structure))
+            ->assertForbidden();
+        $this->assertTrue(FeeStructure::query()->whereKey($structure->id)->exists());
+
+        $this->actingAsInSchool($this->bursar)
+            ->delete(route('app.fees.structures.destroy', $structure))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+        $this->assertFalse(FeeStructure::query()->whereKey($structure->id)->exists());
+    }
+
+    public function test_bursar_cannot_delete_fee_structure_with_confirmed_payment(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+        $class = $load['class'];
+        $student = Student::factory()->create([
+            'school_id' => $this->school->id,
+            'class_id' => $class->id,
+            'status' => 'active',
+            'full_name' => 'Paid Learner',
+            'residency' => Residency::DAY,
+        ]);
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.structures.store'), [
+            'name' => 'Paid day tuition',
+            'amount' => 50000,
+            'kind' => FeeKind::TUITION,
+            'residency' => Residency::DAY,
+            'applies_to' => 'class',
+            'class_id' => $class->id,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $structure = FeeStructure::query()->where('name', 'Paid day tuition')->firstOrFail();
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.invoices.bulk'), [
+            'fee_structure_id' => $structure->id,
+            'class_id' => $class->id,
+        ])->assertRedirect();
+
+        $invoice = FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $structure->id)->firstOrFail();
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.payments.store'), [
+            'invoice_id' => $invoice->id,
+            'amount' => 50000,
+            'method' => 'cash',
+        ])->assertRedirect();
+
+        $this->actingAsInSchool($this->bursar)
+            ->delete(route('app.fees.structures.destroy', $structure))
+            ->assertRedirect()
+            ->assertSessionHasErrors('structure');
+        $this->assertTrue(FeeStructure::query()->whereKey($structure->id)->exists());
+
+        $unpaid = FeeStructure::create([
+            'school_id' => $this->school->id,
+            'name' => 'Unpaid extra',
+            'amount' => 8000,
+            'kind' => FeeKind::TRANSPORT,
+            'residency' => Residency::ANY,
+            'applies_to' => 'learners',
+            'currency' => 'UGX',
+            'is_active' => true,
+        ]);
+        $unpaid->syncLearners($this->school->id, [$student->id]);
+        $this->actingAsInSchool($this->bursar)->post(route('app.fees.invoices.bulk'), [
+            'fee_structure_id' => $unpaid->id,
+        ])->assertRedirect();
+        $openInvoice = FeeInvoice::query()->where('fee_structure_id', $unpaid->id)->where('student_id', $student->id)->firstOrFail();
+        $this->assertSame('open', $openInvoice->status);
+
+        $this->actingAsInSchool($this->bursar)
+            ->delete(route('app.fees.structures.destroy', $unpaid))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+        $this->assertFalse(FeeStructure::query()->whereKey($unpaid->id)->exists());
+        $this->assertSame('void', $openInvoice->fresh()->status);
+    }
 }

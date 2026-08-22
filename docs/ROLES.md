@@ -77,7 +77,7 @@ Academic operating system: years, terms, classes, subjects, teaching assignments
 
 ### 6. Bursar
 
-Finance workspace: fee types (tuition by day/boarding for a class, transport/van, or a custom type applied to a named group of learners), invoicing, payments, printable/emailable receipts, SchoolPay reconciliation, discounts, reversals, reports. Demanded, cleared, and overdue invoices are separate pages; recording a payment is a popup on the demanded ledger. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades or learner attendance. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
+Finance workspace: fee types (a class amount for day and a separate amount for boarding; named extras such as van saved for a specific learner and applied on their profile), delete or archive of saved types, invoicing, payments, printable/emailable receipts, SchoolPay reconciliation, discounts, reversals, reports. Demanded, cleared, and overdue invoices are separate pages; recording a payment is a popup on the demanded ledger. Granular keys (`fees.invoice.void`, `fees.payment.reverse`, …) sit alongside `finance.manage`. High-risk actions are audited. No grades or learner attendance. Salary amounts and payment history (`hr.payroll.manage`) stay with the bursar — not a full payroll engine.
 
 ### 7. Head Teacher
 
@@ -160,7 +160,7 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Staff files | `staff.profile.update` + `staff_documents` (FORCE RLS); secretary may update files but not roles or salary |
 | Staff messages | `StaffMessageService` (`staff_conversations` / `staff_messages`) |
 | Salary view/write | `StaffPayrollService` (`hr.payroll.view` / `hr.payroll.manage`) — amount on invite when the actor has payroll manage |
-| Learner fees | Class day/boarding structures auto-invoice on enroll; custom extras via `FeeInvoiceService::applyCustomFee` on the learner profile |
+| Learner fees | Class day/boarding structures auto-invoice on enroll; custom extras via `FeeInvoiceService::applyCustomFee` on the learner profile; bursar may delete a saved type (`FeeInvoiceService::deleteStructure`) which voids unpaid invoices |
 | Gender stats / EMIS census | `GenderStatsService::emisOverview` |
 | Homeroom profile / restream | `LearnerScope::canEditProfile` / `canRestreamTo` (`learners.profile.update`) |
 | Marks upload revoke | `MarksheetWorkflow::revokeUpload` (`assessment.lock`, after deadline) |

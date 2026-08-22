@@ -8,6 +8,7 @@ use App\Support\Residency;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FeeStructure extends Model
 {
@@ -38,6 +39,12 @@ class FeeStructure extends Model
         return $this->belongsToMany(Student::class, 'fee_structure_students')
             ->withPivot('school_id')
             ->withTimestamps();
+    }
+
+    /** @return HasMany<FeeInvoice, $this> */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(FeeInvoice::class);
     }
 
     /**
