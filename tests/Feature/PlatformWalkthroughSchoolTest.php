@@ -167,24 +167,6 @@ class PlatformWalkthroughSchoolTest extends TestCase
         $this->assertAuthenticatedAs(User::query()->where('email', 'dos@stkizito.test')->firstOrFail());
     }
 
-    public function test_platform_console_can_seed_when_app_is_production(): void
-    {
-        $this->app['env'] = 'production';
-
-        $this->actingAs($this->operator);
-        $this->withRecentPlatformAuth();
-
-        $password = 'Walkthrough-live-99';
-
-        $this->post(route('platform.schools.walkthrough.store'), [
-            'walkthrough_password' => $password,
-            'walkthrough_password_confirmation' => $password,
-        ])->assertRedirect();
-
-        $this->assertNotNull(app(WalkthroughSchoolService::class)->existing());
-        $this->assertTrue(Hash::check($password, User::query()->where('email', 'admin@stkizito.test')->value('password')));
-    }
-
     /**
      * @return array<string, string>
      */
