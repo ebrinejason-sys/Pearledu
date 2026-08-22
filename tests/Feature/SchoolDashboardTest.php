@@ -78,8 +78,8 @@ class SchoolDashboardTest extends TestCase
         $response = $this->actingAsAdmin()->get(route('app.home'));
 
         $response->assertOk();
-        $response->assertSee('School dashboard', false);
-        $response->assertSee('Active students', false);
+        $response->assertSee('Setup &amp; data hygiene', false);
+        $response->assertSee('Keep the engine running', false);
         $response->assertSee('Learners by class', false);
         $response->assertSee('Fee collections', false);
         $response->assertSee('Quick access', false);

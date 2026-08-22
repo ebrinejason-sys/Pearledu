@@ -44,6 +44,7 @@ class TeachingWorkspaceController extends Controller
             'school' => $school,
             'homeroom' => $board['homeroom'],
             'greeting' => $board['greeting'],
+            'permissions' => $permissions,
         ]);
     }
 }

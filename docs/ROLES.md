@@ -8,7 +8,7 @@ Durable context for tenant RBAC. Permissions are enforced on routes and in scope
 - Grants: `config/permissions.php` (union of a user's active `role_assignments` in the current school)
 - Hierarchy of who may invite whom: `App\Services\Authorization\InvitePolicy`
 - Data scope: `AssessmentScope`, `AttendanceScope`, `LearnerScope`, `LmsScope`, `CbtScope`, `HelpdeskScope`
-- Workspaces: `RoleWorkspaceService` composes My classes, My Class, bursar, DOS, Head Teacher, and Director dashboards from the same permission + assignment union
+- Workspaces: `RoleWorkspaceService` composes **My Class**, **My classes**, bursar, DOS academic OS, Head approvals, Deputy logistics, Director governance, and School Admin hygiene from the same permission + assignment union. Primary workspace follows role-key order (homeroom → teacher → DOS → bursar → deputy → head → director → school admin). Multi-role users see the first match as the main desk and the rest as compact strips.
 - Tenant isolation: Eloquent school scope + PostgreSQL `FORCE ROW LEVEL SECURITY`
 
 There is no separate `permissions` / `role_permissions` table. Adding a SQL RBAC schema would duplicate this map.
@@ -57,23 +57,23 @@ User-facing labels may say Teacher, DOS, or Dean of Studies. Internal keys stay 
 
 ### 1. Student
 
-Focused learner portal. Read own timetable, attendance (`self.attendance.view`), published results, LMS, CBT, announcements, and fee invoices. Cannot pay fees or change academic/financial records. URL `student_id` must match `students.user_id`.
+Focused learner portal. Read own timetable, attendance (`self.attendance.view`), published results, LMS, CBT, announcements, and fee invoices. Cannot pay fees or change academic/financial records. URL `student_id` must match `students.user_id`. Home is photo-first; never other learners’ names, marks, or invoices.
 
 ### 2. Parent / Guardian
 
-Portal for linked children only: results, attendance (`child.attendance.view`), timetable, announcements, fee invoices, and `fees.pay` (submissions stay pending until bursar confirmation). Selecting a child switches the whole portal. Cannot see unrelated student IDs. A newly invited guardian gets an **inactive** `parent` assignment until they accept the invite (status stays `invited`, so they cannot sign in).
+Portal for linked children only: results, attendance (`child.attendance.view`), timetable, announcements, fee invoices, and `fees.pay` (submissions stay pending until bursar confirmation). Selecting a child switches the whole portal. Home is photo-first with Results / Attendance / Fees / Timetable tiles. Message the **class teacher**, not a staff directory. Cannot see unrelated student IDs, classmates’ marks, or ranks. A newly invited guardian gets an **inactive** `parent` assignment until they accept the invite (status stays `invited`, so they cannot sign in).
 
 ### 3. Teacher (`subject_teacher`)
 
-**My classes** workspace: today's lessons and which subject they teach to which class. Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. Inviting a Teacher, or granting Teacher to existing staff who have no current-year load, requires classified load: subject + one or more classes + `periods_per_week` (default 3). One person may hold many subject→class rows — not a single entry per staff member. Those rows are the same `teaching_assignments` the timetable generator already uses (year, optional term, optional start/end dates). Cannot edit another subject merely because they teach the class. Cannot send school-wide SMS.
+**My classes** workspace is the default home: today’s lesson timeline and class+subject cards (Attendance · Enter marks). Marks, LMS, and CBT writes require a current teaching assignment for that **class and subject**. After submit, teachers cannot silently edit (`MarksheetWorkflow`). Flag a pastoral/academic concern to the class teacher via `StaffMessageService` (not a second social graph). Inviting a Teacher, or granting Teacher to existing staff who have no current-year load, requires classified load: subject + one or more classes + `periods_per_week` (default 3). Cannot edit another subject merely because they teach the class. Cannot send school-wide SMS.
 
 ### 4. Class Teacher
 
-**My Class** homeroom: roster, daily attendance, parent contacts, invite/link parents for that class (`users.invite.parent`). Sees examination sets (BOT / MOT / EOT and any custom test DOS creates) with the subjects taught in that class. After the marks-upload deadline they may revoke a subject teacher's upload (`assessment.lock`) — they still cannot enter marks. Homeroom bio, photo, and restream to a sibling stream of the same class (`learners.profile.update`) are scoped to their assigned class; they do not get school-wide `learners.manage`. Cannot send school-wide SMS. Staff role edits must store and preserve `role_assignments.class_id`.
+**My Class** workspace is the default home: roster faces, today’s attendance ring, Take register (offline-queue), parent list, exam-set status with lock after deadline, and a **fees cleared count** (no amounts). Composite report cards **read published marks** for the homeroom — they do not write `marks`. Parents message the class teacher (helpdesk assigned server-side). Escalate to deputy / DOS / head via staff messages. Staff role edits must store and preserve `role_assignments.class_id`.
 
 ### 5. Director of Studies (DOS)
 
-Academic operating system: years, terms, classes, subjects, teaching assignments, timetable, assessment periods, marksheet verify/publish, LMS/CBT oversight, enrollments (`enrollment.manage`), learner academic view. May invite teachers (`staff.invite.teacher`) without `staff.manage`. No `learners.manage` (identity/account ops), finance, HR, or school identity.
+Academic operating system (home): current period funnel (draft → submitted → verified → published), occupancy heatmap preview (`TeachingLoadService::occupancy`), grade-band view of **published** marks (no pupil names), teachers with late drafts. Years, terms, classes, subjects, teaching assignments, timetable, assessment periods, marksheet verify/publish, LMS/CBT oversight, enrollments (`enrollment.manage`), learner academic view. May invite teachers (`staff.invite.teacher`) without `staff.manage`. No `learners.manage` (identity/account ops), finance, HR, or school identity.
 
 ### 6. Bursar
 
@@ -81,11 +81,15 @@ Finance workspace: fee types (a class amount for day and a separate amount for b
 
 ### 7. Head Teacher
 
-Operational leadership dashboard: students, staff, attendance oversight, promotions, timetable, HR, school reports. **View** finance and assessment. Cannot enter marks or post fee mutations.
+Approvals home: school KPIs plus promotion batches pending commit, helpdesk escalations, attendance gaps. **View** finance and assessment. Cannot enter marks or post fee mutations. `promotions.approve` stays head-only — deputy does not commit.
 
 ### 8. Director
 
-Executive/governance dashboard: EMIS-style census (learners M/F, teaching vs non-teaching staff, enrollment by class and sex, NIN tracking, nationality), collection, attendance, academic mean, class overview (learner profiles + published performance), staff profiles, staff clock history, salary **view** and payment history. No transactional writes (marks, learner attendance, fee mutations, salary changes). `hr.payroll.view` is not `finance.manage`.
+Governance home: EMIS-style census (learners M/F, teaching vs non-teaching staff, enrollment by class and sex), collection rate, attendance %, published academic mean, staff clock **summary**. Exception alerts (read-only) link to Head / DOS / Bursar **view** routes — never to a director mutate form. No transactional writes (marks, learner attendance, fee mutations, salary changes). `hr.payroll.view` is not `finance.manage`. Does not receive the Head/Deputy operations workspace.
+
+### 9. School Admin
+
+Created at onboard. Break-glass tenant operator (`finance.manage`, `assessment.manage`). Home is a **setup/integrity console** (completeness ring, invited-not-activated staff, classes without a class teacher, teachers with no load, duplicate-looking learners, missing photos) — not the daily mark-entry or fee-posting desk. Do not merge with Head Teacher or Director.
 
 ### Secretary
 
@@ -102,7 +106,19 @@ php artisan invite:activate secretary@school.test --password='Choose-a-long-pass
 
 ### Deputy Head Teacher
 
-Same operational shape as Head Teacher except promotions stay with the Head Teacher.
+Same operational shape as Head Teacher except promotions stay with the Head Teacher. Home is **daily logistics**: staff clock, uncovered timetable slots (empty `teacher_id`), class absence heatmap, helpdesk queue. No fee writes, no mark entry, no promotion commit.
+
+## Escalation
+
+Structured, using helpdesk + staff messages (no parallel product):
+
+1. Teacher flags a concern → class teacher (`StaffMessageService::flagConcern`)
+2. Parent messages **class teacher** (helpdesk ticket; `assigned_to` set server-side from the child’s homeroom)
+3. Class teacher escalates → deputy / DOS / head (staff messages)
+4. Deputy / head see school-wide helpdesk (`helpdesk.manage`)
+5. Director sees exception **alerts** on the governance pulse, not a task dump
+
+Class teachers may view tickets assigned to them. That is not `helpdesk.manage`.
 
 ## Invitation authority
 
@@ -178,7 +194,11 @@ Keys are from `config/permissions.php`. R = view, W = mutate, scoped = assigned 
 | Teaching occupancy matrix | `TeachingLoadService::occupancy` (class × subject; warn when two teachers share a cell) |
 | Class defaulters | `DefaulterNoticeService` (print + notify class teacher via staff messages) |
 | Idle logout | `EnforceIdleSession` + `users.last_seen_at` (remember-me cannot skip) |
-| Role dashboards | `RoleWorkspaceService` |
+| Role dashboards | `RoleWorkspaceService` (primary workspace by role key; stacked strips for multi-role) |
+| Action Center | `ActionCenterService` (hygiene for school admin; exceptions for director; scoped attendance gaps) |
+| Parent → class teacher | Helpdesk `assigned_to` set server-side; class teacher may view assigned tickets |
+| Teacher → class teacher | `StaffMessageService::flagConcern` |
+| School admin hygiene | `SchoolSetupService::hygiene` |
 | Nav / shortcuts | Nested EMIS-style IA in `NavigationBuilder` (Manage school data → Learners / Human Resource / Finance). `SchoolDashboardService` shortcuts. Not a security boundary. |
 
 ## Identity and demographics

@@ -56,7 +56,13 @@ class AppHomeController extends Controller
             'setupPercent' => $school ? $setup->completionPercentage($school) : 100,
             'setupNext' => $school ? $setup->nextStep($school) : null,
             'setupComplete' => $school ? $setup->isComplete($school) : true,
-            'emis' => $board['emis'] ?? null,
+            'emis' => (! empty($workspace['governance']) || in_array('director', $workspace['roleKeys'] ?? [], true))
+                ? ($workspace['governance']['emis'] ?? $board['emis'] ?? null)
+                : null,
+            'showSchoolCharts' => in_array('reports.view', $permissions, true)
+                || in_array('finance.view', $permissions, true)
+                || in_array('director', $workspace['roleKeys'] ?? [], true),
+            'showShortcuts' => in_array($workspace['primary'] ?? 'none', ['hygiene', 'academicLead', 'bursar', 'operationsLead', 'governance'], true),
         ]);
     }
 }

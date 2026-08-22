@@ -25,6 +25,24 @@ class PortalController extends Controller
             ? $this->portal->resolveStudent($user, $request->integer('student_id') ?: null)
             : null;
 
+        $schoolId = $this->context->schoolId();
+        $permissions = $schoolId ? $user->permissionsForSchool($schoolId) : [];
+        $canPay = in_array('fees.pay', $permissions, true);
+        $classTeacher = $student ? $this->portal->classTeacherFor($student) : null;
+        $latestAttendance = $this->portal->latestAttendanceFor($learners->pluck('id')->all());
+
+        $expected = 0.0;
+        $balance = 0.0;
+        if ($student) {
+            foreach ($this->portal->invoices($student) as $inv) {
+                if ($inv->status === 'void') {
+                    continue;
+                }
+                $expected += (float) $inv->amount;
+                $balance += (float) $inv->balance;
+            }
+        }
+
         return view('app.portal.home', [
             'school' => $this->context->school(),
             'learners' => $learners,
@@ -33,11 +51,21 @@ class PortalController extends Controller
             'announcements' => $student ? $this->portal->announcements($student, $user)->take(5) : collect(),
             'resultsPreview' => $student ? $this->portal->results($student)->take(5) : collect(),
             'attendancePreview' => $student ? $this->portal->attendance($student)->take(7) : collect(),
-            'canViewFees' => in_array('child.fees.view', $user->permissionsForSchool($this->context->schoolId()), true)
-                || in_array('self.fees.view', $user->permissionsForSchool($this->context->schoolId()), true)
-                || in_array('fees.pay', $user->permissionsForSchool($this->context->schoolId()), true),
-            'canViewAttendance' => in_array('child.attendance.view', $user->permissionsForSchool($this->context->schoolId()), true)
-                || in_array('self.attendance.view', $user->permissionsForSchool($this->context->schoolId()), true),
+            'latestAttendance' => $latestAttendance,
+            'classTeacher' => $classTeacher,
+            'canPay' => $canPay,
+            'feeExpected' => $expected,
+            'feeBalance' => $balance,
+            'todaySlots' => $student
+                ? $this->portal->timetable($student)->where('day_of_week', (int) now(config('app.timezone'))->isoWeekday())->values()
+                : collect(),
+            'canViewFees' => in_array('child.fees.view', $permissions, true)
+                || in_array('self.fees.view', $permissions, true)
+                || $canPay,
+            'canViewAttendance' => in_array('child.attendance.view', $permissions, true)
+                || in_array('self.attendance.view', $permissions, true),
+            'isParent' => in_array('child.results.view', $permissions, true) || $canPay,
+            'isStudent' => in_array('self.results.view', $permissions, true),
         ]);
     }
 

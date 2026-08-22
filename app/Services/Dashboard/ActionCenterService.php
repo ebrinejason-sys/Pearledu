@@ -3,20 +3,30 @@
 namespace App\Services\Dashboard;
 
 use App\Models\AdmissionApplication;
+use App\Models\AssessmentMarksheet;
 use App\Models\AssessmentPeriod;
 use App\Models\AttendanceRecord;
 use App\Models\FeeInvoice;
 use App\Models\FeePayment;
+use App\Models\HelpdeskTicket;
+use App\Models\PromotionBatch;
+use App\Models\Role;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Term;
 use App\Models\User;
+use App\Services\Authorization\AssignedClassResolver;
 use App\Services\Schools\SchoolModuleRegistry;
+use App\Services\Schools\SchoolSetupService;
 use Illuminate\Support\Facades\Route;
 
 class ActionCenterService
 {
-    public function __construct(private SchoolModuleRegistry $modules) {}
+    public function __construct(
+        private SchoolModuleRegistry $modules,
+        private SchoolSetupService $setup,
+        private AssignedClassResolver $assigned,
+    ) {}
 
     /**
      * @param  list<string>  $permissions
@@ -26,6 +36,20 @@ class ActionCenterService
     {
         $items = [];
         $schoolId = (int) $school->id;
+        $roleKeys = $user->activeAssignments()
+            ->where('school_id', $schoolId)
+            ->with('role')
+            ->get()
+            ->pluck('role.key')
+            ->filter()
+            ->unique()
+            ->all();
+        $isAdminOnlyOps = in_array(Role::SCHOOL_ADMIN, $roleKeys, true)
+            && ! in_array(Role::BURSAR, $roleKeys, true)
+            && ! in_array(Role::SUBJECT_TEACHER, $roleKeys, true)
+            && ! in_array(Role::DIRECTOR_OF_STUDIES, $roleKeys, true);
+        $isDirector = in_array(Role::DIRECTOR, $roleKeys, true)
+            && ! in_array(Role::SCHOOL_ADMIN, $roleKeys, true);
 
         if ($this->can($permissions, 'admissions.manage') && $this->modules->enabled($school, 'admissions')) {
             $pending = AdmissionApplication::query()
@@ -43,14 +67,72 @@ class ActionCenterService
             }
         }
 
+        if (in_array(Role::SCHOOL_ADMIN, $roleKeys, true) && $this->can($permissions, 'school.manage')) {
+            foreach ($this->setup->hygiene($school)['tiles'] as $tile) {
+                if ((int) $tile['count'] <= 0) {
+                    continue;
+                }
+                $items[] = $this->item(
+                    'hygiene_'.$tile['key'],
+                    $tile['tone'] === 'danger' ? 'high' : 'medium',
+                    $tile['count'].' · '.$tile['label'],
+                    $tile['hint'],
+                    $tile['url'],
+                );
+            }
+        }
+
+        if ($isDirector) {
+            foreach ($this->directorExceptionItems($school, $permissions) as $item) {
+                $items[] = $item;
+            }
+        }
+
+        if ($this->can($permissions, 'promotions.approve')) {
+            $pendingPromo = PromotionBatch::query()
+                ->where('school_id', $schoolId)
+                ->whereNull('committed_at')
+                ->where('status', '!=', 'committed')
+                ->count();
+            if ($pendingPromo > 0) {
+                $items[] = $this->item(
+                    'promotions',
+                    'high',
+                    $pendingPromo === 1 ? '1 promotion batch waiting to commit' : "{$pendingPromo} promotion batches waiting to commit",
+                    'Head Teacher commits. Director of Studies prepares the batch.',
+                    Route::has('app.promotions.index') ? route('app.promotions.index') : null,
+                );
+            }
+        }
+
+        if ($this->can($permissions, 'helpdesk.manage')) {
+            $openTickets = HelpdeskTicket::query()
+                ->where('school_id', $schoolId)
+                ->where('status', '!=', 'closed')
+                ->count();
+            if ($openTickets > 0 && ! $isDirector) {
+                $items[] = $this->item(
+                    'helpdesk',
+                    'medium',
+                    $openTickets === 1 ? '1 open helpdesk ticket' : "{$openTickets} open helpdesk tickets",
+                    'Escalations from class teachers and parents.',
+                    Route::has('app.helpdesk.index') ? route('app.helpdesk.index') : null,
+                );
+            }
+        }
+
         if ($this->can($permissions, 'finance.manage') && $this->modules->enabled($school, 'fees')) {
             $pendingPay = FeePayment::query()->where('school_id', $schoolId)->where('status', 'pending')->count();
             if ($pendingPay > 0) {
                 $items[] = $this->item(
                     'payments',
-                    'high',
-                    $pendingPay === 1 ? '1 payment needs verification' : "{$pendingPay} payments need verification",
-                    'Confirm or reject pending receipts.',
+                    $isAdminOnlyOps ? 'medium' : 'high',
+                    $isAdminOnlyOps
+                        ? ($pendingPay === 1 ? 'Bursar queue: 1 pending submission' : "Bursar queue: {$pendingPay} pending submissions")
+                        : ($pendingPay === 1 ? '1 payment needs verification' : "{$pendingPay} payments need verification"),
+                    $isAdminOnlyOps
+                        ? 'Integrity alert — the bursar confirms or rejects. You remain break-glass.'
+                        : 'Confirm or reject pending receipts.',
                     Route::has('app.fees.index') ? route('app.fees.index').'#payments' : null,
                 );
             }
@@ -82,7 +164,7 @@ class ActionCenterService
                         ->orWhere(fn ($x) => $x->where('balance', '<=', 0)->where('status', '!=', 'void'));
                 })
                 ->count();
-            if ($cleared > 0) {
+            if ($cleared > 0 && ! $isAdminOnlyOps) {
                 $items[] = $this->item(
                     'fees_cleared',
                     'low',
@@ -98,7 +180,7 @@ class ActionCenterService
                 ->where('school_id', $schoolId)
                 ->whereIn('status', ['draft', 'mark_entry_open'])
                 ->count();
-            if ($openPeriods > 0 && $this->can($permissions, 'assessment.enter')) {
+            if ($openPeriods > 0 && $this->can($permissions, 'assessment.enter') && ! $isAdminOnlyOps) {
                 $items[] = $this->item(
                     'marks',
                     'medium',
@@ -115,19 +197,29 @@ class ActionCenterService
             if ($unpublished > 0 && $this->can($permissions, 'assessment.manage')) {
                 $items[] = $this->item(
                     'publish',
-                    'high',
+                    $isAdminOnlyOps ? 'low' : 'high',
                     $unpublished === 1 ? '1 period is ready to publish' : "{$unpublished} periods are ready to publish",
-                    'Parents only see results after you publish.',
+                    $isAdminOnlyOps
+                        ? 'DOS publishes. School admin remains academic break-glass.'
+                        : 'Parents only see results after you publish.',
                     Route::has('app.assessment.index') ? route('app.assessment.index') : null,
                 );
             }
         }
 
-        if ($this->canAny($permissions, ['attendance.mark', 'attendance.manage']) && $this->modules->enabled($school, 'attendance')) {
-            $classes = SchoolClass::query()->where('school_id', $schoolId)->count();
+        if ($this->canAny($permissions, ['attendance.mark', 'attendance.manage']) && $this->modules->enabled($school, 'attendance') && ! $isDirector) {
+            $allowed = $this->assigned->isSchoolWide($user, $schoolId)
+                || $this->can($permissions, 'attendance.manage')
+                ? null
+                : $this->assigned->assignedClassIds($user, $schoolId);
+            $classes = SchoolClass::query()
+                ->where('school_id', $schoolId)
+                ->when(is_array($allowed), fn ($q) => $q->whereIn('id', $allowed ?: [0]))
+                ->count();
             $marked = AttendanceRecord::query()
                 ->where('school_id', $schoolId)
                 ->whereDate('attended_on', now()->toDateString())
+                ->when(is_array($allowed), fn ($q) => $q->whereIn('class_id', $allowed ?: [0]))
                 ->distinct()
                 ->count('class_id');
             $missing = max(0, $classes - $marked);
@@ -136,7 +228,9 @@ class ActionCenterService
                     'attendance',
                     'medium',
                     $missing === 1 ? '1 class has no attendance today' : "{$missing} classes have no attendance today",
-                    'Mark the register so absences can notify parents.',
+                    $this->can($permissions, 'attendance.manage')
+                        ? 'Deputy / class teachers mark the register.'
+                        : 'Take today’s register for your assigned class.',
                     Route::has('app.attendance.index') ? route('app.attendance.index') : null,
                 );
             }
@@ -162,6 +256,44 @@ class ActionCenterService
         }
 
         usort($items, fn ($a, $b) => $this->rank($a['priority']) <=> $this->rank($b['priority']));
+
+        return $items;
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     * @return list<array{type:string,priority:string,title:string,description:string,action_url:?string}>
+     */
+    private function directorExceptionItems(School $school, array $permissions): array
+    {
+        $items = [];
+        $schoolId = (int) $school->id;
+
+        $pending = FeePayment::query()->where('school_id', $schoolId)->where('status', 'pending')->count();
+        if ($this->can($permissions, 'finance.view') && $pending >= 10) {
+            $items[] = $this->item(
+                'exception_fees',
+                'medium',
+                $pending.' fee submissions still pending',
+                'Bursar confirms. You have finance view only.',
+                Route::has('app.fees.index') ? route('app.fees.index') : null,
+            );
+        }
+
+        $stuck = AssessmentMarksheet::query()
+            ->where('school_id', $schoolId)
+            ->where('status', 'draft')
+            ->whereHas('period', fn ($q) => $q->whereNotNull('entry_deadline')->whereDate('entry_deadline', '<', now()->toDateString()))
+            ->count();
+        if ($this->can($permissions, 'assessment.view') && $stuck > 0) {
+            $items[] = $this->item(
+                'exception_marks',
+                'medium',
+                $stuck === 1 ? '1 marksheet stuck in draft after deadline' : "{$stuck} marksheets stuck in draft after deadline",
+                'Director of Studies owns the marksheet workflow.',
+                Route::has('app.assessment.reports') ? route('app.assessment.reports') : null,
+            );
+        }
 
         return $items;
     }
