@@ -90,6 +90,6 @@ class ConfirmPlatformAuthTest extends TestCase
             ->assertOk()
             ->assertSee('Continue', false)
             ->assertSee('name="name"', false)
-            ->assertSee((string) $this->school->name, false);
+            ->assertSee(e((string) $this->school->name), false);
     }
 }
