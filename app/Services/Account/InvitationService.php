@@ -30,6 +30,65 @@ class InvitationService
     }
 
     /**
+     * Break-glass: set a password and activate every open invite for this email
+     * without the mailed token. Used when mail never arrived (local/dev or ops).
+     */
+    public function activateInvitedAccount(string $email, string $password): User
+    {
+        return DB::transaction(function () use ($email, $password) {
+            $this->context->forPlatform();
+
+            $normalized = strtolower(trim($email));
+            $user = User::query()
+                ->whereRaw('lower(email) = ?', [$normalized])
+                ->lockForUpdate()
+                ->first();
+
+            if (! $user) {
+                throw new RuntimeException('No account found for that email.');
+            }
+            if ($user->status === 'disabled') {
+                throw new RuntimeException('This account is disabled and cannot be activated.');
+            }
+            if ($user->is_platform) {
+                throw new RuntimeException('Platform operator accounts cannot be activated this way.');
+            }
+
+            $open = SchoolInvitation::query()
+                ->where('user_id', $user->id)
+                ->whereNull('accepted_at')
+                ->lockForUpdate()
+                ->orderByDesc('id')
+                ->get();
+
+            if ($open->isEmpty() && $user->status !== 'invited') {
+                throw new RuntimeException('No open invitation for that email. They may already have accepted.');
+            }
+
+            $user->forceFill(['password' => $password, 'status' => 'active'])->save();
+
+            foreach ($open as $inv) {
+                $this->activateInvitationRole($user, $inv);
+                $inv->forceFill(['accepted_at' => now()])->save();
+            }
+
+            if ($open->isEmpty()) {
+                RoleAssignment::query()
+                    ->where('user_id', $user->id)
+                    ->where('is_active', false)
+                    ->update(['is_active' => true]);
+            }
+
+            $this->audit->record('invitation.activated_cli', $user, [
+                'email' => $user->email,
+                'roles_activated' => $open->pluck('role_key')->values()->all(),
+            ]);
+
+            return $user->fresh();
+        });
+    }
+
+    /**
      * Accept: set password, activate only this invitation's batch (or single role),
      * and mark those invitations accepted. Locked against concurrent accept races.
      */
@@ -44,7 +103,7 @@ class InvitationService
             }
 
             $user = $inv->user;
-            if (! $user) {
+            if (! $user instanceof User) {
                 throw new RuntimeException('This invitation has no user account.');
             }
 
@@ -81,7 +140,7 @@ class InvitationService
                 }
             }
 
-            return $user->fresh();
+            return $user->fresh() ?? $user;
         });
     }
 

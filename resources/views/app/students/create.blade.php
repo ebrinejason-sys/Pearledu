@@ -7,6 +7,15 @@
       @csrf
       @include('app.students._form')
 
+      @if(!empty($canApplyFees))
+        @include('app.students._fee_attach', [
+          'layout' => 'form',
+          'canApplyFees' => true,
+          'applyableStructures' => $applyableStructures ?? collect(),
+          'invoicedStructureIds' => [],
+        ])
+      @endif
+
       <fieldset style="border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-top:18px">
         <legend style="font-size:14px;padding:0 6px">Guardian (same window)</legend>
         <p style="margin:0 0 12px;color:var(--muted);font-size:13px">Capture the related parent or guardian now. You can add more on the learner profile after saving.</p>

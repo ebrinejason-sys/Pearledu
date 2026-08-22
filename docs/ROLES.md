@@ -91,6 +91,15 @@ Executive/governance dashboard: EMIS-style census (learners M/F, teaching vs non
 
 Front office: school-wide learner directory lookup (`learners.view`, no create/archive), staff files (photo, biodata, academic documents via `staff.profile.update`), printable staff ID cards (photo, name, roles on the front; badge barcode on the back), barcode clock in/out (`staff.attendance.mark`), staff messages. No finance, payroll, grade, or staff-role writes. Not invitable by bursars or teachers.
 
+**Login after invite:** creating the role in `config/permissions.php` is not enough. Sync the catalog, then the person must set a password.
+
+```bash
+php artisan db:seed --class=RoleSeeder
+php artisan invite:activate secretary@school.test --password='Choose-a-long-password'
+```
+
+`RoleSeeder` is idempotent (adds `secretary` if the `roles` row is missing). Invited users stay `status=invited` with inactive `role_assignments` until they open the email link **or** you run `invite:activate`. Login rejects invited/disabled accounts with a generic credentials error. On a live server add `--force`. Walkthrough accounts such as `secretary@stkizito.test` are already active after `php artisan school:seed-walkthrough --password='…'`.
+
 ### Deputy Head Teacher
 
 Same operational shape as Head Teacher except promotions stay with the Head Teacher.

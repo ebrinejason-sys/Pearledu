@@ -14,11 +14,13 @@ class SchoolInvitation extends Model
 
     protected $casts = ['expires_at' => 'datetime', 'accepted_at' => 'datetime'];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<School, $this> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);

@@ -47,6 +47,7 @@
   <div class="sidebar__head">
     @include('layouts.partials.brand', [
       'brandHref' => ($nav['zone'] ?? '') === 'platform' ? route('platform.dashboard') : route('app.home'),
+      'showTagline' => true,
     ])
   </div>
   <nav class="sidebar__nav">

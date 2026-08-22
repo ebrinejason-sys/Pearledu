@@ -184,4 +184,17 @@
 
 **Rollback/revisit:** Do not replace a school's uploaded crest with the PearlEdu sphere.
 
+## 2026-08-22 — Learner fee attach, staff directory, invite activation
+
+**Problem:** The Fees tab hid attach behind a modal, so bursars missed it. The staff directory mixed parents/learners into HR and was a flat card grid. Secretary existed in `config/permissions.php` but invited accounts could not sign in until they accepted mail — operators who never ran a command were stuck.
+
+**Decision:** Keep attach on `finance.manage` / `fees.invoice.create` (bursar + school admin). Show the picker inline on the learner Fees tab and on Add/Edit student for those roles. Head/deputy still auto-bill class/residency defaults on enroll; they cannot POST extras. Staff index lists `Role::STAFF` only, grouped graphically. `php artisan db:seed --class=RoleSeeder` syncs the catalog; `php artisan invite:activate {email} --password=…` sets a password and activates open invites (production needs `--force`). Sidebar brand keeps the 21-chord sphere and adds the tagline “developed by Voxsign Technologies”.
+
+**Reason:** Least privilege (finance writes stay bursar/admin) and the existing invite lifecycle (no password at invite time).
+
+**Consequences:** Director still sees the ledger and matching types, not Attach. Parents/students leave the Staff page (invite them from the learner profile).
+
+**Rollback/revisit:** Do not grant `fees.invoice.create` to director or head.
+
+
 

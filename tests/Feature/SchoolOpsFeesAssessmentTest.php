@@ -859,12 +859,14 @@ class SchoolOpsFeesAssessmentTest extends TestCase
         $this->actingAsInSchool($this->bursar)->get(route('app.students.show', ['student' => $student, 'tab' => 'fees']))
             ->assertOk()
             ->assertSee('Attach fee type', false)
+            ->assertSee('Attach and bill', false)
             ->assertSee('Late PTA', false)
             ->assertSee('Boarding only extra', false);
 
         $this->actingAsInSchool($this->director)->get(route('app.students.show', ['student' => $student, 'tab' => 'fees']))
             ->assertOk()
-            ->assertDontSee('Attach fee type', false);
+            ->assertDontSee('Attach fee type', false)
+            ->assertSee('Bursar or school admin attaches', false);
 
         $this->actingAsInSchool($this->bursar)->post(route('app.students.fees.apply', $student), [
             'fee_structure_id' => $pta->id,
@@ -895,5 +897,60 @@ class SchoolOpsFeesAssessmentTest extends TestCase
         $this->actingAsInSchool($this->teacher)->post(route('app.students.fees.apply', $student), [
             'fee_structure_id' => $pta->id,
         ])->assertForbidden();
+    }
+
+    public function test_school_admin_can_attach_fee_structure_when_creating_a_learner(): void
+    {
+        $load = TeacherInviteLoad::ensure($this->school);
+        $class = $load['class'];
+
+        $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
+            'full_name' => 'Anchor Learner',
+            'status' => 'active',
+            'class_id' => $class->id,
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $anchor = Student::query()->where('full_name', 'Anchor Learner')->firstOrFail();
+
+        $this->actingAsInSchool($this->bursar)->post(route('app.students.fees.apply', $anchor), [
+            'name' => 'Create-time van',
+            'amount' => 15000,
+            'kind' => FeeKind::TRANSPORT,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $van = FeeStructure::query()->where('name', 'Create-time van')->where('applies_to', 'learners')->firstOrFail();
+
+        $this->actingAsInSchool($this->admin)->get(route('app.students.create'))
+            ->assertOk()
+            ->assertSee('Fee structures for this learner', false)
+            ->assertSee('Create-time van', false);
+
+        $this->actingAsInSchool($this->admin)->post(route('app.students.store'), [
+            'full_name' => 'Create Attach Learner',
+            'status' => 'active',
+            'class_id' => $class->id,
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+            'fee_structure_ids' => [$van->id],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $student = Student::query()->where('full_name', 'Create Attach Learner')->firstOrFail();
+        $this->assertTrue(FeeInvoice::query()->where('student_id', $student->id)->where('fee_structure_id', $van->id)->exists());
+
+        $head = User::where('email', 'head@standrews.test')->firstOrFail();
+        $this->actingAsInSchool($head)->get(route('app.students.create'))
+            ->assertOk()
+            ->assertDontSee('Fee structures for this learner', false);
+
+        $this->actingAsInSchool($head)->post(route('app.students.store'), [
+            'full_name' => 'Head Extra Learner',
+            'status' => 'active',
+            'class_id' => $class->id,
+            'residency' => Residency::DAY,
+            'nationality' => 'Uganda',
+            'fee_structure_ids' => [$van->id],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $headLearner = Student::query()->where('full_name', 'Head Extra Learner')->firstOrFail();
+        $this->assertFalse(FeeInvoice::query()->where('student_id', $headLearner->id)->where('fee_structure_id', $van->id)->exists());
     }
 }

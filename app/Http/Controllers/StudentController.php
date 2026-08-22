@@ -19,6 +19,7 @@ use App\Support\FeeKind;
 use App\Support\Gender;
 use App\Support\Residency;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -86,9 +87,15 @@ class StudentController extends Controller
 
     public function create()
     {
+        $user = request()->user();
+        $schoolId = $this->context->schoolId();
+        $canApplyFees = $this->actorCanApplyFees($user, $schoolId);
+
         return view('app.students.create', [
             'classes' => $this->classesForSchool(),
             'statuses' => $this->statuses(),
+            'canApplyFees' => $canApplyFees,
+            'applyableStructures' => $canApplyFees ? $this->applyableStructures(null, false) : collect(),
         ]);
     }
 
@@ -106,6 +113,7 @@ class StudentController extends Controller
             $this->lifecycle->enrollStudent($student, (int) $classId);
             $this->invoices->assignDefaultStructures($student->fresh());
         }
+        $this->applySelectedFeeStructures($request, $student->fresh());
         $this->maybeInviteFirstGuardian($request, $student);
 
         return redirect()
@@ -126,8 +134,7 @@ class StudentController extends Controller
         $canLinkGuardians = $this->learners->canLinkGuardian($user, $schoolId, $student);
         $canViewFinance = in_array('finance.view', $user->permissionsForSchool($schoolId), true)
             || in_array('finance.manage', $user->permissionsForSchool($schoolId), true);
-        $canApplyFees = in_array('finance.manage', $user->permissionsForSchool($schoolId), true)
-            || in_array('fees.invoice.create', $user->permissionsForSchool($schoolId), true);
+        $canApplyFees = $this->actorCanApplyFees($user, $schoolId);
         $profileTab = (string) request()->query('tab', 'basic');
         if (! in_array($profileTab, ['basic', 'guardians', 'fees', 'login'], true)) {
             $profileTab = 'basic';
@@ -144,26 +151,9 @@ class StudentController extends Controller
         $feeKinds = FeeKind::keys();
         $applyableStructures = collect();
         $invoicedStructureIds = [];
-        if ($canApplyFees) {
+        if ($canViewFinance || $canApplyFees) {
             $classId = $student->class_id ? (int) $student->class_id : null;
-            $applyableStructures = FeeStructure::query()
-                ->with('schoolClass')
-                ->where('school_id', $schoolId)
-                ->where('is_active', true)
-                ->where(function ($q) use ($classId) {
-                    $q->where('applies_to', 'learners')
-                        ->orWhere(function ($class) use ($classId) {
-                            $class->where('applies_to', 'class')
-                                ->where(function ($scope) use ($classId) {
-                                    $scope->whereNull('class_id');
-                                    if ($classId) {
-                                        $scope->orWhere('class_id', $classId);
-                                    }
-                                });
-                        });
-                })
-                ->orderBy('name')
-                ->get();
+            $applyableStructures = $this->applyableStructures($classId, true);
             $invoicedStructureIds = FeeInvoice::query()
                 ->where('school_id', $schoolId)
                 ->where('student_id', $student->id)
@@ -188,15 +178,32 @@ class StudentController extends Controller
         $user = request()->user();
         $schoolId = $this->context->schoolId();
         $full = $user && $schoolId && $this->learners->canMutateStudent($user, $schoolId, $student);
+        $canApplyFees = $full && $this->actorCanApplyFees($user, $schoolId);
         $classes = $full
             ? $this->classesForSchool()
             : $this->restreamClasses($student);
+        $invoicedStructureIds = [];
+        if ($canApplyFees) {
+            $invoicedStructureIds = FeeInvoice::query()
+                ->where('school_id', $schoolId)
+                ->where('student_id', $student->id)
+                ->where('status', '!=', 'void')
+                ->whereNotNull('fee_structure_id')
+                ->pluck('fee_structure_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
 
         return view('app.students.edit', [
             'student' => $student,
             'classes' => $classes,
             'statuses' => $this->statuses(),
             'profileOnly' => ! $full,
+            'canApplyFees' => $canApplyFees,
+            'applyableStructures' => $canApplyFees
+                ? $this->applyableStructures($student->class_id ? (int) $student->class_id : null, true)
+                : collect(),
+            'invoicedStructureIds' => $invoicedStructureIds,
         ]);
     }
 
@@ -234,6 +241,7 @@ class StudentController extends Controller
         if ($full && ($classChanged || $residencyChanged)) {
             $this->invoices->assignDefaultStructures($student->fresh());
         }
+        $this->applySelectedFeeStructures($request, $student->fresh());
 
         return redirect()
             ->route('app.students.show', $student)
@@ -373,12 +381,7 @@ class StudentController extends Controller
         $this->assertTenantOwned($student);
         $user = $request->user();
         $schoolId = $this->context->schoolId();
-        abort_unless($user && $schoolId, 403);
-        $perms = $user->permissionsForSchool($schoolId);
-        abort_unless(
-            in_array('finance.manage', $perms, true) || in_array('fees.invoice.create', $perms, true),
-            403
-        );
+        abort_unless($user && $schoolId && $this->actorCanApplyFees($user, $schoolId), 403);
 
         if ($request->filled('fee_structure_id')) {
             $data = $request->validate([
@@ -583,5 +586,81 @@ class StudentController extends Controller
     private function classesForSchool()
     {
         return SchoolClass::query()->orderBy('level')->orderBy('name')->get();
+    }
+
+    private function actorCanApplyFees(?User $user, ?int $schoolId): bool
+    {
+        if (! $user || ! $schoolId) {
+            return false;
+        }
+        $perms = $user->permissionsForSchool($schoolId);
+
+        return in_array('finance.manage', $perms, true)
+            || in_array('fees.invoice.create', $perms, true);
+    }
+
+    /**
+     * @return Collection<int, FeeStructure>
+     */
+    private function applyableStructures(?int $classId, bool $requireClassMatch): Collection
+    {
+        $schoolId = $this->context->schoolId();
+        if (! $schoolId) {
+            return collect();
+        }
+
+        return FeeStructure::query()
+            ->with('schoolClass')
+            ->where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->where(function ($q) use ($classId, $requireClassMatch) {
+                $q->where('applies_to', 'learners')
+                    ->orWhere(function ($class) use ($classId, $requireClassMatch) {
+                        $class->where('applies_to', 'class');
+                        if (! $requireClassMatch) {
+                            return;
+                        }
+                        $class->where(function ($scope) use ($classId) {
+                            $scope->whereNull('class_id');
+                            if ($classId) {
+                                $scope->orWhere('class_id', $classId);
+                            }
+                        });
+                    });
+            })
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function applySelectedFeeStructures(Request $request, Student $student): void
+    {
+        $user = $request->user();
+        $schoolId = $this->context->schoolId();
+        if (! $this->actorCanApplyFees($user, $schoolId)) {
+            return;
+        }
+        if (! $request->exists('fee_structure_ids')) {
+            return;
+        }
+
+        $ids = $request->validate([
+            'fee_structure_ids' => 'nullable|array',
+            'fee_structure_ids.*' => 'integer',
+        ])['fee_structure_ids'] ?? [];
+
+        foreach ($ids as $id) {
+            $structure = FeeStructure::query()
+                ->where('school_id', $schoolId)
+                ->where('is_active', true)
+                ->find((int) $id);
+            if (! $structure) {
+                continue;
+            }
+            try {
+                $this->invoices->invoiceStudent($student->fresh(), $structure);
+            } catch (ValidationException) {
+                // Skip structures that do not match class/residency.
+            }
+        }
     }
 }

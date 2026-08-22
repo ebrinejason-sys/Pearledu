@@ -236,4 +236,40 @@ class InvitationLifecycleTest extends TestCase
         $this->assertTrue($user->fresh()->isPlatformOperator());
         $this->assertSame('active', $user->fresh()->status);
     }
+
+    public function test_invite_activate_command_lets_invited_secretary_sign_in(): void
+    {
+        $school = School::where('slug', 'like', 'pearledu%')->firstOrFail();
+        $admin = User::where('email', 'admin@standrews.test')->firstOrFail();
+
+        $result = app(StaffInvitationService::class)->invite($school, [
+            'full_name' => 'New Secretary',
+            'email' => 'newsec@standrews.test',
+            'role_keys' => ['secretary'],
+        ], $admin, false);
+
+        $user = User::where('email', 'newsec@standrews.test')->firstOrFail();
+        $this->assertSame('invited', $user->status);
+        $this->assertNotEmpty($result['invitations']);
+
+        $this->from('/login')->post('/login', [
+            'identifier' => 'newsec@standrews.test',
+            'password' => 'SecretaryPass99',
+        ])->assertSessionHasErrors('identifier');
+        $this->assertGuest();
+
+        $this->artisan('invite:activate', [
+            'email' => 'newsec@standrews.test',
+            '--password' => 'SecretaryPass99',
+        ])->assertSuccessful();
+
+        $this->assertSame('active', $user->fresh()->status);
+        $this->assertTrue($user->fresh()->hasRoleInSchool(Role::SECRETARY, $school->id));
+
+        $this->post('/login', [
+            'identifier' => 'newsec@standrews.test',
+            'password' => 'SecretaryPass99',
+        ])->assertRedirect();
+        $this->assertAuthenticatedAs($user->fresh());
+    }
 }
