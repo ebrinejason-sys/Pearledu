@@ -95,4 +95,23 @@ class FeeStructure extends Model
 
         return true;
     }
+
+    /**
+     * Attach this learner and raise an invoice for a named extra (van, club, …).
+     *
+     * @param  list<int>  $studentIds
+     */
+    public function attachLearners(int $schoolId, array $studentIds): void
+    {
+        $ids = Student::query()
+            ->where('school_id', $schoolId)
+            ->whereIn('id', $studentIds)
+            ->pluck('id');
+
+        foreach ($ids as $id) {
+            $this->learners()->syncWithoutDetaching([
+                (int) $id => ['school_id' => $schoolId],
+            ]);
+        }
+    }
 }

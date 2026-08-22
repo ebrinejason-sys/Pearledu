@@ -43,6 +43,9 @@ class StaffInvitationService
      *   role_key?: string,
      *   role_keys?: list<string>,
      *   class_id?: ?int,
+     *   date_of_birth?: ?string,
+     *   nationality?: ?string,
+     *   home_address?: ?string,
      *   teaching_assignments?: list<array{subject_id:int, class_ids: list<int>, periods_per_week?: int}>
      * }  $data
      * @return array{
@@ -110,6 +113,15 @@ class StaffInvitationService
             }
             if (filled($data['nin'] ?? null)) {
                 $fill['nin'] = $data['nin'];
+            }
+            if (array_key_exists('date_of_birth', $data) && filled($data['date_of_birth'])) {
+                $fill['date_of_birth'] = $data['date_of_birth'];
+            }
+            if (array_key_exists('nationality', $data) && filled($data['nationality'])) {
+                $fill['nationality'] = $data['nationality'];
+            }
+            if (array_key_exists('home_address', $data) && filled($data['home_address'])) {
+                $fill['home_address'] = $data['home_address'];
             }
             $user->forceFill($fill)->save();
 

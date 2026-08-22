@@ -40,7 +40,7 @@
       @if($roles->isEmpty())
         <p style="color:var(--muted)">You cannot invite anyone with your current responsibilities.</p>
       @else
-      <form method="post" action="{{ route('app.staff.store') }}" id="invite-staff-form">
+      <form method="post" action="{{ route('app.staff.store') }}" id="invite-staff-form" enctype="multipart/form-data">
         @csrf
         <fieldset style="border:0;padding:0;margin:0">
           <legend style="font-size:13px;color:var(--muted);padding:0">Personal information</legend>
@@ -63,14 +63,38 @@
           <label for="invite-nin">National ID (NIN) <span aria-hidden="true">*</span></label>
           <input id="invite-nin" name="nin" value="{{ old('nin') }}" required autocomplete="off" minlength="10" maxlength="20">
           @error('nin')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-dob">Date of birth</label>
+          <input id="invite-dob" type="date" name="date_of_birth" value="{{ old('date_of_birth') }}">
+          @error('date_of_birth')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-nationality">Nationality</label>
+          <input id="invite-nationality" name="nationality" value="{{ old('nationality', 'Uganda') }}">
+          <label for="invite-address">Home address</label>
+          <input id="invite-address" name="home_address" value="{{ old('home_address') }}">
+          <label for="invite-photo">Photo</label>
+          <input id="invite-photo" type="file" name="photo" accept="image/*" capture="user">
+          @error('photo')<div class="err" role="alert">{{ $message }}</div>@enderror
+        </fieldset>
+
+        <fieldset style="border:0;padding:0;margin:16px 0 0">
+          <legend style="font-size:13px;color:var(--muted);padding:0">Teaching or non-teaching</legend>
+          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Teaching staff need a subject and class load. Non-teaching staff keep biodata, ID, salary, and other duties.</p>
+          <label class="check" style="margin:0 12px 8px 0">
+            <input type="radio" name="staff_kind" value="teaching" class="js-staff-kind" @checked(old('staff_kind', 'teaching') === 'teaching')>
+            <span>Teaching staff</span>
+          </label>
+          <label class="check" style="margin:0 0 8px">
+            <input type="radio" name="staff_kind" value="non_teaching" class="js-staff-kind" @checked(old('staff_kind') === 'non_teaching')>
+            <span>Non-teaching staff</span>
+          </label>
+          @error('staff_kind')<div class="err" role="alert">{{ $message }}</div>@enderror
         </fieldset>
 
         <fieldset style="border:0;padding:0;margin:16px 0 0">
           <legend style="font-size:13px;color:var(--muted);padding:0">Responsibilities</legend>
-          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Tick every role this person should hold. One person may be a teacher and a class teacher at the same time.</p>
+          <p style="margin:4px 0 10px;font-size:13px;color:var(--muted)">Tick every role this person should hold. Teaching staff must include Teacher and/or Class Teacher. One person may be a teacher and a class teacher at the same time.</p>
           <div class="role-picks">
             @foreach($roles as $role)
-              <label class="role-pick">
+              <label class="role-pick js-role-wrap{{ in_array($role->key, ['subject_teacher', 'class_teacher'], true) ? ' js-teaching-role' : '' }}">
                 <input type="checkbox" name="role_keys[]" value="{{ $role->key }}" class="js-role-key" @checked(collect(old('role_keys', []))->contains($role->key))>
                 <strong>{{ $role->label }}</strong>
                 <span>{{ $roleHints[$role->key] ?? 'School responsibility' }}</span>
@@ -93,12 +117,23 @@
         </div>
         <div id="teaching-field" hidden>
           <h3 style="font-size:15px;margin:16px 0 0">Teaching load</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 8px">Required when Teacher is selected. One person can teach different subjects to different classes so the timetable does not collide.</p>
           @include('app.teaching._load-builder', [
             'builderId' => 'invite-load',
             'subjects' => $subjects ?? collect(),
             'classes' => $classes,
           ])
         </div>
+        @if(!empty($canSetSalary))
+        <fieldset style="border:0;padding:0;margin:16px 0 0">
+          <legend style="font-size:13px;color:var(--muted);padding:0">Salary</legend>
+          <label for="invite-salary">Monthly amount (UGX)</label>
+          <input id="invite-salary" type="number" min="0" name="salary_amount" value="{{ old('salary_amount') }}">
+          @error('salary_amount')<div class="err" role="alert">{{ $message }}</div>@enderror
+          <label for="invite-salary-notes">Notes</label>
+          <input id="invite-salary-notes" name="salary_notes" value="{{ old('salary_notes') }}">
+        </fieldset>
+        @endif
         <p style="margin-top:14px"><button class="btn" type="submit">Send invitation</button></p>
       </form>
       @endif
@@ -213,14 +248,25 @@
     function checkedRoles(selector) {
       return Array.from(document.querySelectorAll(selector)).filter(function (el) { return el.checked; }).map(function (el) { return el.value; });
     }
+    function staffKind() {
+      var el = document.querySelector('#invite-staff-form input[name="staff_kind"]:checked');
+      return el ? el.value : '';
+    }
     function syncInvite() {
+      var kind = staffKind();
+      document.querySelectorAll('#invite-staff-form .js-teaching-role').forEach(function (wrap) {
+        wrap.hidden = kind === 'non_teaching';
+        if (kind === 'non_teaching') {
+          wrap.querySelectorAll('input').forEach(function (cb) { cb.checked = false; });
+        }
+      });
       var keys = checkedRoles('#invite-staff-form .js-role-key');
       var homeroom = document.getElementById('homeroom-field');
       var teach = document.getElementById('teaching-field');
       if (homeroom) homeroom.hidden = keys.indexOf('class_teacher') === -1;
-      if (teach) teach.hidden = keys.indexOf('subject_teacher') === -1;
+      if (teach) teach.hidden = kind !== 'teaching' || keys.indexOf('subject_teacher') === -1;
     }
-    document.querySelectorAll('#invite-staff-form .js-role-key').forEach(function (el) {
+    document.querySelectorAll('#invite-staff-form .js-role-key, #invite-staff-form .js-staff-kind').forEach(function (el) {
       el.addEventListener('change', syncInvite);
     });
     syncInvite();

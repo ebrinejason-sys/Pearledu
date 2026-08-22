@@ -15,12 +15,17 @@ class Student extends Model
     use BelongsToSchool, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'school_id', 'user_id', 'full_name', 'gender', 'residency', 'nationality',
+        'school_id', 'user_id', 'full_name', 'gender', 'date_of_birth', 'residency', 'nationality',
+        'religion', 'home_address', 'medical_notes',
         'emis_number', 'schoolpay_payment_code',
         'lin', 'nin', 'photo_path', 'class_id', 'status',
     ];
 
-    protected $casts = ['lin' => 'encrypted', 'nin' => 'encrypted'];   // DPPA: encrypted at rest
+    protected $casts = [
+        'lin' => 'encrypted',
+        'nin' => 'encrypted',
+        'date_of_birth' => 'date',
+    ];
 
     /** @return HasMany<Guardianship, $this> */
     public function guardianships(): HasMany

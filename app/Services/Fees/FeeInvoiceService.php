@@ -7,6 +7,8 @@ use App\Models\FeeAdjustment;
 use App\Models\FeeInvoice;
 use App\Models\FeeStructure;
 use App\Models\Student;
+use App\Support\FeeKind;
+use App\Support\Residency;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -99,6 +101,79 @@ class FeeInvoiceService
         }
 
         return ['created' => $created, 'already_existed' => $already, 'skipped' => $skipped];
+    }
+
+    /**
+     * Create a learner-specific extra (van, club) and invoice this student.
+     * The class day/boarding tuition is a separate saved structure.
+     *
+     * @param  array{name: string, amount: float|int|string, kind?: string, due_on?: ?string, term_id?: ?int}  $data
+     */
+    public function applyCustomFee(Student $student, array $data): FeeInvoice
+    {
+        $schoolId = (int) $student->school_id;
+        $kind = (string) ($data['kind'] ?? FeeKind::OTHER);
+        if (! in_array($kind, FeeKind::keys(), true)) {
+            $kind = FeeKind::OTHER;
+        }
+
+        return DB::transaction(function () use ($student, $data, $schoolId, $kind) {
+            $structure = FeeStructure::create([
+                'school_id' => $schoolId,
+                'name' => $data['name'],
+                'amount' => $data['amount'],
+                'kind' => $kind,
+                'residency' => Residency::ANY,
+                'applies_to' => 'learners',
+                'class_id' => null,
+                'term_id' => $data['term_id'] ?? null,
+                'currency' => 'UGX',
+                'is_active' => true,
+            ]);
+            $structure->syncLearners($schoolId, [(int) $student->id]);
+            $this->ensureInvoice($schoolId, (int) $student->id, $structure, $data['due_on'] ?? null);
+
+            $invoice = $this->liveInvoice($schoolId, (int) $student->id, (int) $structure->id);
+            if (! $invoice) {
+                throw ValidationException::withMessages([
+                    'amount' => 'The fee could not be applied to this learner.',
+                ]);
+            }
+
+            return $invoice;
+        });
+    }
+
+    /**
+     * Invoice one learner from an already-saved structure (class tuition or named group).
+     */
+    public function invoiceStudent(Student $student, FeeStructure $structure, ?string $dueOn = null): FeeInvoice
+    {
+        $schoolId = (int) $student->school_id;
+        if ((int) $structure->school_id !== $schoolId) {
+            throw ValidationException::withMessages([
+                'fee_structure_id' => 'That fee structure does not belong to this school.',
+            ]);
+        }
+
+        if ($structure->isLearnerTargeted()) {
+            $structure->attachLearners($schoolId, [(int) $student->id]);
+            $structure->unsetRelation('learners');
+        } elseif (! $structure->appliesToStudent($student)) {
+            throw ValidationException::withMessages([
+                'fee_structure_id' => 'This fee is for a different class or residency (day/boarding).',
+            ]);
+        }
+
+        $this->ensureInvoice($schoolId, (int) $student->id, $structure, $dueOn);
+        $invoice = $this->liveInvoice($schoolId, (int) $student->id, (int) $structure->id);
+        if (! $invoice) {
+            throw ValidationException::withMessages([
+                'fee_structure_id' => 'The fee could not be applied to this learner.',
+            ]);
+        }
+
+        return $invoice;
     }
 
     public function createSingle(

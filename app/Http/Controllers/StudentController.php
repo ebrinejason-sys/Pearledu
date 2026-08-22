@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeeStructure;
 use App\Models\Guardianship;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\User;
 use App\Services\Authorization\LearnerScope;
+use App\Services\Fees\FeeInvoiceService;
 use App\Services\Fees\StudentLedgerService;
 use App\Services\Learners\StudentLifecycleService;
 use App\Services\Students\GuardianLinkService;
 use App\Services\Students\StudentAccountLinkService;
 use App\Services\Tenancy\TenantContext;
+use App\Support\FeeKind;
 use App\Support\Gender;
 use App\Support\Residency;
 use Illuminate\Http\Request;
@@ -27,6 +31,7 @@ class StudentController extends Controller
         private StudentLifecycleService $lifecycle,
         private StudentLedgerService $ledger,
         private LearnerScope $learners,
+        private FeeInvoiceService $invoices,
     ) {}
 
     public function index(Request $request)
@@ -89,6 +94,7 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $this->validateOptionalFirstGuardian($request);
         $data['residency'] = Residency::normalize($data['residency'] ?? null);
         $data['nationality'] = $data['nationality'] ?? 'Uganda';
         $classId = $data['class_id'] ?? null;
@@ -97,7 +103,9 @@ class StudentController extends Controller
         $this->storePhoto($request, $student);
         if ($classId) {
             $this->lifecycle->enrollStudent($student, (int) $classId);
+            $this->invoices->assignDefaultStructures($student->fresh());
         }
+        $this->maybeInviteFirstGuardian($request, $student);
 
         return redirect()
             ->route('app.students.show', $student)
@@ -117,10 +125,22 @@ class StudentController extends Controller
         $canLinkGuardians = $this->learners->canLinkGuardian($user, $schoolId, $student);
         $canViewFinance = in_array('finance.view', $user->permissionsForSchool($schoolId), true)
             || in_array('finance.manage', $user->permissionsForSchool($schoolId), true);
+        $canApplyFees = in_array('finance.manage', $user->permissionsForSchool($schoolId), true)
+            || in_array('fees.invoice.create', $user->permissionsForSchool($schoolId), true);
         $statement = $canViewFinance ? $this->ledger->statement($student) : ['lines' => [], 'balance' => 0];
+        $feeKinds = FeeKind::keys();
+        $applyableStructures = $canApplyFees
+            ? FeeStructure::query()
+                ->where('school_id', $schoolId)
+                ->where('is_active', true)
+                ->where('applies_to', 'learners')
+                ->orderBy('name')
+                ->get()
+            : collect();
 
         return view('app.students.show', compact(
-            'student', 'statement', 'canManageLearners', 'canEditProfile', 'canLinkGuardians', 'canViewFinance'
+            'student', 'statement', 'canManageLearners', 'canEditProfile', 'canLinkGuardians',
+            'canViewFinance', 'canApplyFees', 'feeKinds', 'applyableStructures'
         ));
     }
 
@@ -152,6 +172,7 @@ class StudentController extends Controller
         $full = $user && $schoolId && $this->learners->canMutateStudent($user, $schoolId, $student);
         $data = $this->validated($request, $student, $full);
         $classId = $data['class_id'] ?? null;
+        $residency = $data['residency'] ?? $student->residency;
         unset($data['class_id'], $data['photo']);
         if (! $full) {
             unset($data['status'], $data['emis_number'], $data['schoolpay_payment_code']);
@@ -159,9 +180,11 @@ class StudentController extends Controller
                 abort(403);
             }
         }
+        $classChanged = $classId && (int) $student->class_id !== (int) $classId;
+        $residencyChanged = Residency::normalize($residency) !== Residency::normalize($student->residency);
         $student->update($data);
         $this->storePhoto($request, $student);
-        if ($classId && (int) $student->fresh()->class_id !== (int) $classId) {
+        if ($classChanged) {
             try {
                 $this->lifecycle->enrollStudent($student->fresh(), (int) $classId);
             } catch (ValidationException $e) {
@@ -170,6 +193,9 @@ class StudentController extends Controller
                 }
                 $student->update(['class_id' => $classId]);
             }
+        }
+        if ($full && ($classChanged || $residencyChanged)) {
+            $this->invoices->assignDefaultStructures($student->fresh());
         }
 
         return redirect()
@@ -204,9 +230,10 @@ class StudentController extends Controller
                 'nin' => 'required|string|min:10|max:20',
                 'relationship' => 'nullable|string|max:60',
                 'is_primary' => 'sometimes|boolean',
+                'photo' => 'nullable|image|max:2048',
             ]);
 
-            $this->guardians->inviteNew(
+            $link = $this->guardians->inviteNew(
                 $student,
                 $data['full_name'],
                 $data['email'],
@@ -216,6 +243,7 @@ class StudentController extends Controller
                 $request->user()?->id,
                 $data['nin'],
             );
+            $this->storeGuardianPhoto($request, $link->guardian);
 
             return back()->with('status', 'Guardian invited and linked.');
         }
@@ -303,6 +331,105 @@ class StudentController extends Controller
         return back()->with('status', 'Student login unlinked from this learner.');
     }
 
+    public function applyFee(Request $request, Student $student)
+    {
+        $this->assertTenantOwned($student);
+        $user = $request->user();
+        $schoolId = $this->context->schoolId();
+        abort_unless($user && $schoolId, 403);
+        $perms = $user->permissionsForSchool($schoolId);
+        abort_unless(
+            in_array('finance.manage', $perms, true) || in_array('fees.invoice.create', $perms, true),
+            403
+        );
+
+        if ($request->filled('fee_structure_id')) {
+            $data = $request->validate([
+                'fee_structure_id' => 'required|integer',
+                'due_on' => 'nullable|date',
+            ]);
+            $structure = FeeStructure::query()
+                ->where('school_id', $schoolId)
+                ->where('is_active', true)
+                ->findOrFail($data['fee_structure_id']);
+            $invoice = $this->invoices->invoiceStudent($student, $structure, $data['due_on'] ?? null);
+
+            return back()->with('status', 'Fee applied. Invoice '.$invoice->reference.' · balance UGX '.number_format((float) $invoice->balance).'.');
+        }
+
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'amount' => 'required|numeric|min:0',
+            'kind' => ['required', Rule::in(FeeKind::keys())],
+            'due_on' => 'nullable|date',
+        ]);
+        $invoice = $this->invoices->applyCustomFee($student, $data);
+
+        return back()->with('status', 'Custom fee applied to '.$student->full_name.'. Invoice '.$invoice->reference.'.');
+    }
+
+    private function maybeInviteFirstGuardian(Request $request, Student $student): void
+    {
+        if (trim((string) $request->input('guardian_full_name', '')) === ''
+            || trim((string) $request->input('guardian_email', '')) === '') {
+            return;
+        }
+
+        $data = $this->validateOptionalFirstGuardian($request);
+        if ($data === null) {
+            return;
+        }
+
+        $link = $this->guardians->inviteNew(
+            $student,
+            $data['guardian_full_name'],
+            $data['guardian_email'],
+            $data['guardian_phone'] ?? null,
+            $data['guardian_relationship'] ?? null,
+            true,
+            $request->user()?->id,
+            $data['guardian_nin'],
+        );
+        if ($request->hasFile('guardian_photo') && $link->guardian) {
+            $file = $request->file('guardian_photo');
+            if ($file) {
+                $link->guardian->avatar_path = $file->store('avatars/'.$link->guardian->id, 'public');
+                $link->guardian->save();
+            }
+        }
+    }
+
+    /** @return array<string, mixed>|null */
+    private function validateOptionalFirstGuardian(Request $request): ?array
+    {
+        if (trim((string) $request->input('guardian_full_name', '')) === ''
+            && trim((string) $request->input('guardian_email', '')) === '') {
+            return null;
+        }
+
+        return $request->validate([
+            'guardian_full_name' => 'required|string|max:120',
+            'guardian_email' => 'required|email|max:190',
+            'guardian_phone' => 'nullable|string|max:30',
+            'guardian_nin' => 'required|string|min:10|max:20',
+            'guardian_relationship' => 'nullable|string|max:60',
+            'guardian_photo' => 'nullable|image|max:2048',
+        ]);
+    }
+
+    private function storeGuardianPhoto(Request $request, ?User $guardian): void
+    {
+        if (! $guardian || ! $request->hasFile('photo')) {
+            return;
+        }
+        $file = $request->file('photo');
+        if ($guardian->avatar_path) {
+            Storage::disk('public')->delete($guardian->avatar_path);
+        }
+        $guardian->avatar_path = $file->store('avatars/'.$guardian->id, 'public');
+        $guardian->save();
+    }
+
     private function assertTenantOwned(Student $student): void
     {
         $schoolId = $this->context->schoolId();
@@ -354,8 +481,12 @@ class StudentController extends Controller
             ],
             'status' => [$full ? 'required' : 'nullable', Rule::in($this->statuses())],
             'gender' => ['nullable', Rule::in(Gender::keys())],
+            'date_of_birth' => 'nullable|date|before:today',
             'residency' => ['nullable', Rule::in(Residency::learnerKeys())],
             'nationality' => 'nullable|string|max:80',
+            'religion' => 'nullable|string|max:80',
+            'home_address' => 'nullable|string|max:255',
+            'medical_notes' => 'nullable|string|max:2000',
             'photo' => 'nullable|image|max:2048',
             'lin' => 'nullable|string|max:120',
             'nin' => 'nullable|string|max:120',
@@ -370,7 +501,7 @@ class StudentController extends Controller
         ]);
 
         // Empty strings → null so unique(emis) and encryption stay clean
-        foreach (['emis_number', 'lin', 'nin', 'class_id', 'schoolpay_payment_code', 'nationality'] as $key) {
+        foreach (['emis_number', 'lin', 'nin', 'class_id', 'schoolpay_payment_code', 'nationality', 'religion', 'home_address', 'medical_notes', 'date_of_birth'] as $key) {
             if (array_key_exists($key, $data) && $data[$key] === '') {
                 $data[$key] = null;
             }
