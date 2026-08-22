@@ -14,6 +14,7 @@ use App\Models\Subject;
 use App\Models\TeachingAssignment;
 use App\Models\Term;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 class SchoolSetupService
@@ -267,13 +268,17 @@ class SchoolSetupService
             ->whereHas('roleAssignments', fn ($q) => $q->where('school_id', $schoolId)->whereHas('role', fn ($rq) => $rq->whereIn('key', Role::STAFF)))
             ->count();
 
-        $duplicateNames = Student::query()
-            ->where('school_id', $schoolId)
-            ->where('status', 'active')
-            ->selectRaw('lower(full_name) as n, count(*) as c')
-            ->groupByRaw('lower(full_name)')
-            ->havingRaw('count(*) > 1')
-            ->get()
+        $duplicateNames = (int) DB::query()
+            ->fromSub(
+                Student::query()
+                    ->where('school_id', $schoolId)
+                    ->where('status', 'active')
+                    ->selectRaw('lower(full_name) as n')
+                    ->groupByRaw('lower(full_name)')
+                    ->havingRaw('count(*) > 1')
+                    ->toBase(),
+                'dupes',
+            )
             ->count();
 
         $missingPhotos = Student::query()

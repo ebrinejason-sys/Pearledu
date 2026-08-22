@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboard;
 
+use App\Models\AcademicYear;
 use App\Models\AssessmentMarksheet;
 use App\Models\AssessmentPeriod;
 use App\Models\AttendanceRecord;
@@ -13,12 +14,14 @@ use App\Models\Mark;
 use App\Models\PromotionBatch;
 use App\Models\Role;
 use App\Models\RoleAssignment;
+use App\Models\Room;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\StaffTimePunch;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\TeachingAssignment;
+use App\Models\TimetablePeriod;
 use App\Models\TimetableSlot;
 use App\Models\User;
 use App\Services\Academics\TeachingLoadService;
@@ -163,33 +166,39 @@ class RoleWorkspaceService
 
         $today = (int) now(config('app.timezone'))->isoWeekday();
         $nowTime = now(config('app.timezone'))->format('H:i');
-        $lessons = TimetableSlot::query()
+        $slots = TimetableSlot::query()
             ->where('school_id', $school->id)
             ->where('teacher_id', $user->id)
             ->where('day_of_week', $today)
             ->with(['period', 'schoolClass', 'subject', 'room'])
             ->get()
-            ->sortBy(fn (TimetableSlot $slot) => $slot->period?->sequence ?? $slot->period_id)
-            ->values()
-            ->map(function (TimetableSlot $slot) use ($nowTime) {
-                $start = (string) ($slot->period?->starts_at ?? '');
-                $end = (string) ($slot->period?->ends_at ?? '');
-                $inWindow = $nowTime >= $start && $nowTime <= $end;
-                $current = $start !== '' && $end !== '' && $inWindow;
+            ->sortBy(function (TimetableSlot $slot) {
+                $period = $slot->period;
 
-                return [
-                    'period' => $slot->period?->name ?? 'Period',
-                    'starts_at' => $slot->period?->starts_at,
-                    'ends_at' => $slot->period?->ends_at,
-                    'subject' => $slot->subject?->name ?? 'Subject',
-                    'class' => $slot->schoolClass instanceof SchoolClass ? $slot->schoolClass->displayName() : 'Class',
-                    'class_id' => (int) $slot->class_id,
-                    'subject_id' => (int) $slot->subject_id,
-                    'room' => $slot->room?->name,
-                    'current' => $current,
-                ];
-            })
-            ->all();
+                return $period instanceof TimetablePeriod ? $period->sequence : $slot->period_id;
+            });
+
+        $lessons = [];
+        foreach ($slots as $slot) {
+            $period = $slot->period;
+            $subject = $slot->subject;
+            $room = $slot->room;
+            $start = $period instanceof TimetablePeriod ? (string) $period->starts_at : '';
+            $end = $period instanceof TimetablePeriod ? (string) $period->ends_at : '';
+            $inWindow = $start !== '' && $end !== '' && $nowTime >= $start && $nowTime <= $end;
+
+            $lessons[] = [
+                'period' => $period instanceof TimetablePeriod ? $period->name : 'Period',
+                'starts_at' => $period instanceof TimetablePeriod ? $period->starts_at : null,
+                'ends_at' => $period instanceof TimetablePeriod ? $period->ends_at : null,
+                'subject' => $subject instanceof Subject ? $subject->name : 'Subject',
+                'class' => $slot->schoolClass instanceof SchoolClass ? $slot->schoolClass->displayName() : 'Class',
+                'class_id' => (int) $slot->class_id,
+                'subject_id' => (int) $slot->subject_id,
+                'room' => $room instanceof Room ? $room->name : null,
+                'current' => $inWindow,
+            ];
+        }
 
         $period = AssessmentPeriod::query()
             ->where('school_id', $school->id)
@@ -222,6 +231,7 @@ class RoleWorkspaceService
             $class = $first->schoolClass;
             $classId = (int) $first->class_id;
             $homeroom = $homeroomByClass->get($classId);
+            $homeroomUser = $homeroom instanceof RoleAssignment ? $homeroom->user : null;
             $subjects = [];
             foreach ($rows as $row) {
                 if (! $row instanceof TeachingAssignment) {
@@ -229,9 +239,10 @@ class RoleWorkspaceService
                 }
                 $sheet = $marksheets->first(fn (AssessmentMarksheet $s) => (int) $s->class_id === $classId
                     && (int) $s->subject_id === (int) $row->subject_id);
+                $subject = $row->subject;
                 $subjects[] = [
                     'id' => (int) $row->subject_id,
-                    'name' => $row->subject?->name ?? 'Subject',
+                    'name' => $subject instanceof Subject ? $subject->name : 'Subject',
                     'status' => $sheet?->status ?? 'draft',
                     'revoked' => $sheet?->uploadRevoked() ?? false,
                 ];
@@ -241,7 +252,7 @@ class RoleWorkspaceService
                 'class' => $class instanceof SchoolClass ? $class->displayName() : 'Class '.$first->class_id,
                 'subjects' => $subjects,
                 'class_teacher_id' => $homeroom instanceof RoleAssignment ? (int) $homeroom->user_id : null,
-                'class_teacher_name' => $homeroom instanceof RoleAssignment ? $homeroom->user?->full_name : null,
+                'class_teacher_name' => $homeroomUser instanceof User ? $homeroomUser->full_name : null,
             ];
         }
 
@@ -353,12 +364,14 @@ class RoleWorkspaceService
             foreach ($subjects as $assignment) {
                 $sheet = $marksheets->first(fn (AssessmentMarksheet $s) => (int) $s->assessment_period_id === (int) $period->id
                     && (int) $s->subject_id === (int) $assignment->subject_id);
+                $subject = $assignment->subject;
+                $teacher = $assignment->teacher;
                 $rows[] = [
                     'subject_id' => (int) $assignment->subject_id,
-                    'subject' => $assignment->subject?->name ?? 'Subject',
-                    'teacher' => $assignment->teacher?->full_name,
-                    'teacher_photo' => $assignment->teacher?->avatarUrl(),
-                    'teacher_initial' => $assignment->teacher?->avatarInitial() ?? '?',
+                    'subject' => $subject instanceof Subject ? $subject->name : 'Subject',
+                    'teacher' => $teacher instanceof User ? $teacher->full_name : null,
+                    'teacher_photo' => $teacher instanceof User ? $teacher->avatarUrl() : null,
+                    'teacher_initial' => $teacher instanceof User ? $teacher->avatarInitial() : '?',
                     'status' => $sheet?->status ?? 'draft',
                     'revoked' => $sheet?->uploadRevoked() ?? false,
                     'can_revoke' => $period->entryDeadlinePassed() && ! ($sheet?->uploadRevoked() ?? false),
@@ -664,7 +677,8 @@ class RoleWorkspaceService
      */
     private function pendingPromotions(School $school): array
     {
-        return PromotionBatch::query()
+        $out = [];
+        $batches = PromotionBatch::query()
             ->where('school_id', $school->id)
             ->whereNull('committed_at')
             ->where('status', '!=', 'committed')
@@ -672,15 +686,21 @@ class RoleWorkspaceService
             ->with(['fromYear', 'toYear'])
             ->orderByDesc('id')
             ->limit(8)
-            ->get()
-            ->map(fn (PromotionBatch $batch) => [
+            ->get();
+
+        foreach ($batches as $batch) {
+            $from = $batch->fromYear;
+            $to = $batch->toYear;
+            $out[] = [
                 'id' => (int) $batch->id,
-                'from' => $batch->fromYear?->name,
-                'to' => $batch->toYear?->name,
+                'from' => $from instanceof AcademicYear ? $from->name : null,
+                'to' => $to instanceof AcademicYear ? $to->name : null,
                 'items' => (int) $batch->items_count,
                 'commit_url' => Route::has('app.promotions.commit') ? route('app.promotions.commit', $batch) : null,
-            ])
-            ->all();
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -688,21 +708,27 @@ class RoleWorkspaceService
      */
     private function openHelpdesk(School $school): array
     {
-        return HelpdeskTicket::query()
+        $out = [];
+        $tickets = HelpdeskTicket::query()
             ->where('school_id', $school->id)
             ->where('status', '!=', 'closed')
             ->with('user')
             ->orderByDesc('id')
             ->limit(8)
-            ->get()
-            ->map(fn (HelpdeskTicket $ticket) => [
+            ->get();
+
+        foreach ($tickets as $ticket) {
+            $from = $ticket->user;
+            $out[] = [
                 'id' => (int) $ticket->id,
                 'subject' => $ticket->subject,
-                'from' => $ticket->user?->full_name,
+                'from' => $from instanceof User ? $from->full_name : null,
                 'priority' => $ticket->priority ?: 'normal',
                 'category' => $ticket->category,
-            ])
-            ->all();
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -797,20 +823,30 @@ class RoleWorkspaceService
     {
         $today = (int) now(config('app.timezone'))->isoWeekday();
 
-        return TimetableSlot::query()
+        $slots = TimetableSlot::query()
             ->where('school_id', $school->id)
             ->where('day_of_week', $today)
             ->whereNull('teacher_id')
             ->with(['period', 'schoolClass', 'subject'])
             ->get()
-            ->sortBy(fn (TimetableSlot $slot) => $slot->period?->sequence ?? $slot->period_id)
-            ->map(fn (TimetableSlot $slot) => [
+            ->sortBy(function (TimetableSlot $slot) {
+                $period = $slot->period;
+
+                return $period instanceof TimetablePeriod ? $period->sequence : $slot->period_id;
+            });
+
+        $out = [];
+        foreach ($slots as $slot) {
+            $period = $slot->period;
+            $subject = $slot->subject;
+            $out[] = [
                 'class' => $slot->schoolClass instanceof SchoolClass ? $slot->schoolClass->displayName() : 'Class',
-                'period' => $slot->period?->name,
-                'subject' => $slot->subject?->name,
-            ])
-            ->values()
-            ->all();
+                'period' => $period instanceof TimetablePeriod ? $period->name : null,
+                'subject' => $subject instanceof Subject ? $subject->name : null,
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -834,7 +870,7 @@ class RoleWorkspaceService
             $present = 0;
             $marked = 0;
             foreach ($byStatus as $row) {
-                $n = (int) $row->total;
+                $n = (int) $row->getAttribute('total');
                 $marked += $n;
                 if (in_array($row->status, ['present', 'late'], true)) {
                     $present += $n;
@@ -926,7 +962,8 @@ class RoleWorkspaceService
             if ($lastThree->count() < 3) {
                 continue;
             }
-            $allZero = $lastThree->every(fn ($row) => (int) $row->present === 0 && (int) $row->marked > 0);
+            $allZero = $lastThree->every(fn ($row) => (int) $row->getAttribute('present') === 0
+                && (int) $row->getAttribute('marked') > 0);
             if ($allZero) {
                 $hit++;
             }
@@ -993,28 +1030,36 @@ class RoleWorkspaceService
             ->whereIn('id', $rows->pluck('subject_id')->all() ?: [0])
             ->pluck('name', 'id');
 
-        return $rows->map(function ($row) use ($names) {
-            $total = max(1, (int) $row->total);
+        $out = [];
+        foreach ($rows as $row) {
+            $u = (int) $row->getAttribute('u');
+            $d = (int) $row->getAttribute('d');
+            $c = (int) $row->getAttribute('c');
+            $b = (int) $row->getAttribute('b');
+            $a = (int) $row->getAttribute('a');
+            $total = max(1, (int) $row->getAttribute('total'));
 
-            return [
+            $out[] = [
                 'subject' => $names[(int) $row->subject_id] ?? 'Subject',
-                'total' => (int) $row->total,
+                'total' => (int) $row->getAttribute('total'),
                 'bands' => [
-                    'U' => (int) $row->u,
-                    'D' => (int) $row->d,
-                    'C' => (int) $row->c,
-                    'B' => (int) $row->b,
-                    'A' => (int) $row->a,
+                    'U' => $u,
+                    'D' => $d,
+                    'C' => $c,
+                    'B' => $b,
+                    'A' => $a,
                 ],
                 'pct' => [
-                    'U' => (int) round(((int) $row->u / $total) * 100),
-                    'D' => (int) round(((int) $row->d / $total) * 100),
-                    'C' => (int) round(((int) $row->c / $total) * 100),
-                    'B' => (int) round(((int) $row->b / $total) * 100),
-                    'A' => (int) round(((int) $row->a / $total) * 100),
+                    'U' => (int) round(($u / $total) * 100),
+                    'D' => (int) round(($d / $total) * 100),
+                    'C' => (int) round(($c / $total) * 100),
+                    'B' => (int) round(($b / $total) * 100),
+                    'A' => (int) round(($a / $total) * 100),
                 ],
             ];
-        })->all();
+        }
+
+        return $out;
     }
 
     /**
@@ -1047,11 +1092,12 @@ class RoleWorkspaceService
             $match = $assignments->first(fn (TeachingAssignment $a) => (int) $a->class_id === (int) $sheet->class_id
                 && (int) $a->subject_id === (int) $sheet->subject_id);
             $teacher = $match?->teacher;
+            $subject = $sheet->subject;
             $out[] = [
                 'name' => $teacher instanceof User ? $teacher->full_name : 'Unassigned',
                 'photo' => $teacher instanceof User ? $teacher->avatarUrl() : null,
                 'initial' => $teacher instanceof User ? $teacher->avatarInitial() : '?',
-                'subject' => $sheet->subject?->name ?? 'Subject',
+                'subject' => $subject instanceof Subject ? $subject->name : 'Subject',
                 'class' => $sheet->schoolClass instanceof SchoolClass ? $sheet->schoolClass->displayName() : 'Class',
             ];
         }
