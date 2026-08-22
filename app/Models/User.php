@@ -9,17 +9,29 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
-/** Global identity. Schools + roles come from role_assignments (one person, many roles).
+/**
+ * Global identity. Schools + roles come from role_assignments (one person, many roles).
  *
- * @property \Illuminate\Support\Carbon|null $last_login_at
- * @property \Illuminate\Support\Carbon|null $last_seen_at
+ * @property Carbon|null $last_login_at
+ * @property Carbon|null $last_seen_at
  */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = ['full_name', 'email', 'phone', 'password', 'status', 'preferred_theme', 'avatar_path', 'last_login_at', 'last_seen_at'];
+    protected $fillable = [
+        'full_name',
+        'email',
+        'phone',
+        'password',
+        'status',
+        'preferred_theme',
+        'avatar_path',
+        'last_login_at',
+        'last_seen_at',
+    ];
 
     protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
 

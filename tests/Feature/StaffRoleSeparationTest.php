@@ -39,6 +39,7 @@ class StaffRoleSeparationTest extends TestCase
     public function test_dos_can_invite_teachers_but_cannot_edit_existing_staff_roles(): void
     {
         Mail::fake();
+        config(['mail.from.address' => 'no-reply@voxsign.test']);
         $dos = User::where('email', 'dos@standrews.test')->firstOrFail();
         $head = User::where('email', 'head@standrews.test')->firstOrFail();
 
@@ -50,7 +51,7 @@ class StaffRoleSeparationTest extends TestCase
             'full_name' => 'Invited Teacher',
             'email' => 'invited-teacher@standrews.test',
             'role_keys' => ['subject_teacher'],
-        ])->assertRedirect();
+        ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('users', ['email' => 'invited-teacher@standrews.test']);
 

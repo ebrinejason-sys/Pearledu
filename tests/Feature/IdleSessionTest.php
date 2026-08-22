@@ -84,7 +84,7 @@ class IdleSessionTest extends TestCase
 
         $this->assertAuthenticatedAs($this->teacher);
 
-        $this->teacher->forceFill(['last_seen_at' => now()->subMinutes(31)])->save();
+        $this->travel(31)->minutes();
 
         $this->get(route('app.home'))
             ->assertRedirect(route('login'));

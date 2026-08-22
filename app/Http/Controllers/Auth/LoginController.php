@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\RequireRecentPlatformAuth;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\TwoFactorService;
@@ -96,7 +97,7 @@ class LoginController extends Controller
         $audit->record('auth.login', $user);
 
         if ($user && $user->isPlatformOperator()) {
-            \App\Http\Middleware\RequireRecentPlatformAuth::markConfirmed($request);
+            RequireRecentPlatformAuth::markConfirmed($request);
         }
 
         if ($user && ! $user->isPlatformOperator() && ($school = $user->primarySchool())) {
