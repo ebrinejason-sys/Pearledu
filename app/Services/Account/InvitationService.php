@@ -103,7 +103,7 @@ class InvitationService
             }
 
             $user = $inv->user;
-            if (! $user) {
+            if (! $user instanceof User) {
                 throw new RuntimeException('This invitation has no user account.');
             }
 
@@ -140,7 +140,7 @@ class InvitationService
                 }
             }
 
-            return $user->fresh();
+            return $user->fresh() ?? $user;
         });
     }
 
