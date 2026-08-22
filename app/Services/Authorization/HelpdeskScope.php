@@ -7,7 +7,8 @@ use App\Models\User;
 
 /**
  * Helpdesk: create / view own / manage school-wide.
- * Normal members only see and close their own tickets.
+ * Assignees may view and close tickets assigned to them (parent → class teacher)
+ * without helpdesk.manage.
  */
 class HelpdeskScope
 {
@@ -46,8 +47,13 @@ class HelpdeskScope
             return true;
         }
 
+        if ($this->canViewOwn($user, $schoolId) && (int) $ticket->user_id === (int) $user->id) {
+            return true;
+        }
+
         return $this->canViewOwn($user, $schoolId)
-            && (int) $ticket->user_id === (int) $user->id;
+            && $ticket->assigned_to !== null
+            && (int) $ticket->assigned_to === (int) $user->id;
     }
 
     public function canClose(User $user, int $schoolId, HelpdeskTicket $ticket): bool

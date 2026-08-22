@@ -123,6 +123,12 @@ class NavigationBuilder
                 'label' => 'Home',
                 'items' => array_values(array_filter([
                     $this->item('Dashboard', 'app.home', icon: 'home'),
+                    $this->has($permissions, 'class.view')
+                        ? $this->item('My Class', 'app.teaching.homeroom', icon: 'classes', active: request()->routeIs('app.teaching.homeroom'))
+                        : null,
+                    $this->hasAny($permissions, ['assessment.enter', 'lms.manage'])
+                        ? $this->item('My classes', 'app.teaching.mine', icon: 'teaching', active: request()->routeIs('app.teaching.mine'))
+                        : null,
                     $portalHome ? $this->item('My portal', 'app.portal.home', icon: 'home', active: request()->routeIs('app.portal.*')) : null,
                 ])),
             ],
@@ -193,12 +199,6 @@ class NavigationBuilder
                 'key' => 'academics',
                 'label' => 'Academics',
                 'items' => array_values(array_filter([
-                    $this->hasAny($permissions, ['assessment.enter', 'lms.manage'])
-                        ? $this->item('My classes', 'app.teaching.mine', icon: 'teaching', active: request()->routeIs('app.teaching.mine'))
-                        : null,
-                    $this->has($permissions, 'class.view')
-                        ? $this->item('My Class', 'app.teaching.homeroom', icon: 'classes', active: request()->routeIs('app.teaching.homeroom'))
-                        : null,
                     $on('attendance') && $this->hasAny($permissions, ['attendance.mark', 'attendance.manage', 'attendance.view'])
                         ? $this->item('Attendance', 'app.attendance.index', icon: 'attendance', active: request()->routeIs('app.attendance.*'))
                         : null,

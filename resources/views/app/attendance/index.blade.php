@@ -35,42 +35,53 @@
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <input type="checkbox" name="notify_absent" value="1" checked> SMS guardians on absent
       </label>
-      <table>
+      <table class="reg-table">
         <thead><tr><th>Student</th><th>Status</th><th>Reason</th></tr></thead>
         <tbody>
         @foreach($students as $i => $student)
           @php($rec = $existing->get($student->id))
           <tr>
-            <td>
-              {{ $student->full_name }}
+            <td class="reg-sticky">
+              <div class="reg-person">
+                @include('app.partials.person-face', ['url' => $student->photoUrl(), 'initial' => $student->photoInitial(), 'name' => $student->full_name])
+                <span>{{ $student->full_name }}</span>
+              </div>
               <input type="hidden" name="records[{{ $i }}][student_id]" value="{{ $student->id }}">
             </td>
             <td>
-              <select name="records[{{ $i }}][status]">
+              <div class="att-btns" role="group" aria-label="Attendance for {{ $student->full_name }}">
                 @foreach(['present','absent','late','excused'] as $st)
-                  <option value="{{ $st }}" @selected(($rec?->status ?? 'present') === $st)>{{ ucfirst($st) }}</option>
+                  <label class="att-btn att-btn--{{ $st }}">
+                    <input type="radio" name="records[{{ $i }}][status]" value="{{ $st }}" @checked(($rec?->status ?? 'present') === $st)>
+                    <span>{{ ucfirst($st) }}</span>
+                  </label>
                 @endforeach
-              </select>
+              </div>
             </td>
             <td><input name="records[{{ $i }}][reason]" value="{{ $rec?->reason }}"></td>
           </tr>
         @endforeach
         </tbody>
       </table>
-      <p style="margin-top:14px"><button class="btn" type="submit">Save attendance</button></p>
+      <p style="margin-top:14px"><button class="btn accent ws-cta" type="submit">Save attendance</button></p>
     </form>
   </div>
   @elseif($students->isNotEmpty())
   <div class="card">
-    <p style="margin:0 0 12px;color:var(--muted)">Read-only register for this class.</p>
-    <table>
+    <p class="ws-hint">Read-only register for this class.</p>
+    <table class="reg-table">
       <thead><tr><th>Student</th><th>Status</th><th>Reason</th></tr></thead>
       <tbody>
       @foreach($students as $student)
         @php($rec = $existing->get($student->id))
         <tr>
-          <td>{{ $student->full_name }}</td>
-          <td>{{ ucfirst($rec?->status ?? '—') }}</td>
+          <td class="reg-sticky">
+            <div class="reg-person">
+              @include('app.partials.person-face', ['url' => $student->photoUrl(), 'initial' => $student->photoInitial(), 'name' => $student->full_name])
+              <span>{{ $student->full_name }}</span>
+            </div>
+          </td>
+          <td><span class="pill pill--{{ $rec?->status === 'present' ? 'success' : ($rec?->status === 'absent' ? 'danger' : 'warning') }}">{{ ucfirst($rec?->status ?? '—') }}</span></td>
           <td>{{ $rec?->reason ?: '—' }}</td>
         </tr>
       @endforeach

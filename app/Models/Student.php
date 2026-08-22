@@ -118,6 +118,27 @@ class Student extends Model
         return $user instanceof User ? $user->avatarUrl() : null;
     }
 
+    public function photoInitial(): string
+    {
+        return strtoupper(substr($this->full_name ?: '?', 0, 1));
+    }
+
+    public function firstName(): string
+    {
+        $name = trim((string) $this->full_name);
+        if ($name === '') {
+            return 'Learner';
+        }
+
+        return explode(' ', $name)[0];
+    }
+
+    /** @return HasMany<AttendanceRecord, $this> */
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class);
+    }
+
     /** Presence only — does not decrypt or audit. */
     public function hasLinOnFile(): bool
     {

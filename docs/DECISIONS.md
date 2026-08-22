@@ -184,6 +184,20 @@
 
 **Rollback/revisit:** Do not replace a school's uploaded crest with the PearlEdu sphere.
 
+## 2026-08-22 — Role harmony workspaces without a second RBAC
+
+**Problem:** Grants already matched SoD, but every school role landed on a shared admin desk. A harmony brief asked for one owner per task, graphical homes, and structured escalation — and also asked for Head finance writes, class-teacher mark entry, and new SQL permission tables.
+
+**Decision:** Keep `config/permissions.php` + `role_assignments`. Compose homes in `RoleWorkspaceService` by **role-key** order (homeroom → teacher → DOS → bursar → deputy → head → director → school admin). Action Center and nav follow the same union. Escalation reuses helpdesk (parent → assigned class teacher) and staff messages (teacher → homeroom; homeroom → deputy/DOS/head). Director exceptions are read-only and link to Head/DOS/Bursar view routes. No grant expansion for director, head, deputy, or class teacher. No `concerns` table.
+
+**Rejected from the brief:** Head finance/grade writes or exam-entry unlock; class teacher inheriting `assessment.enter`; director fee-revision approval; renaming `subject_teacher` / `director_of_studies`; parent view of classmates or ranks; quiet-hours as a hard blocker; learner electives; deputy venue booking as a new module.
+
+**Reason:** Least privilege already encoded in middleware and `*Scope` services. A second permission system would drift. UI hiding is still not the security boundary.
+
+**Consequences:** School admin home is a hygiene console; they remain break-glass. Class teachers see tickets assigned to them without `helpdesk.manage`. Multi-role union still wins (Jane as class teacher + teacher).
+
+**Rollback/revisit:** Director break-glass override remains deferred. Quiet-hours messaging can hang on `StaffMessageService` later without a new product.
+
 ## 2026-08-22 — Learner fee attach, staff directory, invite activation
 
 **Problem:** The Fees tab hid attach behind a modal, so bursars missed it. The staff directory mixed parents/learners into HR and was a flat card grid. Secretary existed in `config/permissions.php` but invited accounts could not sign in until they accepted mail — operators who never ran a command were stuck.

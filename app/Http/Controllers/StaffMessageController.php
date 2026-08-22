@@ -30,22 +30,46 @@ class StaffMessageController extends Controller
         abort_unless($school && $request->user(), 404);
 
         $data = $request->validate([
-            'user_ids' => 'required|array|min:1',
+            'user_ids' => 'nullable|array|min:1',
             'user_ids.*' => 'integer',
             'subject' => 'nullable|string|max:160',
             'body' => 'required|string|max:4000',
+            'intent' => 'nullable|in:concern,escalate',
+            'class_id' => 'nullable|integer',
+            'role_key' => 'nullable|string',
         ]);
 
         try {
-            $conversation = $messages->start(
-                $school,
-                $request->user(),
-                $data['user_ids'],
-                $data['body'],
-                $data['subject'] ?? null,
-            );
+            if (($data['intent'] ?? null) === 'concern') {
+                abort_unless(! empty($data['class_id']), 422);
+                $conversation = $messages->flagConcern(
+                    $school,
+                    $request->user(),
+                    (int) $data['class_id'],
+                    $data['body'],
+                );
+            } elseif (($data['intent'] ?? null) === 'escalate') {
+                abort_unless(! empty($data['role_key']), 422);
+                $conversation = $messages->escalateTo(
+                    $school,
+                    $request->user(),
+                    (string) $data['role_key'],
+                    $data['body'],
+                );
+            } else {
+                if (empty($data['user_ids'])) {
+                    return back()->withInput()->withErrors(['user_ids' => 'Choose someone to message.']);
+                }
+                $conversation = $messages->start(
+                    $school,
+                    $request->user(),
+                    $data['user_ids'] ?? [],
+                    $data['body'],
+                    $data['subject'] ?? null,
+                );
+            }
         } catch (RuntimeException $e) {
-            return back()->withInput()->withErrors(['user_ids' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['user_ids' => $e->getMessage(), 'body' => $e->getMessage()]);
         }
 
         return redirect()->route('app.staff.messages.show', $conversation)->with('status', 'Message sent.');

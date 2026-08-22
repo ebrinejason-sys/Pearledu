@@ -6,7 +6,7 @@
       @if($canManage)
         School-wide tickets. PearlEdu support staff also see these in the admin inbox.
       @else
-        Your tickets only. PearlEdu support staff see them in the admin inbox.
+        Tickets you opened or that were assigned to you. PearlEdu support staff see them in the admin inbox.
       @endif
     </p>
   </div></div>
@@ -23,7 +23,7 @@
     </div>
     @endif
     <div class="card">
-      <h3 style="margin-top:0">{{ $canManage ? 'All tickets' : 'My tickets' }}</h3>
+      <h3 style="margin-top:0">{{ $canManage ? 'All tickets' : 'My tickets & assigned' }}</h3>
       <table>
         <thead><tr><th>Subject</th>@if($canManage)<th>From</th>@endif<th>Status</th></tr></thead>
         <tbody>

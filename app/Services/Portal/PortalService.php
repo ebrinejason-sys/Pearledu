@@ -7,6 +7,8 @@ use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
 use App\Models\FeeInvoice;
 use App\Models\Mark;
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\Student;
 use App\Models\TimetableSlot;
 use App\Models\User;
@@ -69,6 +71,44 @@ class PortalService
         }
 
         return $learners->first();
+    }
+
+    public function classTeacherFor(Student $student): ?User
+    {
+        if (! $student->class_id) {
+            return null;
+        }
+
+        $userId = RoleAssignment::query()
+            ->where('school_id', $student->school_id)
+            ->where('class_id', $student->class_id)
+            ->where('is_active', true)
+            ->whereHas('role', fn ($q) => $q->where('key', Role::CLASS_TEACHER))
+            ->value('user_id');
+
+        return $userId ? User::query()->find($userId) : null;
+    }
+
+    /**
+     * Latest attendance status keyed by student id. Own children only — caller must pass linked ids.
+     *
+     * @param  list<int>  $studentIds
+     * @return array<int, AttendanceRecord>
+     */
+    public function latestAttendanceFor(array $studentIds): array
+    {
+        if ($studentIds === []) {
+            return [];
+        }
+
+        return AttendanceRecord::query()
+            ->whereIn('student_id', $studentIds)
+            ->orderByDesc('attended_on')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('student_id')
+            ->keyBy('student_id')
+            ->all();
     }
 
     /** @return Collection<int, Mark> */

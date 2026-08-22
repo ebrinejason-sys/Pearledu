@@ -33,11 +33,13 @@ class TimetableSlot extends Model
         return $this->belongsTo(Subject::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'teacher_id');
     }
 
+    /** @return BelongsTo<Room, $this> */
     public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);

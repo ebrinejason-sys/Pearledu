@@ -41,16 +41,19 @@ class AssessmentMarksheet extends Model
         return $this->upload_revoked_at !== null;
     }
 
+    /** @return BelongsTo<AssessmentPeriod, $this> */
     public function period(): BelongsTo
     {
         return $this->belongsTo(AssessmentPeriod::class, 'assessment_period_id');
     }
 
+    /** @return BelongsTo<SchoolClass, $this> */
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
     }
 
+    /** @return BelongsTo<Subject, $this> */
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);

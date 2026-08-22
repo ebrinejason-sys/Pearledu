@@ -15,6 +15,7 @@ class HelpdeskScopeTest extends TestCase
     use RefreshDatabase;
 
     private School $school;
+
     private HelpdeskScope $scope;
 
     protected function setUp(): void
@@ -70,5 +71,34 @@ class HelpdeskScopeTest extends TestCase
         $this->assertTrue($this->scope->canManage($admin, $this->school->id));
         $this->assertTrue($this->scope->canView($admin, $this->school->id, $ticket));
         $this->assertTrue($this->scope->canClose($admin, $this->school->id, $ticket));
+    }
+
+    public function test_class_teacher_can_view_assigned_parent_ticket_not_others(): void
+    {
+        $classTeacher = User::where('email', 'classteacher@standrews.test')->firstOrFail();
+        $parent = User::where('email', 'parent@standrews.test')->firstOrFail();
+        $teacher = User::where('email', 'teacher@standrews.test')->firstOrFail();
+
+        $assigned = HelpdeskTicket::create([
+            'school_id' => $this->school->id,
+            'user_id' => $parent->id,
+            'assigned_to' => $classTeacher->id,
+            'subject' => 'Assigned to homeroom',
+            'body' => 'Details',
+            'status' => 'open',
+            'category' => 'class_teacher',
+        ]);
+        $other = HelpdeskTicket::create([
+            'school_id' => $this->school->id,
+            'user_id' => $teacher->id,
+            'subject' => 'Other staff ticket',
+            'body' => 'Details',
+            'status' => 'open',
+        ]);
+
+        $this->assertFalse($this->scope->canManage($classTeacher, $this->school->id));
+        $this->assertTrue($this->scope->canView($classTeacher, $this->school->id, $assigned));
+        $this->assertFalse($this->scope->canView($classTeacher, $this->school->id, $other));
+        $this->assertTrue($this->scope->canClose($classTeacher, $this->school->id, $assigned));
     }
 }

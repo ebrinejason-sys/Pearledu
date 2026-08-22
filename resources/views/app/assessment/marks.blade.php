@@ -63,14 +63,20 @@
       <input type="hidden" name="period_id" value="{{ $periodId }}">
       <input type="hidden" name="class_id" value="{{ $classId }}">
       <input type="hidden" name="subject_id" value="{{ $subjectId }}">
-      <table>
+      <table class="reg-table">
         <thead><tr><th>Student</th><th>Score</th><th>Grade</th><th>Comment</th></tr></thead>
         <tbody>
         @foreach($students as $i => $student)
           @php($m = $existing->get($student->id))
           <tr>
-            <td>{{ $student->full_name }}<input type="hidden" name="rows[{{ $i }}][student_id]" value="{{ $student->id }}"></td>
-            <td><input type="number" step="0.01" name="rows[{{ $i }}][score]" value="{{ $m?->score }}" @disabled(!($canEnterMarks ?? true))></td>
+            <td class="reg-sticky">
+              <div class="reg-person">
+                @include('app.partials.person-face', ['url' => $student->photoUrl(), 'initial' => $student->photoInitial(), 'name' => $student->full_name])
+                <span>{{ $student->full_name }}</span>
+              </div>
+              <input type="hidden" name="rows[{{ $i }}][student_id]" value="{{ $student->id }}">
+            </td>
+            <td><input type="number" inputmode="decimal" step="0.01" name="rows[{{ $i }}][score]" value="{{ $m?->score }}" @disabled(!($canEnterMarks ?? true))></td>
             <td>{{ $m?->grade ?: '—' }}@if($m?->remark)<div style="font-size:12px;color:var(--muted)">{{ $m->remark }}</div>@endif</td>
             <td><input name="rows[{{ $i }}][comment]" value="{{ $m?->comment }}" @disabled(!($canEnterMarks ?? true))></td>
           </tr>

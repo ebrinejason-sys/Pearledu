@@ -9,6 +9,8 @@
       $grid[$slot->day_of_week][$slot->period_id] = $slot;
     }
     $usedDays = $slots->pluck('day_of_week')->unique()->sort()->values();
+    $todayIso = (int) now(config('app.timezone'))->isoWeekday();
+    $usedDays = $usedDays->sortBy(fn ($d) => ((int) $d - $todayIso + 7) % 7)->values();
   @endphp
   <div class="page-header">
     <div>
@@ -37,7 +39,7 @@
           </thead>
           <tbody>
             @foreach($usedDays as $dayNum)
-              <tr>
+              <tr class="{{ (int) $dayNum === $todayIso ? 'is-today' : '' }}">
                 <td><strong>{{ $dayNames[$dayNum] ?? $dayNum }}</strong></td>
                 @foreach($periods as $period)
                   @php($slot = $grid[$dayNum][$period->id] ?? null)
